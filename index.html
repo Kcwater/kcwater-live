@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KC WATER - ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Battambang:wght@400;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { 
+      font-family: 'Plus Jakarta Sans', 'Battambang', sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+      box-sizing: border-box;
+    }
+    body { 
+      background: radial-gradient(circle at top right, #f0fdf4 0%, #f8fafc 50%, #f1f5f9 100%); 
+      color: #0f172a; 
+      min-height: 100vh;
+    }
+    .kc-glass-nav {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+    }
+    .kc-glass-card {
+      background: #ffffff;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 12px 30px -8px rgba(5, 150, 105, 0.08);
+      border-radius: 24px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .kc-glass-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 35px -10px rgba(5, 150, 105, 0.16);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .kc-btn-primary {
+      background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+      color: white;
+      box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      border-radius: 9999px;
+      font-weight: 800;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .kc-btn-primary:active { transform: scale(0.96); }
+    .kc-floating-cart {
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 32px;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* 🛵 ចលនាម៉ូតូរត់ញ័រៗ & ពន្លឺដំណាក់កាល */
+    @keyframes scooterDrive {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      25% { transform: translateY(-3px) rotate(-3deg); }
+      75% { transform: translateY(-1px) rotate(2deg); }
+    }
+    .animate-scooter {
+      animation: scooterDrive 0.75s ease-in-out infinite;
+    }
+    @keyframes linePulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    .animate-line-pulse {
+      animation: linePulse 1.5s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="pb-36 antialiased select-none">
+
+  <!-- ១. NAVBAR -->
+  <header class="sticky top-0 z-40 kc-glass-nav">
+    <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white text-xl shadow-md">
+          <i class="fas fa-droplet"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-base font-black text-slate-900 tracking-tight leading-none">KC WATER</h1>
+            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Poipet</span>
+          </div>
+          <p class="text-[10px] text-emerald-700 font-bold mt-0.5" id="txtTopSubtitle">រោងចក្រទឹកបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)</p>
+        </div>
+      </div>
+
+      <!-- ៣ ភាសា -->
+      <div class="flex items-center bg-slate-100 p-1 rounded-full border border-slate-200 text-xs font-black">
+        <button onclick="changeAppLanguage('km')" id="langBtn_km" class="px-2.5 py-1 rounded-full bg-emerald-700 text-white shadow-xs transition">ខ្មែរ</button>
+        <button onclick="changeAppLanguage('en')" id="langBtn_en" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition">EN</button>
+        <button onclick="changeAppLanguage('zh')" id="langBtn_zh" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition">中文</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ប្រអប់ជូនដំណឹងពេលផុតម៉ោងធ្វើការ -->
+  <div id="storeClosedNoticeBanner" class="max-w-md mx-auto px-4 pt-3 hidden">
+    <div class="p-3 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-start gap-2.5 text-amber-950 text-xs shadow-xs">
+      <div class="w-8 h-8 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-sm shrink-0 mt-0.5">
+        <i class="fas fa-moon"></i>
+      </div>
+      <div>
+        <b class="text-amber-950 font-black block">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
+        <span class="text-[11px] text-amber-800 leading-snug block mt-0.5" id="storeClosedTimeHint">
+          ម៉ោងទទួលកុម្ម៉ង់៖ 07:00 ព្រឹក ដល់ 18:00 ល្ងាច។ លោកអ្នកនៅតែអាចកុម្ម៉ង់ទុកជាមុនបាន ហើយរោងចក្រនឹងចាត់ចែងដឹកជូននៅព្រឹកស្អែក!
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ២. BANNER & TRUST BADGES -->
+  <section class="max-w-md mx-auto px-4 pt-4 pb-2 space-y-3">
+    <div class="p-4 rounded-3xl bg-gradient-to-r from-emerald-800 via-green-800 to-emerald-950 text-white shadow-xl relative overflow-hidden">
+      <div class="relative z-10 space-y-1.5">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-[10px] font-black text-emerald-200">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="txtBannerTag">សេវាដឹកដល់ផ្ទះរហ័ស ៣០-៤៥ នាទី</span>
+        </div>
+        <h2 class="text-xl font-black tracking-tight" id="txtBannerTitle">ទឹកពិសាបរិសុទ្ធគុណភាពខ្ពស់</h2>
+        <p class="text-[11px] text-emerald-100/80 leading-relaxed" id="txtBannerDesc">ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន ស្តង់ដារសុខភាព ១០០%</p>
+      </div>
+    </div>
+
+    <!-- ផ្លាកសញ្ញាទំនុកចិត្ត ៣ -->
+    <div class="grid grid-cols-3 gap-2 text-center">
+      <div class="p-2.5 bg-white rounded-2xl border border-slate-100 shadow-2xs space-y-0.5">
+        <i class="fas fa-shield-halved text-emerald-600 text-sm"></i>
+        <div class="text-[10px] font-black text-slate-800" id="tbSafe">សុវត្ថិភាពខ្ពស់</div>
+        <div class="text-[9px] text-slate-400 font-bold">UV & Ozone</div>
+      </div>
+      <div class="p-2.5 bg-white rounded-2xl border border-slate-100 shadow-2xs space-y-0.5">
+        <i class="fas fa-truck-fast text-blue-600 text-sm"></i>
+        <div class="text-[10px] font-black text-slate-800" id="tbSpeed">ដឹកដល់មុខផ្ទះ</div>
+        <div class="text-[9px] text-slate-400 font-bold">ក្រុងប៉ោយប៉ែត</div>
+      </div>
+      <div class="p-2.5 bg-white rounded-2xl border border-slate-100 shadow-2xs space-y-0.5">
+        <i class="fas fa-award text-amber-500 text-sm"></i>
+        <div class="text-[10px] font-black text-slate-800" id="tbStandard">ស្តង់ដារជាតិ</div>
+        <div class="text-[9px] text-slate-400 font-bold">KC Pure Water</div>
+      </div>
+    </div>
+
+    <!-- កាតកុម្ម៉ង់ម្ដងទៀតសម្រាប់ភ្ញៀវធ្លាប់កុម្ម៉ង់ (1-Click Reorder) -->
+    <div id="quickReorderCardBox" class="hidden p-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between gap-2 shadow-2xs animate-in zoom-in duration-200">
+      <div class="flex items-center gap-2 overflow-hidden">
+        <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xs shadow-xs shrink-0">
+          <i class="fas fa-rotate-right"></i>
+        </div>
+        <div class="overflow-hidden">
+          <span class="text-[10px] text-emerald-800 font-bold block">ធ្លាប់កុម្ម៉ង់ពីមុន?</span>
+          <b class="text-xs text-slate-800 block truncate" id="quickReorderSummaryText">កុម្ម៉ង់ដូចលើកមុន</b>
+        </div>
+      </div>
+      <button type="button" onclick="execute1ClickReorder()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1 shrink-0">
+        <i class="fas fa-bolt text-[10px] text-yellow-300"></i>
+        <span>កុម្ម៉ង់ម្ដងទៀត</span>
+      </button>
+    </div>
+
+    <!-- ប្រអប់តាមដានការកុម្ម៉ង់ Live Tracking -->
+    <div id="activeOrderCardBox" class="hidden"></div>
+  </section>
+
+  <!-- ៣. បញ្ជីទំនិញ CATALOG -->
+  <section id="catalogSection" class="max-w-md mx-auto px-4 pt-2 space-y-3">
+    <div class="flex justify-between items-center">
+      <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5" id="txtCatalogTitle">
+        <i class="fas fa-boxes-stacked text-emerald-600"></i>
+        <span>មុខទំនិញទឹកពិសា (Products)</span>
+      </h3>
+      <span class="text-[11px] font-bold text-emerald-700 cursor-pointer" onclick="filterCatalog('ALL', document.getElementById('catBtn_ALL'))" id="txtCatalogAll">ទាំងអស់</span>
+    </div>
+
+    <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
+      <button onclick="filterCatalog('ALL', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl bg-emerald-700 text-white shadow-xs whitespace-nowrap active:scale-95 transition">ទាំងអស់</button>
+      <button onclick="filterCatalog('BARREL', this)" id="catBtn_BARREL" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">ទឹកធុង ២០L</button>
+      <button onclick="filterCatalog('PACK', this)" id="catBtn_PACK" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">ទឹកយួរ / ដប</button>
+      <button onclick="filterCatalog('EQUIP', this)" id="catBtn_EQUIP" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">ជើងទម្រ / បរិក្ខារ</button>
+    </div>
+
+    <div id="catalogGrid" class="grid grid-cols-2 gap-3 pt-1"></div>
+  </section>
+
+  <!-- ៤. ផ្ទាំង POPUP DETAIL MODAL -->
+  <div id="productDetailModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" onclick="closeProductDetailModal()"></div>
+    <div class="bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 relative border border-slate-100 animate-in slide-in-from-bottom duration-300">
+      <div class="flex justify-between items-start">
+        <span class="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800" id="modalBadge">KC Standard</span>
+        <button onclick="closeProductDetailModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center">&times;</button>
+      </div>
+
+      <div class="text-center space-y-1.5">
+        <div class="h-28 flex items-center justify-center p-1" id="modalSvgArea"></div>
+        <h4 class="text-base font-black text-slate-900" id="modalTitle"></h4>
+        <p class="text-xs text-slate-500 font-medium leading-relaxed" id="modalDesc"></p>
+        <div class="text-lg font-black text-emerald-700" id="modalPrice"></div>
+      </div>
+
+      <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex justify-between items-center">
+        <span class="text-xs font-black text-slate-700" id="modalQtyLabel">ចំនួនកុម្ម៉ង់៖</span>
+        <div class="flex items-center gap-3">
+          <button onclick="adjustDetailQty(-1)" class="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-700 font-black text-base flex items-center justify-center shadow-2xs active:scale-90">-</button>
+          <span id="modalQtyDisplay" class="font-black text-base text-slate-900 w-6 text-center">1</span>
+          <button onclick="adjustDetailQty(1)" class="w-9 h-9 rounded-xl bg-emerald-600 text-white font-black text-base flex items-center justify-center shadow-xs active:scale-90">+</button>
+        </div>
+      </div>
+
+      <button onclick="confirmAddToCart()" class="w-full py-3.5 kc-btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm">
+        <i class="fas fa-cart-plus"></i>
+        <span id="btnModalAddCartLabel">បញ្ចូលកន្ត្រក</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ៥. របារកន្ត្រកអណ្តែត FLOATING DOCK -->
+  <div id="floatingCartDock" class="fixed bottom-4 left-4 right-4 max-w-md mx-auto z-40 transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none">
+    <div class="kc-floating-cart px-4 py-3 flex justify-between items-center text-white">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center text-base">
+          <i class="fas fa-basket-shopping"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-300 font-bold block" id="dockItemCount">0 មុខទំនិញ</span>
+          <b class="text-sm font-black text-white" id="dockTotalPrice">0 ៛</b>
+        </div>
+      </div>
+      <button onclick="openCheckoutModal()" class="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md active:scale-95 transition flex items-center gap-1.5">
+        <span id="dockCheckoutLabel">គិតលុយ</span>
+        <i class="fas fa-arrow-right text-[10px]"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ៦. ផ្ទាំង CHECKOUT ពេញលេញ -->
+  <div id="checkoutModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs" onclick="closeCheckoutModal()"></div>
+    <div class="bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl z-10 w-full max-w-md max-h-[92vh] overflow-y-auto p-5 space-y-3.5 relative border border-slate-100 animate-in slide-in-from-bottom duration-300 text-xs">
+      
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+        <div>
+          <h4 class="font-black text-slate-900 text-sm sm:text-base" id="coHeading">ព័ត៌មានដឹកជញ្ជូនទឹក (ប៉ោយប៉ែត)</h4>
+          <p class="text-[10px] text-emerald-700 font-bold" id="coSub">ដឹកជូនដល់មុខផ្ទះរហ័សដោយអ្នកដឹក KC WATER</p>
+        </div>
+        <button onclick="closeCheckoutModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center">&times;</button>
+      </div>
+
+      <div id="checkoutErrorAlert" class="hidden p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 font-bold text-[11px] flex items-center gap-2">
+        <i class="fas fa-circle-exclamation text-red-600 text-sm"></i>
+        <span id="checkoutErrorMsg"></span>
+      </div>
+
+      <div id="checkoutCartItemsList" class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1.5"></div>
+
+      <!-- ១. ព័ត៌មានអ្នកទទួល -->
+      <div class="space-y-1.5">
+        <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
+          <i class="fas fa-user-circle text-emerald-600"></i>
+          <span id="coSectionUser">១. ព័ត៌មានអ្នកទទួលទឹក</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="inp_custName" placeholder="ឈ្មោះអ្នកទទួល (*)" class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 transition">
+          <input type="tel" id="inp_custPhone" placeholder="លេខទូរស័ព្ទ (*)" class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 transition">
+        </div>
+      </div>
+
+      <!-- ២. ទីតាំង GPS Google Maps ផ្ទះ -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between items-center">
+          <span class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
+            <i class="fas fa-map-location-dot text-blue-600"></i>
+            <span id="coSectionLoc">២. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត</span>
+          </span>
+          <button type="button" onclick="detectGPSLocation()" class="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition">
+            <i class="fas fa-crosshairs text-blue-600"></i>
+            <span id="btnGpsLabel">📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ</span>
+          </button>
+        </div>
+        <input type="hidden" id="inp_custMapUrl" value="">
+        <div id="gpsStatusHint" class="text-[10px] text-slate-500 font-bold italic">💡 ចុចប៊ូតុងខៀវខាងលើ ដើម្បីឱ្យទូរស័ព្ទចាប់កូអរដោនេផ្ទះដោយស្វ័យប្រវត្តិ</div>
+        <input type="text" id="inp_custAddress" placeholder="ភូមិ, សង្កាត់, ឬចំណាំទីតាំងសម្គាល់ក្បែរផ្ទះ..." class="font-bold p-2.5 rounded-xl border border-slate-300 bg-white outline-none focus:border-emerald-600 w-full">
+      </div>
+
+      <!-- ៣. ជម្រើសសំបកធុង -->
+      <div class="p-3 bg-amber-50/90 rounded-2xl border border-amber-200 space-y-1.5">
+        <div class="font-black text-amber-950 text-[11px] flex justify-between items-center">
+          <span class="flex items-center gap-1">
+            <i class="fas fa-recycle text-amber-700"></i>
+            <span id="coSectionSwap">៣. ការដោះដូរសំបកធុងទឹក</span>
+          </span>
+          <span id="barrelCountSummaryBadge" class="text-[9px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold"></span>
+        </div>
+        <div class="space-y-1 text-[11px]">
+          <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+            <input type="radio" name="co_swapOption" value="YES" onchange="onSwapOptionChanged()" checked class="accent-emerald-600">
+            <span id="optSwapYes">✅ ខ្ញុំមានសំបកធុងដូរ (មិនគិតថ្លៃសំបក)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+            <input type="radio" name="co_swapOption" value="NO" onchange="onSwapOptionChanged()" class="accent-emerald-600">
+            <span id="optSwapNo">🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មីដាច់ +១២,០០០៛/ធុង)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- ៤. វិធីទូទាត់ប្រាក់ & ABA KHQR -->
+      <div class="space-y-2">
+        <div class="font-black text-slate-800 uppercase text-[11px] flex items-center gap-1">
+          <i class="fas fa-wallet text-purple-600"></i>
+          <span id="coSectionPay">៤. វិធីទូទាត់ប្រាក់</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <label id="cardPayCOD" class="p-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 flex items-center gap-2 cursor-pointer font-bold text-slate-900 transition">
+            <input type="radio" name="co_payMethod" value="COD" onchange="onPayMethodChanged('COD')" checked class="accent-emerald-600">
+            <span id="optCodLabel">💵 លុយសុទ្ធពេលដល់</span>
+          </label>
+          <label id="cardPayABA" class="p-2.5 rounded-xl border-2 border-slate-200 bg-white flex items-center gap-2 cursor-pointer font-bold text-slate-700 hover:border-blue-300 transition">
+            <input type="radio" name="co_payMethod" value="ABA" onchange="onPayMethodChanged('ABA')" class="accent-blue-600">
+            <span id="optAbaLabel">📱 ស្កេន ABA KHQR</span>
+          </label>
+        </div>
+
+        <div id="abaKhqrDisplayArea" class="hidden p-3 bg-red-50/70 border-2 border-red-300 rounded-2xl space-y-2 text-center animate-in zoom-in duration-200">
+          <div class="flex justify-between items-center text-xs font-bold text-red-950 border-b border-red-200 pb-1.5">
+            <span class="flex items-center gap-1"><i class="fas fa-qrcode text-red-600"></i> ABA KHQR ផ្លូវការ (KEALY IENG)</span>
+            <span class="font-black text-red-700" id="khqrDueAmountText">៛ 0</span>
+          </div>
+          <div class="p-1 bg-white rounded-xl border border-red-200 shadow-inner max-w-[180px] mx-auto">
+            <img src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" alt="ABA KHQR" class="w-full rounded-lg shadow-xs">
+          </div>
+          <p class="text-[10px] text-slate-500 font-bold">ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម</p>
+        </div>
+      </div>
+
+      <!-- សរុបទឹកប្រាក់ & ប៊ូតុងបញ្ជាទិញ -->
+      <div class="pt-2 border-t border-slate-100 space-y-2">
+        <div class="flex justify-between items-center text-sm font-black text-slate-900">
+          <span id="coTotalLabel">សរុបទឹកប្រាក់ត្រូវបង់៖</span>
+          <span id="coGrandTotalText" class="text-base text-emerald-700 font-black">0 ៛</span>
+        </div>
+        <button type="button" onclick="submitFinalWaterOrder()" id="btnSubmitOrderAction" class="w-full py-3.5 kc-btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm">
+          <i class="fas fa-paper-plane"></i>
+          <span id="btnSubmitOrderText">បញ្ជាក់ការកុម្ម៉ង់ទឹកឥឡូវនេះ (Order Now)</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC (CONNECTED TO SUPABASE) -->
+  <script>
+    // 🔑 SUPABASE CONFIGURATION
+    const SUPABASE_URL = "https://ntftdylkcnkxsytptket.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    var currentLang = 'km';
+    var cartItems = {};
+    var activeModalProduct = null;
+    var currentTrackingOrderId = null;
+    var trackingPollTimer = null;
+    var BARREL_DEPOSIT_PRICE = 12000;
+    var STORE_CATALOG = [];
+    var activePromoConfig = null;
+    var storeDeliveryConfig = { standardFee: 0, freeMinQty: 2 };
+    var storeOperatingConfig = { isOpen: true, openTime: "07:00", closeTime: "18:00" };
+    var telegramConfig = { token: "", chatId: "", status: "ON" };
+
+    // ១. ទាញយកមុខទំនិញពី Supabase Database
+    async function loadStoreOnlineProducts() {
+      var grid = document.getElementById('catalogGrid');
+      if (grid) grid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs"><i class="fas fa-spinner fa-spin text-emerald-600 text-xl mb-2 block"></i> កំពុងទាញយកទំនិញ...</div>';
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select('*')
+          .order('id', { ascending: true });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          STORE_CATALOG = data.map(function(p) {
+            var nameLower = (p.name || '').toLowerCase();
+            var cat = 'EQUIP';
+            var isBarrel = false;
+
+            if (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1 || nameLower.indexOf('២០') !== -1) {
+              cat = 'BARREL';
+              isBarrel = true;
+            } else if (nameLower.indexOf('យួរ') !== -1 || nameLower.indexOf('ដប') !== -1 || nameLower.indexOf('កេស') !== -1) {
+              cat = 'PACK';
+            }
+
+            var imgDisplay = p.img ? '<img src="' + p.img + '" class="h-24 object-contain rounded-2xl drop-shadow-md mx-auto" onerror="this.src=\'https://cdn-icons-png.flaticon.com/512/3100/3100566.png\';">' : '<div class="text-5xl my-2">💧</div>';
+
+            return {
+              id: String(p.id || ''),
+              cat: cat,
+              isBarrel20L: isBarrel,
+              badge: (cat === 'BARREL') ? 'ពេញនិយមបំផុត' : 'គុណភាពខ្ពស់',
+              name_km: p.name,
+              name_en: p.name,
+              name_zh: p.name,
+              desc_km: 'ទឹកពិសាបរិសុទ្ធស្តង់ដារអនាម័យខ្ពស់ ដឹកជញ្ជូនរហ័សដោយ KC WATER',
+              desc_en: 'KC WATER pure drinking water, fast direct delivery in Poipet.',
+              desc_zh: 'KC WATER 优质纯净饮用水，快速送达。',
+              price: parseFloat(p.online_price || p.price || 0),
+              svg: imgDisplay
+            };
+          });
+          renderCatalogGrid('ALL');
+        } else {
+          if (grid) grid.innerHTML = '<div class="col-span-full py-10 text-center text-slate-400 font-bold text-xs">មិនទាន់មានទំនិញក្នុងស្តុកឡើយ</div>';
+        }
+      } catch (err) {
+        if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">កំហុសទាញយកទំនិញ៖ ' + err.message + '</div>';
+      }
+    }
+   
+
+    // ២. ទាញយកការកំណត់ (Settings) ពី Supabase
+    async function loadStoreSettings() {
+      try {
+        const { data, error } = await supabaseClient.from('settings').select('*');
+        if (error || !data) return;
+
+        var s = {};
+        data.forEach(function(r) { s[r.key] = r.value; });
+         telegramConfig.token = s.Telegram_Token || "";
+        telegramConfig.chatId = s.Telegram_ChatID || "";
+        telegramConfig.status = s.Telegram_Alert_Status || "ON";
+
+        // Delivery
+        storeDeliveryConfig.standardFee = parseFloat(s.Delivery_Fee_Standard || 0);
+        storeDeliveryConfig.freeMinQty = parseInt(s.Delivery_Free_Min_Qty || 2);
+
+        // Store Hours
+        var openTime = s.Store_Open_Time || "07:00";
+        var closeTime = s.Store_Close_Time || "18:00";
+        var status = (s.Store_Open_Status || "AUTO").toUpperCase();
+
+        var now = new Date();
+        var hrs = String(now.getHours()).padStart(2, '0');
+        var mins = String(now.getMinutes()).padStart(2, '0');
+        var curTime = hrs + ":" + mins;
+
+        var isOpen = (status === "OPEN") || (status === "AUTO" && curTime >= openTime && curTime <= closeTime);
+        storeOperatingConfig = { isOpen: isOpen, openTime: openTime, closeTime: closeTime };
+
+        var banner = document.getElementById('storeClosedNoticeBanner');
+        var hint = document.getElementById('storeClosedTimeHint');
+        var topSub = document.getElementById('txtTopSubtitle');
+
+        if (!isOpen) {
+          if (banner) banner.classList.remove('hidden');
+          if (hint) hint.innerText = "ម៉ោងទទួលកុម្ម៉ង់៖ " + openTime + " ដល់ " + closeTime + "។ លោកអ្នកនៅតែអាចកុម្ម៉ង់ទុកជាមុនបាន ហើយរោងចក្រនឹងចាត់ចែងដឹកជូននៅព្រឹកស្អែក!";
+          if (topSub) topSub.innerHTML = '<span class="text-amber-700 font-bold">🌙 ក្រៅម៉ោងធ្វើការ (ដឹកជញ្ជូននៅព្រឹកស្អែក)</span>';
+        } else {
+          if (banner) banner.classList.add('hidden');
+          if (topSub) topSub.innerHTML = '<span class="text-emerald-700 font-bold">🟢 កំពុងបើកទទួលកុម្ម៉ង់ (ដល់ម៉ោង ' + closeTime + ')</span>';
+        }
+      } catch (e) {}
+    }
+
+    // ៣. បញ្ជាក់ការកុម្ម៉ង់ទឹកចូល Supabase Database ផ្ទាល់
+    var isSubmittingOrderLock = false;
+
+    async function submitFinalWaterOrder() {
+      if (isSubmittingOrderLock) return;
+
+      var nameInp = document.getElementById('inp_custName');
+      var phoneInp = document.getElementById('inp_custPhone');
+      var addrInp = document.getElementById('inp_custAddress');
+      var mapUrlInp = document.getElementById('inp_custMapUrl');
+
+      var name = nameInp ? nameInp.value.trim() : '';
+      var phone = phoneInp ? phoneInp.value.trim() : '';
+      var address = addrInp ? addrInp.value.trim() : '';
+      var mapUrl = mapUrlInp ? mapUrlInp.value.trim() : '';
+
+      nameInp.classList.remove('border-red-500');
+      phoneInp.classList.remove('border-red-500');
+
+      if (!name) { nameInp.classList.add('border-red-500'); showInAppError("សូមបញ្ចូលឈ្មោះ!"); nameInp.focus(); return; }
+      if (!phone) { phoneInp.classList.add('border-red-500'); showInAppError("សូមបញ្ចូលលេខទូរស័ព្ទ!"); phoneInp.focus(); return; }
+      if (!mapUrl && !address) { showInAppError("សូមចុចចាប់ GPS ឬវាយអាសយដ្ឋានផ្ទះ!"); return; }
+
+      var items = [];
+      var itemsSummaryList = [];
+      var total20LBarrels = 0;
+
+      for (var k in cartItems) {
+        if (cartItems[k].qty > 0) {
+          items.push({ id: k, name: cartItems[k].name, price: cartItems[k].price, qty: cartItems[k].qty });
+          itemsSummaryList.push(cartItems[k].name + " x " + cartItems[k].qty);
+          if (cartItems[k].isBarrel20L) total20LBarrels += cartItems[k].qty;
+        }
+      }
+
+      if (items.length === 0) { showInAppError("កន្ត្រកទទេ! សូមជ្រើសរើសទឹកជាមុនសិន។"); return; }
+
+      var swapVal = document.querySelector('input[name="co_swapOption"]:checked').value;
+      var isNoSwap = (swapVal === 'NO');
+
+      if (isNoSwap && total20LBarrels > 0) {
+        itemsSummaryList.push("ទិញសំបកធុងថ្មី (២០L) x " + total20LBarrels);
+      }
+
+      var calcResult = updateCheckoutCalculation();
+      var grandTotal = calcResult.grandTotal;
+      if (calcResult.deliveryFee > 0) itemsSummaryList.push("សេវាដឹកជញ្ជូន x 1");
+
+      var payVal = document.querySelector('input[name="co_payMethod"]:checked').value;
+      var orderId = "ORD-" + new Date().getTime();
+
+      isSubmittingOrderLock = true;
+      var btn = document.getElementById('btnSubmitOrderAction');
+      var originalBtnText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងបញ្ជូនការកុម្ម៉ង់...';
+
+      try {
+        const { error } = await supabaseClient.from('orders').insert([{
+          order_id: orderId,
+          customer_name: name,
+          phone: phone,
+          location_url: mapUrl || address,
+          items: itemsSummaryList.join(", "),
+          total: grandTotal,
+          currency: "KHR",
+          barrel_swap: isNoSwap ? ('ទិញសំបកថ្មីដាច់ ' + total20LBarrels + ' ធុង') : 'មានសំបកដូរ',
+          payment_method: payVal === 'ABA' ? 'ស្កេន ABA KHQR' : 'លុយសុទ្ធពេលដល់ (COD)',
+          status: 'Pending',
+          note: address
+        }]);
+
+        if (error) throw error;
+        // 🔔 បាញ់សារដំណឹង Telegram ទៅកាន់រោងចក្រភ្លាមៗ
+        try {
+          if (telegramConfig.token && telegramConfig.chatId && telegramConfig.status !== 'OFF') {
+            var tgItemLines = itemsSummaryList.map(function(item) { return "  • " + item; }).join("\n");
+            var timeStr = new Date().toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+            
+            var tgMsg = "🔔 <b>[KC WATER - ការកុម្ម៉ង់ទឹកថ្មីតាម WEBSITE!]</b>\n\n" +
+                        "🆔 <b>កូដ៖</b> <code>" + orderId + "</code>\n" +
+                        "👤 <b>អតិថិជន៖</b> " + name + "\n" +
+                        "📞 <b>ទូរស័ព្ទ៖</b> " + phone + "\n" +
+                        "📦 <b>ទំនិញកុម្ម៉ង់៖</b>\n" + tgItemLines + "\n" +
+                        "🛢️ <b>សំបកធុង៖</b> <b>" + (isNoSwap ? ('ទិញសំបកថ្មី ' + total20LBarrels + ' ធុង') : 'មានសំបកដូរ') + "</b>\n" +
+                        "💰 <b>តម្លៃសរុប៖</b> <b>៛ " + Number(grandTotal).toLocaleString() + "</b>\n" +
+                        "💳 <b>វិធីបង់ប្រាក់៖</b> " + (payVal === 'ABA' ? 'ស្កេន ABA KHQR' : 'លុយសុទ្ធពេលដល់ (COD)') + "\n" +
+                        (mapUrl ? "🗺️ <b>ផែនទីផ្ទះភ្ញៀវ៖</b> <a href='" + mapUrl + "'>ចុចបើក Google Maps នាំផ្លូវ</a>\n" : "") +
+                        (address ? "📝 <b>ចំណាំទីតាំង៖</b> " + address + "\n" : "") +
+                        "🕒 <b>ម៉ោង៖</b> " + timeStr;
+
+            fetch("https://api.telegram.org/bot" + telegramConfig.token + "/sendMessage", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: telegramConfig.chatId,
+                text: tgMsg,
+                parse_mode: "HTML"
+              })
+            }).catch(function(err){ console.error("Telegram send error:", err); });
+          }
+        } catch(tgErr) {
+          console.error("Telegram error:", tgErr);
+        }
+
+        // ចងចាំទិន្នន័យ
+        localStorage.setItem('kc_order_name', name);
+        localStorage.setItem('kc_order_phone', phone);
+        localStorage.setItem('kc_order_addr', address);
+        localStorage.setItem('kc_active_order_id', orderId);
+        localStorage.setItem('kc_last_order_items', JSON.stringify(cartItems));
+
+        cartItems = {};
+        recalcCartDock();
+        renderCatalogGrid();
+        closeCheckoutModal();
+
+        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+        currentTrackingOrderId = orderId;
+        checkActiveOrderLiveStatus();
+
+      } catch (err) {
+        showInAppError("កំហុស៖ " + err.message);
+      } finally {
+        isSubmittingOrderLock = false;
+        btn.disabled = false;
+        btn.innerHTML = originalBtnText;
+      }
+    }
+
+    // ៤. តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ ៤ ជំហាន (ANIMATED 4-STEP DELIVERY TRACKER)
+    async function checkActiveOrderLiveStatus() {
+      var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
+      var cardBox = document.getElementById('activeOrderCardBox');
+      if (!orderId || !cardBox) { 
+        if (cardBox) cardBox.classList.add('hidden'); 
+        return; 
+      }
+
+      var refreshIcon = document.getElementById('trackingRefreshIcon');
+      if (refreshIcon) refreshIcon.classList.add('fa-spin');
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('orders')
+          .select('*')
+          .eq('order_id', orderId)
+          .maybeSingle();
+
+        if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+
+        if (!data || data.status === "Cancelled") {
+          cardBox.classList.add('hidden');
+          clearInterval(trackingPollTimer);
+          return;
+        }
+
+        // 🎯 កំណត់ដំណាក់កាលទាំង ៤ តាម Status ជាក់ស្តែង
+        var step = 1; // 1: ទទួលកុម្ម៉ង់, 2: រៀបចំទឹក, 3: កំពុងធ្វើដំណើរ, 4: ដឹកដល់
+        var progressWidth = "12%";
+        var statusHintText = "រោងចក្របានទទួលការកុម្ម៉ង់ហើយ កំពុងពិនិត្យទំនិញ...";
+
+        if (data.status === "Pending") {
+          step = 1;
+          progressWidth = "15%";
+          statusHintText = "រោងចក្របានទទួលការកុម្ម៉ង់ហើយ កំពុងរង់ចាំចាត់ចែងអ្នកដឹក...";
+        } else if (data.status === "Assigned") {
+          step = 3; // មានអ្នកដឹកហើយ ➔ ម៉ូតូកំពុងធ្វើដំណើរ
+          progressWidth = "72%";
+          statusHintText = "អ្នកដឹកកំពុងធ្វើដំណើរលើផ្លូវឆ្ពោះទៅផ្ទះរបស់អ្នក! សូមត្រៀមទទួលទឹក...";
+        } else if (data.status === "Delivered") {
+          step = 4;
+          progressWidth = "100%";
+          statusHintText = "ទឹកត្រូវបានដឹកជញ្ជូន និងប្រគល់ដល់ផ្ទះរួចរាល់! សូមអរគុណ! 🙏";
+        }
+
+        // 🎨 រៀបចំ Node Icon ដំណាក់កាលទាំង ៤
+        function getNodeHtml(nodeStep, icon, label) {
+          var isDone = step > nodeStep;
+          var isCurrent = step === nodeStep;
+          
+          var circleClass = "";
+          var iconContent = "";
+
+          if (isDone) {
+            circleClass = "bg-emerald-600 text-white shadow-md border-2 border-emerald-600";
+            iconContent = '<i class="fas fa-check text-xs"></i>';
+          } else if (isCurrent) {
+            if (nodeStep === 3) {
+              // 🛵 ម៉ូតូមានចលនាញ័រៗរត់លើផ្លូវ
+              circleClass = "bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-lg shadow-orange-500/40 border-2 border-amber-300 animate-scooter scale-110";
+              iconContent = '<i class="fas fa-motorcycle text-sm"></i>';
+            } else if (nodeStep === 4) {
+              circleClass = "bg-emerald-600 text-white shadow-lg border-2 border-emerald-300 scale-110";
+              iconContent = '<i class="fas fa-house-chimney text-xs"></i>';
+            } else {
+              circleClass = "bg-emerald-600 text-white shadow-lg border-2 border-emerald-300 scale-110";
+              iconContent = '<i class="' + icon + ' text-xs animate-pulse"></i>';
+            }
+          } else {
+            circleClass = "bg-slate-100 text-slate-400 border-2 border-slate-200";
+            iconContent = '<i class="' + icon + ' text-xs"></i>';
+          }
+
+          var labelColor = isCurrent ? "text-emerald-950 font-black" : (isDone ? "text-emerald-700 font-bold" : "text-slate-400 font-medium");
+
+          return '<div class="flex flex-col items-center text-center relative z-10 w-16">' +
+            '<div class="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ' + circleClass + '">' +
+              iconContent +
+            '</div>' +
+            '<span class="text-[9.5px] mt-1.5 leading-tight ' + labelColor + '">' + label + '</span>' +
+          '</div>';
+        }
+
+        // ព័ត៌មានអ្នកដឹក (បង្ហាញពេល Assigned)
+        var driverCardHtml = "";
+        if (data.driver_name && step >= 2 && data.status !== "Delivered") {
+          var phoneToCall = data.driver_phone || "077934748";
+          var cleanPhone = String(phoneToCall).replace(/[^0-9]/g, '');
+
+          driverCardHtml = '<div class="p-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 rounded-2xl border-2 border-emerald-300 flex justify-between items-center shadow-xs animate-in zoom-in duration-200">' +
+            '<div class="flex items-center gap-2.5">' +
+              '<div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-base shadow-xs animate-scooter">' +
+                '<i class="fas fa-motorcycle"></i>' +
+              '</div>' +
+              '<div>' +
+                '<span class="text-[9.5px] text-emerald-800 font-bold block uppercase tracking-wider">អ្នកដឹកជញ្ជូន KC WATER</span>' +
+                '<b class="text-slate-900 text-xs sm:text-sm">' + data.driver_name + '</b>' +
+                (data.driver_phone ? '<div class="text-[10.5px] text-emerald-900 font-black mt-0.5">📞 ' + data.driver_phone + '</div>' : '') +
+              '</div>' +
+            '</div>' +
+            '<a href="tel:' + cleanPhone + '" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition" style="text-decoration:none;">' +
+              '<i class="fas fa-phone text-xs"></i> ខលទៅអ្នកដឹក' +
+            '</a>' +
+          '</div>';
+        }
+
+        var tgMsgText = encodeURIComponent("សួស្តី KC WATER! ខ្ញុំបានផ្ញើប្រាក់សម្រាប់ការកុម្ម៉ង់លេខកូដ [" + orderId + "] ចំនួន ៛ " + Number(data.total || 0).toLocaleString() + " រួចរាល់ហើយ។ នេះជារូបភាពបង្កាន់ដៃ (Slip) របស់ខ្ញុំ៖");
+        var tgSlipLink = "https://t.me/KcWater?text=" + tgMsgText;
+
+        cardBox.innerHTML = '<div class="p-4 rounded-3xl bg-white border-2 border-emerald-400 shadow-xl space-y-3 animate-in zoom-in duration-200">' +
+          
+          // ក្បាលកាត
+          '<div class="flex justify-between items-center border-b border-slate-100 pb-2.5">' +
+            '<div>' +
+              '<div class="flex items-center gap-1.5">' +
+                '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>' +
+                '<b class="text-xs text-slate-900 font-black">ស្ថានភាពដឹកទឹកផ្ទាល់ (Live Tracking)</b>' +
+              '</div>' +
+              '<div class="text-[10px] text-slate-400 font-mono mt-0.5">កូដ៖ <code>' + orderId + '</code></div>' +
+            '</div>' +
+            '<button type="button" onclick="checkActiveOrderLiveStatus()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[10px] font-bold flex items-center gap-1 active:scale-95 transition">' +
+              '<i id="trackingRefreshIcon" class="fas fa-rotate text-[10px]"></i> Refresh' +
+            '</button>' +
+          '</div>' +
+
+          // 🛵 របារដំណើរការ ៤ ជំហាន (ANIMATED TIMELINE)
+          '<div class="py-2 px-1 relative">' +
+            // បន្ទាត់ផ្លូវរត់ខាងក្រោយ
+            '<div class="absolute top-6 left-6 right-6 h-1.5 bg-slate-100 rounded-full z-0"></div>' +
+            // បន្ទាត់ផ្លូវរត់ពណ៌បៃតងរំកិលតាម %
+            '<div class="absolute top-6 left-6 h-1.5 bg-gradient-to-r from-emerald-500 to-amber-500 rounded-full z-0 transition-all duration-700 animate-line-pulse" style="width:' + progressWidth + '"></div>' +
+            // ចំណុច Node ទាំង ៤
+            '<div class="flex justify-between items-start relative z-10">' +
+              getNodeHtml(1, "fa-receipt", "ទទួលកុម្ម៉ង់") +
+              getNodeHtml(2, "fa-boxes-packing", "រៀបចំទឹក") +
+              getNodeHtml(3, "fa-motorcycle", "កំពុងដឹក") +
+              getNodeHtml(4, "fa-house-chimney", "ដឹកដល់") +
+            '</div>' +
+          '</div>' +
+
+          // សារជូនដំណឹងដំណាក់កាលបច្ចុប្បន្ន
+          '<div class="p-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs font-bold text-slate-700 leading-snug">' +
+            '<i class="fas fa-info-circle text-emerald-600 mr-1.5"></i>' + statusHintText +
+          '</div>' +
+
+          // កាតអ្នកដឹក
+          driverCardHtml +
+
+          // ប៊ូតុងផ្ញើ Slip ABA ទៅ Telegram
+          '<div class="pt-0.5">' +
+            '<a href="' + tgSlipLink + '" target="_blank" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center justify-center gap-2 active:scale-95 transition" style="text-decoration:none;">' +
+              '<i class="fab fa-telegram text-sm"></i> 📲 ផ្ញើបង្កាន់ដៃ (Slip ABA) ទៅ Telegram រោងចក្រ' +
+            '</a>' +
+          '</div>' +
+
+          // ជើងកាត (សរុបលុយ)
+          '<div class="flex justify-between items-center text-[11px] pt-1 border-t border-slate-100 text-slate-700 font-bold">' +
+            '<span>ទឹកប្រាក់សរុប៖ <b class="text-emerald-800 font-black text-xs">៛ ' + Number(data.total || 0).toLocaleString() + '</b></span>' +
+            (data.location_url ? '<button type="button" onclick="openOrderMap(\'' + data.location_url.replace(/'/g, "\\'") + '\')" class="text-blue-600 text-[10px] underline font-bold"><i class="fas fa-location-dot"></i> ផែនទីផ្ទះ</button>' : '') +
+          '</div>' +
+
+        '</div>';
+
+        cardBox.classList.remove('hidden');
+
+        // បើដឹកដល់ហើយ បាញ់កាំជ្រួចអបអរសាទរ
+        if (data.status === "Delivered" && !localStorage.getItem('kc_celebrated_' + orderId)) {
+          if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70 });
+          localStorage.setItem('kc_celebrated_' + orderId, 'true');
+        }
+
+      } catch (e) {
+        console.error("Tracking error:", e);
+      }
+    }
+    // ៥. មុខងារជំនួយទូទៅ (UI & Calculations)
+    function renderCatalogGrid(filterCat) {
+      filterCat = filterCat || 'ALL';
+      var grid = document.getElementById('catalogGrid');
+      if (!grid) return;
+      var html = '';
+
+      STORE_CATALOG.forEach(function(item) {
+        if (filterCat !== 'ALL' && item.cat !== filterCat) return;
+        var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
+        var inCartBadge = inCart > 0 ? '<span class="absolute top-3 right-3 w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow">' + inCart + '</span>' : '';
+
+        html += '<div onclick="openProductDetailModal(\'' + item.id + '\')" class="kc-glass-card p-3.5 flex flex-col justify-between cursor-pointer relative group">' +
+          '<span class="absolute top-3 left-3 bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + item.badge + '</span>' +
+          inCartBadge +
+          '<div class="h-24 flex items-center justify-center my-2 group-hover:scale-105 transition-transform">' + item.svg + '</div>' +
+          '<div class="space-y-1">' +
+            '<h4 class="text-xs font-bold text-slate-800 line-clamp-2 h-8 leading-snug">' + item.name_km + '</h4>' +
+            '<div class="text-xs font-black text-emerald-700">៛ ' + Number(item.price).toLocaleString() + '</div>' +
+          '</div>' +
+          '<button type="button" class="mt-2.5 w-full py-1.5 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1">' +
+            '<i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? ('រើសទិញ (' + inCart + ')') : 'រើសទិញ') +
+          '</button>' +
+        '</div>';
+      });
+      grid.innerHTML = html;
+    }
+
+    function filterCatalog(cat, btn) {
+      document.querySelectorAll('.cat-chip').forEach(function(b) {
+        b.className = 'cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition';
+      });
+      btn.className = 'cat-chip px-4 py-2 rounded-2xl bg-emerald-700 text-white shadow-xs whitespace-nowrap active:scale-95 transition';
+      renderCatalogGrid(cat);
+    }
+
+    function openProductDetailModal(id) {
+      var item = STORE_CATALOG.find(function(p){ return p.id === id; });
+      if (!item) return;
+      activeModalProduct = item;
+      var curQty = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 1;
+
+      document.getElementById('modalSvgArea').innerHTML = item.svg;
+      document.getElementById('modalTitle').innerText = item.name_km;
+      document.getElementById('modalDesc').innerText = item.desc_km;
+      document.getElementById('modalPrice').innerText = '៛ ' + Number(item.price).toLocaleString();
+      document.getElementById('modalQtyDisplay').innerText = curQty;
+      updateModalButtonText(curQty);
+      document.getElementById('productDetailModal').classList.remove('hidden');
+    }
+
+    function closeProductDetailModal() { document.getElementById('productDetailModal').classList.add('hidden'); activeModalProduct = null; }
+
+    function adjustDetailQty(delta) {
+      var display = document.getElementById('modalQtyDisplay');
+      if (!display || !activeModalProduct) return;
+      var val = (parseInt(display.innerText) || 1) + delta;
+      if (val < 1) val = 1;
+      display.innerText = val;
+      updateModalButtonText(val);
+    }
+
+    function updateModalButtonText(qty) {
+      if (!activeModalProduct) return;
+      var tot = qty * activeModalProduct.price;
+      document.getElementById('btnModalAddCartLabel').innerText = 'បញ្ចូលកន្ត្រក (៛ ' + tot.toLocaleString() + ')';
+    }
+
+    function confirmAddToCart() {
+      if (!activeModalProduct) return;
+      var q = parseInt(document.getElementById('modalQtyDisplay').innerText) || 1;
+      cartItems[activeModalProduct.id] = { name: activeModalProduct.name_km, price: activeModalProduct.price, qty: q, isBarrel20L: activeModalProduct.isBarrel20L };
+      closeProductDetailModal();
+      renderCatalogGrid();
+      recalcCartDock();
+    }
+
+    function recalcCartDock() {
+      var totalUnits = 0, totalPrice = 0;
+      for (var k in cartItems) {
+        if (cartItems[k].qty > 0) {
+          totalUnits += cartItems[k].qty;
+          totalPrice += (cartItems[k].qty * cartItems[k].price);
+        }
+      }
+      var dock = document.getElementById('floatingCartDock');
+      if (totalUnits > 0) {
+        document.getElementById('dockItemCount').innerText = totalUnits + ' មុខទំនិញ';
+        document.getElementById('dockTotalPrice').innerText = '៛ ' + totalPrice.toLocaleString();
+        dock.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+      } else {
+        dock.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+      }
+    }
+
+    function openCheckoutModal() {
+      document.getElementById('checkoutErrorAlert').classList.add('hidden');
+      updateCheckoutCalculation();
+      try {
+        var sName = localStorage.getItem('kc_order_name') || '';
+        var sPhone = localStorage.getItem('kc_order_phone') || '';
+        var sAddr = localStorage.getItem('kc_order_addr') || '';
+        if (sName && !document.getElementById('inp_custName').value) document.getElementById('inp_custName').value = sName;
+        if (sPhone && !document.getElementById('inp_custPhone').value) document.getElementById('inp_custPhone').value = sPhone;
+        if (sAddr && !document.getElementById('inp_custAddress').value) document.getElementById('inp_custAddress').value = sAddr;
+      } catch(e) {}
+      document.getElementById('checkoutModal').classList.remove('hidden');
+    }
+
+    function closeCheckoutModal() { document.getElementById('checkoutModal').classList.add('hidden'); }
+
+    function updateCheckoutCalculation() {
+      var listCont = document.getElementById('checkoutCartItemsList');
+      var grandText = document.getElementById('coGrandTotalText');
+      var khqrDue = document.getElementById('khqrDueAmountText');
+      var barrelHint = document.getElementById('barrelCountSummaryBadge');
+
+      var html = '', waterTotal = 0, total20LBarrels = 0, totalUnits = 0;
+
+      for (var k in cartItems) {
+        if (cartItems[k].qty > 0) {
+          var sub = cartItems[k].qty * cartItems[k].price;
+          waterTotal += sub;
+          totalUnits += cartItems[k].qty;
+          if (cartItems[k].isBarrel20L) total20LBarrels += cartItems[k].qty;
+
+          html += '<div class="flex justify-between items-center py-1 border-b border-slate-200 last:border-none"><span><b>' + cartItems[k].name + '</b> x ' + cartItems[k].qty + '</span><b class="text-emerald-800">៛ ' + sub.toLocaleString() + '</b></div>';
+        }
+      }
+
+      if (barrelHint) barrelHint.innerText = total20LBarrels > 0 ? (total20LBarrels + ' ធុង ២០L') : 'គ្មានធុង ២០L';
+
+      var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
+      var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
+      var barrelFee = 0;
+
+      if (isNoSwap && total20LBarrels > 0) {
+        barrelFee = total20LBarrels * BARREL_DEPOSIT_PRICE;
+        html += '<div class="flex justify-between items-center py-1.5 border-t border-amber-300 text-amber-950 bg-amber-100/80 px-2 rounded-lg mt-1"><span><i class="fas fa-cart-shopping mr-1 text-amber-800"></i><b>ថ្លៃទិញសំបកធុងថ្មីដាច់ (' + total20LBarrels + ' ធុង x ' + BARREL_DEPOSIT_PRICE.toLocaleString() + '៛)</b></span><b class="text-amber-900 font-black">+៛ ' + barrelFee.toLocaleString() + '</b></div>';
+      }
+
+      var deliveryFee = 0;
+      var stdFee = parseFloat(storeDeliveryConfig.standardFee || 0);
+      var minFreeQty = parseInt(storeDeliveryConfig.freeMinQty || 2);
+
+      if (totalUnits > 0) {
+        if (stdFee > 0 && totalUnits < minFreeQty) {
+          deliveryFee = stdFee;
+          html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1"><span><i class="fas fa-truck text-blue-600 mr-1"></i><b>សេវាដឹកជញ្ជូន (កុម្ម៉ង់ចាប់ពី ' + minFreeQty + ' ធុងឡើង ដឹក Free)</b></span><b class="text-blue-900 font-black">+៛ ' + deliveryFee.toLocaleString() + '</b></div>';
+        } else {
+          html += '<div class="flex justify-between items-center py-1.5 border-t border-emerald-200 text-emerald-950 bg-emerald-50 px-2 rounded-lg mt-1"><span><i class="fas fa-truck-fast text-emerald-600 mr-1"></i><b>សេវាដឹកជញ្ជូនដល់ផ្ទះ</b></span><b class="text-emerald-700 font-black">Free (ឥតគិតថ្លៃ) 🎉</b></div>';
+        }
+      }
+
+      var grandTotal = Math.max(0, waterTotal + barrelFee + deliveryFee);
+      listCont.innerHTML = html || '<div class="text-center py-2 text-slate-400 italic">កន្ត្រកទទេ</div>';
+      grandText.innerText = '៛ ' + grandTotal.toLocaleString();
+      if (khqrDue) khqrDue.innerText = '៛ ' + grandTotal.toLocaleString();
+
+      return { grandTotal: grandTotal, deliveryFee: deliveryFee };
+    }
+
+    function onSwapOptionChanged() { updateCheckoutCalculation(); }
+
+    function onPayMethodChanged(mode) {
+      var cardCOD = document.getElementById('cardPayCOD'), cardABA = document.getElementById('cardPayABA'), qrArea = document.getElementById('abaKhqrDisplayArea');
+      if (mode === 'ABA') {
+        cardABA.className = "p-2.5 rounded-xl border-2 border-blue-600 bg-blue-50/70 flex items-center gap-2 cursor-pointer font-bold text-blue-950 transition";
+        cardCOD.className = "p-2.5 rounded-xl border-2 border-slate-200 bg-white flex items-center gap-2 cursor-pointer font-bold text-slate-700 hover:border-emerald-300 transition";
+        qrArea.classList.remove('hidden');
+      } else {
+        cardCOD.className = "p-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 flex items-center gap-2 cursor-pointer font-bold text-slate-900 transition";
+        cardABA.className = "p-2.5 rounded-xl border-2 border-slate-200 bg-white flex items-center gap-2 cursor-pointer font-bold text-slate-700 hover:border-blue-300 transition";
+        qrArea.classList.add('hidden');
+      }
+    }
+
+    function detectGPSLocation() {
+      var hint = document.getElementById('gpsStatusHint'), inpUrl = document.getElementById('inp_custMapUrl');
+      if (!navigator.geolocation) { hint.innerHTML = '<span class="text-red-500 font-bold">⚠️ ទូរស័ព្ទមិនគាំទ្រ GPS ទេ</span>'; return; }
+      hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin"></i> កំពុងចាប់យកទីតាំងផ្ទះ...</span>';
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        var lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
+        var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
+        inpUrl.value = googleMapUrl;
+        hint.innerHTML = '<span class="text-emerald-700 font-bold">✅ ចាប់បានទីតាំងជោគជ័យ!</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(ពិនិត្យផែនទី)</a>';
+      }, function() {
+        hint.innerHTML = '<span class="text-amber-600 font-bold">⚠️ មិនអាចចាប់ GPS (សូមវាយទីតាំងក្នុងប្រអប់)</span>';
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    function showInAppError(msg) {
+      var alertBox = document.getElementById('checkoutErrorAlert'), msgSpan = document.getElementById('checkoutErrorMsg');
+      if (alertBox && msgSpan) { msgSpan.innerText = msg; alertBox.classList.remove('hidden'); alertBox.scrollIntoView({ behavior: 'smooth' }); }
+    }
+
+    function checkQuickReorderAvailability() {
+      var cardBox = document.getElementById('quickReorderCardBox'), summaryText = document.getElementById('quickReorderSummaryText');
+      if (!cardBox) return;
+      try {
+        var rawSaved = localStorage.getItem('kc_last_order_items');
+        if (!rawSaved) { cardBox.classList.add('hidden'); return; }
+        var savedItems = JSON.parse(rawSaved);
+        var itemNames = [];
+        for (var k in savedItems) { if (savedItems[k].qty > 0) itemNames.push(savedItems[k].name + ' x ' + savedItems[k].qty); }
+        if (itemNames.length > 0) { if (summaryText) summaryText.innerText = itemNames.join(', '); cardBox.classList.remove('hidden'); }
+        else cardBox.classList.add('hidden');
+      } catch(e) { cardBox.classList.add('hidden'); }
+    }
+
+    function execute1ClickReorder() {
+      try {
+        var rawSaved = localStorage.getItem('kc_last_order_items');
+        if (!rawSaved) return;
+        cartItems = JSON.parse(rawSaved);
+        renderCatalogGrid();
+        recalcCartDock();
+        openCheckoutModal();
+        confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+      } catch(e) {}
+    }
+
+    function changeAppLanguage(lang) {
+      currentLang = lang;
+      ['km', 'en', 'zh'].forEach(function(l) {
+        var btn = document.getElementById('langBtn_' + l);
+        if (btn) btn.className = (l === lang) ? "px-2.5 py-1 rounded-full bg-emerald-700 text-white shadow-xs transition" : "px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition";
+      });
+      renderCatalogGrid();
+    }
+
+    // ចាប់ផ្តើមដំណើរការ
+    window.addEventListener('DOMContentLoaded', function() {
+      changeAppLanguage('km');
+      loadStoreOnlineProducts();
+      loadStoreSettings();
+      checkQuickReorderAvailability();
+      checkActiveOrderLiveStatus();
+      trackingPollTimer = setInterval(checkActiveOrderLiveStatus, 8000);
+    });
+  </script>
+</body>
+</html>

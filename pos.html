@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KC WATER - POS System (Supabase Cloud)</title>
+  
+  <!-- 📚 បណ្ណាល័យជំនួយ UI & ស្តង់ដារ -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <!-- 🔑 Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 🎨 រចនាបថ 3D Styles (ហៅចេញពី styles.css) -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 overflow-x-hidden">
+
+  <!-- ១. ផ្ទាំង LOGIN -->
+  <div id="loginPage" class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center border-t-8 border-green-700">
+      <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-3xl shadow-inner">
+        <i class="fas fa-droplet"></i>
+      </div>
+      <h2 class="text-2xl font-black text-green-800 mb-1 uppercase tracking-wider">KC WATER POS</h2>
+      <p class="text-xs text-gray-500 mb-6 font-bold">ប្រព័ន្ធគ្រប់គ្រងរោងចក្រទឹក (Supabase Cloud)</p>
+      
+      <div class="space-y-4">
+        <input type="text" id="user" placeholder="ឈ្មោះអ្នកប្រើប្រាស់ (Username)" onkeyup="if(event.key==='Enter') document.getElementById('pass').focus()" class="w-full border-2 border-gray-200 rounded-2xl p-3 outline-none focus:border-green-600 focus:bg-green-50/50 font-bold text-sm">
+        <input type="password" id="pass" placeholder="លេខកូដសម្ងាត់ (Password)" onkeyup="if(event.key==='Enter') login()" class="w-full border-2 border-gray-200 rounded-2xl p-3 outline-none focus:border-green-600 focus:bg-green-50/50 font-bold text-sm">
+        
+        <div class="flex items-center text-left text-gray-600 text-sm">
+          <input type="checkbox" id="rememberMe" class="mr-2 w-4 h-4 accent-green-600 cursor-pointer">
+          <label for="rememberMe" class="cursor-pointer font-bold text-xs select-none">ចងចាំខ្ញុំ (Remember Me)</label>
+        </div>
+        
+        <button onclick="login()" id="loginBtn" class="btn-green shadow-xl active:scale-95 transition flex items-center justify-center gap-2">
+          <span>ចូលប្រើប្រាស់</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ២. ផ្ទាំងធំ MAIN APP -->
+  <div id="mainApp" class="hidden flex flex-col min-h-screen">
+    <!-- Navbar ខាងលើ -->
+    <nav class="bg-green-700 text-white p-3.5 sm:p-4 flex justify-between items-center shadow-lg sticky top-0 z-[1000]">
+      <div class="flex items-center">
+        <button onclick="toggleSidebar()" class="text-2xl mr-3 sm:mr-4 px-2 hover:bg-green-800 rounded transition active:scale-90" aria-label="បើកម៉ឺនុយ">
+          <i class="fas fa-bars"></i>
+        </button>
+        <span class="font-black tracking-tight text-base sm:text-lg flex items-center gap-1.5">
+          <i class="fas fa-droplet text-green-300"></i> KC WATER
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button type="button" id="navOnlineOrdersBtn" onclick="openOnlineOrdersModal()" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-black bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-md flex items-center gap-1.5 active:scale-95 transition border border-amber-300">
+          <i class="fas fa-truck-fast text-xs text-amber-900"></i>
+          <span class="hidden sm:inline">កុម្ម៉ង់ Online</span>
+          <span id="navOnlineOrdersCount" class="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] flex items-center justify-center font-black animate-pulse">0</span>
+        </button>
+
+        <div id="userInfo" class="text-[10px] bg-green-800 px-3 py-1.5 rounded-full border border-green-600 font-bold uppercase shadow-inner">Admin KC WATER</div>
+      </div>
+    </nav>
+
+    <!-- តួខ្លួន Sidebar + Content Area -->
+    <div class="flex flex-1 relative">
+      <aside id="sidebar" class="sidebar shadow-2xl hidden-sidebar overflow-y-auto">
+        <nav class="p-4 space-y-2" id="sidebarMenuContainer"></nav>
+      </aside>
+      <main class="flex-1 p-3 sm:p-4 overflow-x-hidden" id="contentArea"></main>
+    </div>
+  </div>
+
+  <!-- ៣. ផ្ទាំង Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-[9999] transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div id="toastContent" class="bg-white border-l-4 p-4 shadow-2xl rounded-r-2xl flex items-center min-w-[260px] pointer-events-auto border-green-600">
+      <span id="toastIcon" class="mr-3 text-xl text-green-600"><i class="fas fa-check-circle"></i></span>
+      <span id="toastMsg" class="font-bold text-xs sm:text-sm text-gray-800"></span>
+    </div>
+  </div>
+
+  <!-- ៤. Modal រើសចំនួន & តម្លៃទំនិញចូលកន្ត្រក POS -->
+  <div id="productSelectModal" class="fixed inset-0 z-[4000] flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closeProductModal()"></div>
+    <div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-5 space-y-3 text-center relative border">
+      <button onclick="closeProductModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+      <div class="w-16 h-16 mx-auto flex items-center justify-center bg-gray-50 rounded-2xl p-1.5 border shadow-inner">
+        <img id="modalProdImg" src="" class="max-w-full max-h-full object-contain">
+      </div>
+      <div>
+        <h3 id="modalProdTitle" class="font-extrabold text-gray-800 text-base leading-snug"></h3>
+        <span id="modalStockStatusBadge" class="inline-block mt-0.5 text-[10px] px-2 py-0.5 bg-green-100 text-green-800 font-bold rounded-full"></span>
+      </div>
+      <div class="p-3 bg-blue-50/70 rounded-2xl border border-blue-200 text-left space-y-1">
+        <label class="text-[10px] font-black text-blue-900 uppercase block">តម្លៃលក់ក្នុងមួយឯកតា (៛)</label>
+        <input type="number" id="modalPriceInput" oninput="updateModalSubtotal()" class="w-full text-center text-xl font-black bg-white py-2 rounded-xl border border-blue-300 text-blue-900 outline-none">
+      </div>
+      <div class="bg-green-50/70 p-2.5 rounded-2xl border border-green-200 space-y-1">
+        <label class="text-[10px] font-bold text-gray-600 uppercase block">ចំនួនទំនិញ</label>
+        <div class="flex items-center justify-center gap-3">
+          <button onclick="changeModalQty(-1)" class="w-11 h-10 bg-white text-red-500 border rounded-xl text-xl font-bold shadow-2xs active:scale-90">-</button>
+          <input type="number" id="modalQtyInput" oninput="updateModalSubtotal()" value="1" min="1" class="w-20 h-10 text-center text-xl font-black text-green-800 bg-white border-2 border-green-300 rounded-xl outline-none">
+          <button onclick="changeModalQty(1)" class="w-11 h-10 bg-green-600 text-white rounded-xl text-xl font-bold shadow-md active:scale-90">+</button>
+        </div>
+      </div>
+      <div class="text-xs font-bold text-gray-600 flex justify-between px-2">
+        <span>សរុបមុខទំនិញនេះ៖</span>
+        <span id="modalSubtotalText" class="font-black text-base text-blue-700">0 ៛</span>
+      </div>
+      <button onclick="confirmAddToCart()" class="w-full py-3.5 btn-green shadow-md text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
+        <i class="fas fa-cart-plus"></i> បញ្ចូលកន្ត្រក
+      </button>
+    </div>
+  </div>
+
+  <!-- ៥. Modal ABA KHQR -->
+  <div id="posKhqrModal" class="fixed inset-0 z-[5000] flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closePOSKHQR()"></div>
+    <div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-6 space-y-3.5 text-center relative border">
+      <div class="flex justify-between items-center border-b pb-2">
+        <div class="text-left"><h4 class="font-extrabold text-red-600 text-base"><i class="fas fa-qrcode"></i> ABA KHQR ផ្លូវការ</h4><p class="text-[10px] text-gray-500 font-bold">KEALY IENG</p></div>
+        <button onclick="closePOSKHQR()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+      </div>
+      <div class="p-1 bg-gray-50 rounded-2xl border shadow-inner">
+        <img src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" class="w-56 mx-auto rounded-xl shadow-md border">
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 font-bold uppercase">ចំនួនទឹកប្រាក់ត្រូវទូទាត់</p>
+        <h3 id="posKhqrAmountText" class="text-xl sm:text-2xl font-black text-green-700 mt-0.5">0 ៛</h3>
+      </div>
+      <button onclick="closePOSKHQR()" class="w-full py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">រួចរាល់ (បិទ)</button>
+    </div>
+  </div>
+
+  <!-- ៦. Modal វិក្កយបត្រ (លក់ POS & ទូទាត់លុយ) -->
+  <div id="posSaleReceiptModal" class="fixed inset-0 z-[5000] flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closePOSReceiptModal()"></div>
+    <div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-5 space-y-3 text-center relative border">
+      <h3 class="font-extrabold text-green-800 text-base flex items-center justify-center gap-2">
+        <i class="fas fa-check-circle text-green-600 text-xl"></i>ប្រតិបត្តិការជោគជ័យ!
+      </h3>
+      <div class="max-h-72 overflow-y-auto rounded-2xl border p-1 bg-gray-50 shadow-inner">
+        <img id="posModalReceiptImg" src="" class="w-full rounded-xl">
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button onclick="sharePOSReceiptImage()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition"><i class="fas fa-share-nodes"></i> ផ្ញើ Telegram</button>
+        <a id="posModalReceiptDownloadBtn" href="" download="Receipt.png" class="py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-download"></i> ទាញយក PNG</a>
+      </div>
+      <button onclick="closePOSReceiptModal()" class="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ (រួចរាល់)</button>
+    </div>
+  </div>
+
+  <!-- កន្លែងលាក់សម្រាប់ថតរូបវិក្កយបត្រ -->
+  <div id="hidden_receipt_canvas" style="position:absolute; left:-9999px; top:-9999px;"></div>
+
+  <!-- ==============================================
+       📦 ការហៅ FILES JAVASCRIPT ដាច់ៗពីគ្នា (MODULAR SCRIPTS)
+       ============================================== -->
+  <script src="pos-config.js"></script>
+  <script src="pos-core.js"></script>
+  <script src="pos-settlement.js"></script>
+  <script src="pos-orders.js"></script>
+  <script src="pos-modules.js"></script>
+  <script src="pos-reports.js"></script>
+</body>
+</html>

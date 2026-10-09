@@ -1,0 +1,95 @@
+/* ====================================================
+   KC WATER POS - STYLES & 3D ANIMATIONS (styles.css)
+   ==================================================== */
+* { 
+  font-family: 'Battambang', sans-serif; 
+  box-sizing: border-box; 
+  -webkit-tap-highlight-color: transparent; 
+}
+
+body { 
+  background: radial-gradient(circle at top right, #f1f5f9 0%, #e2e8f0 100%);
+  margin: 0; 
+  color: #1e293b;
+  min-height: 100vh;
+}
+
+#loginPage {
+  background: radial-gradient(circle at center, #f0fdf4 0%, #dcfce7 40%, #e2e8f0 100%);
+}
+
+#loginPage > div {
+  box-shadow: 0 25px 50px -12px rgba(22, 163, 74, 0.22), 0 10px 20px -5px rgba(0, 0, 0, 0.05);
+  border-radius: 2rem;
+  border-top: 8px solid #15803d;
+}
+
+.card { 
+  background: #ffffff; 
+  border-radius: 1.5rem; 
+  padding: 1.25rem; 
+  margin-bottom: 1.25rem; 
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
+}
+
+.dash-card { 
+  background: linear-gradient(145deg, #ffffff, #f8fafc); 
+  border-radius: 20px; 
+  padding: 18px; 
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-green { 
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+  color: white; 
+  padding: 13px 20px; 
+  border-radius: 1.1rem; 
+  font-weight: 700; 
+  width: 100%; 
+  border: none; 
+  cursor: pointer; 
+  box-shadow: 0 5px 0 #15803d, 0 12px 20px rgba(22, 163, 74, 0.35);
+  transition: all 0.15s ease;
+}
+
+.btn-green:active { 
+  transform: translateY(4px) scale(0.98); 
+  box-shadow: 0 1px 0 #15803d;
+}
+
+.sidebar { 
+  left: 0 !important; top: 0 !important; bottom: 0 !important;
+  position: fixed !important; z-index: 2000 !important; 
+  height: 100vh !important; width: 275px; 
+  background: linear-gradient(180deg, #14532d 0%, #166534 55%, #15803d 100%); 
+  color: white; overflow-y: auto !important;
+  padding-top: 75px; padding-bottom: 120px !important;
+  box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+  transform: translateX(0);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.hidden-sidebar { 
+  transform: translateX(-100%) !important; 
+  box-shadow: none !important; 
+}
+
+#sidebarBackdrop { 
+  position: fixed; inset: 0; 
+  background: rgba(15, 23, 42, 0.55); 
+  z-index: 1999; display: none; 
+}
+
+#sidebarBackdrop.active { 
+  display: block !important; 
+  backdrop-filter: blur(8px); 
+}
+
+@media (min-width: 1024px) { 
+  #mainApp { padding-left: 275px; } 
+  .sidebar { position: fixed; } 
+  .hidden-sidebar { left: 0 !important; } 
+  #sidebarBackdrop { display: none !important; }
+}
