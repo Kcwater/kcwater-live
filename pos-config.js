@@ -3,8 +3,8 @@
  *  ========================================================================== */
 
 // 🔑 ១. SUPABASE CLIENT INITIALIZATION
-const SUPABASE_URL = "https://ntftdylkcnkxsytptket.supabase.co";
-const SUPABASE_KEY = "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v";
+const SUPABASE_URL = "https://hocndqkoumgjijtzpzby.supabase.co";
+const SUPABASE_KEY = "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 🌐 ២. GLOBAL APP STATE (អថេររួមទូទាំងកម្មវិធី)
