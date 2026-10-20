@@ -14,8 +14,8 @@ function playPaymentSuccessAudio() {
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // សំឡេង ទី ១
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // សំឡេង ទី ២
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
       gain.gain.setValueAtTime(0.3, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
       osc.connect(gain);
@@ -24,6 +24,15 @@ function playPaymentSuccessAudio() {
       osc.stop(ctx.currentTime + 0.7);
     }
   } catch(e) {}
+}
+
+// មុខងារជំនួយគណនាថ្ងៃខែតាមម៉ោងកម្ពុជា (Cambodia Local Date)
+function getCambodiaDateString() {
+  var d = new Date();
+  var year = d.getFullYear();
+  var month = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
 }
 
 // ==========================================
@@ -36,6 +45,7 @@ async function renderSettlementModule() {
   currentSettlementCustomer = "";
   currentSettlementItems = [];
   currentSettlementPayMode = "Cash";
+  currentSettlementOldDebt = 0; // ✅ កំណត់បំណុលចាស់ឱ្យស្មើ 0 ពេលបើកផ្ទាំងឡើងវិញ
   currentActivePendingPaymentId = null;
 
   var custOptions = '<option value="">-- សូមជ្រើសរើសឈ្មោះម៉ូយ --</option><option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
@@ -46,7 +56,6 @@ async function renderSettlementModule() {
   });
 
   area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
-    // ក្បាលទំព័រ
     '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
       '<div>' +
         '<h2 class="text-base sm:text-xl font-extrabold text-blue-900 flex items-center gap-2">' +
@@ -170,7 +179,7 @@ async function renderSettlementModule() {
           '</div>' +
         '</div>' +
 
-        // 🧠 ផ្នែកវិធីបង់ប្រាក់ឆ្លាតវៃ (SMART PAYMENT SECTION)
+        // 🧠 ផ្នែកវិធីបង់ប្រាក់ឆ្លាតវៃ
         '<div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 space-y-3">' +
           '<div class="flex justify-between items-center">' +
             '<label class="text-xs font-bold text-blue-900 uppercase">វិធីទូទាត់ប្រាក់ជាក់ស្តែង</label>' +
@@ -183,13 +192,13 @@ async function renderSettlementModule() {
             '<button type="button" id="btnSettleSplit" onclick="setSettlePayMode(\'Split\')" class="py-2.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200"><i class="fas fa-layer-group mr-1"></i> ចម្រុះ</button>' +
           '</div>' +
 
-          // បង់ធម្មតា (លុយសុទ្ធ ឬ ABA)
+          // បង់ធម្មតា
           '<div id="settleSingleInputArea" class="space-y-1">' +
             '<label class="text-[10px] font-bold text-gray-500 uppercase">ប្រាក់បានបង់ជាក់ស្តែង (៛)</label>' +
             '<input type="number" id="settlePaidInput" oninput="calcSettleChange()" placeholder="0" class="w-full text-center text-xl font-black text-blue-900 bg-white border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 outline-none">' +
           '</div>' +
 
-          // 🔀 បង់ចម្រុះឆ្លាតវៃ (SMART AUTO-BALANCE: វាយលុយសុទ្ធ ➔ ABA បំពេញបង្គ្រប់អូតូ)
+          // 🔀 បង់ចម្រុះឆ្លាតវៃ (Auto-Balance)
           '<div id="settleSplitInputArea" class="hidden space-y-2.5 bg-white p-3.5 rounded-2xl border border-blue-200 shadow-2xs">' +
             '<div class="text-[11px] font-black text-blue-900 uppercase flex items-center justify-between">' +
               '<span><i class="fas fa-layer-group text-blue-600 mr-1"></i> បែងចែកការទូទាត់ចម្រុះ (៛)៖</span>' +
@@ -212,7 +221,7 @@ async function renderSettlementModule() {
             '</div>' +
           '</div>' +
 
-          // 💵 ប៊ូតុងក្រដាសប្រាក់ខ្មែររហ័ស (QUICK CASH BILLS)
+          // 💵 ប៊ូតុងក្រដាសប្រាក់ខ្មែររហ័ស
           '<div class="flex gap-1.5 pt-1 text-xs">' +
             '<button type="button" onclick="setQuickCashBill(10000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-800 font-black rounded-xl border shadow-2xs active:scale-95 transition">10,000</button>' +
             '<button type="button" onclick="setQuickCashBill(20000)" class="flex-1 py-1.5 bg-white hover:bg-green-50 text-gray-800 font-black rounded-xl border shadow-2xs active:scale-95 transition">20,000</button>' +
@@ -245,7 +254,6 @@ function getTotalDueAmount() {
   return sub + (includeOldDebt ? currentSettlementOldDebt : 0);
 }
 
-// ពេល Admin វាយលុយសុទ្ធ ➔ ប្រអប់ស្កេន ABA បំពេញបង្គ្រប់អូតូភ្លាម!
 function onSplitCashInput(val) {
   var totalDue = getTotalDueAmount();
   var cash = parseFloat(val || 0);
@@ -265,7 +273,6 @@ function onSplitCashInput(val) {
   calcSettleChange();
 }
 
-// ពេល Admin វាយលេខលុយស្កេន ABA ➔ ប្រអប់លុយសុទ្ធបំពេញបង្គ្រប់អូតូភ្លាម!
 function onSplitScanInput(val) {
   var totalDue = getTotalDueAmount();
   var scan = parseFloat(val || 0);
@@ -284,7 +291,6 @@ function onSplitScanInput(val) {
   calcSettleChange();
 }
 
-// ប៊ូតុងក្រដាសប្រាក់ខ្មែររហ័ស (10K, 20K, 50K, 100K)
 function setQuickCashBill(amt) {
   if (currentSettlementPayMode === "Split") {
     var cashInp = document.getElementById('splitKhrCash');
@@ -301,7 +307,6 @@ function setQuickCashBill(amt) {
   }
 }
 
-// បើក QR Modal ជាមួយចំនួនទឹកប្រាក់ជាក់ស្តែងដែលត្រូវស្កេនក្នុង Mode Split
 function openSplitAbaQrModal() {
   var scanVal = parseFloat(document.getElementById('splitKhrScan') ? document.getElementById('splitKhrScan').value || 0 : 0);
   if (scanVal <= 0) {
@@ -317,7 +322,7 @@ function openSplitAbaQrModal() {
 // ==========================================
 async function fetchSettlementOverviewData() {
   try {
-    var todayStr = new Date().toISOString().split('T')[0];
+    var todayStr = getCambodiaDateString();
 
     const { data: todayUnpaids } = await supabaseClient
       .from('transactions')
@@ -348,13 +353,19 @@ async function fetchSettlementOverviewData() {
         tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> គ្មានអ្នកដកទំនិញជំពាក់ថ្ងៃនេះទេ</td></tr>';
       } else {
         var html = '';
-        todayUnpaids.forEach(function(item) {
+       todayUnpaids.forEach(function(item) {
           var timeStr = new Date(item.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
           var safeName = String(item.customer_name || '').replace(/'/g, "\\'");
 
+          // 🚚 ឆែកមើលថាតើមានកូនចៅ ឬអ្នកដឹកមកដកជំនួសមេដែរឬទេ
+          var isWithdrawnByOther = (item.recorded_by && item.recorded_by !== item.customer_name && item.recorded_by !== 'Admin');
+          var withdrawTag = isWithdrawnByOther ? 
+            ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + item.recorded_by + '</span>') : 
+            (item.recorded_by && item.recorded_by !== 'Admin' && item.recorded_by !== item.customer_name ? ('<br><small class="text-slate-400 font-normal text-[9px]">កត់ដោយ៖ ' + item.recorded_by + '</small>') : '');
+
           html += '<tr class="border-b hover:bg-gray-50">' +
             '<td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
-            '<td class="p-2.5 font-bold text-gray-800">' + item.customer_name + '</td>' +
+            '<td class="p-2.5 font-bold text-gray-800">' + item.customer_name + withdrawTag + '</td>' +
             '<td class="p-2.5">' + item.product_name + '</td>' +
             '<td class="p-2.5 text-center font-bold text-blue-700">' + item.qty + '</td>' +
             '<td class="p-2.5 text-right font-bold text-orange-700 whitespace-nowrap">៛ ' + Number(item.total).toLocaleString() + '</td>' +
@@ -425,34 +436,68 @@ async function checkAdminPendingPayments() {
   } catch(e) {}
 }
 
+// ⚡ មុខងារយកសំណើមកទូទាត់ (បំពេញប្រអប់លុយសុទ្ធ & ស្កេន ABA អូតូតាមម៉ូយបានផ្ញើមក)
 async function applyPendingPaymentToSettlement(pendingId, custName, amount, method) {
   currentActivePendingPaymentId = pendingId;
   await selectCustomerForSettlement(custName);
 
-  if (method && method.indexOf('ABA') !== -1) {
-    setSettlePayMode('ABA');
-  } else {
-    setSettlePayMode('Cash');
+  try {
+    // ១. ទាញទិន្នន័យសំណើជាក់ស្តែងពី Supabase
+    const { data: item } = await supabaseClient
+      .from('pending_payments')
+      .select('*')
+      .eq('id', pendingId)
+      .maybeSingle();
+
+    var kCash = item ? parseFloat(item.khr_cash || 0) : 0;
+    var kScan = item ? parseFloat(item.khr_scan || 0) : 0;
+
+    // ២. បើម៉ូយបានបំបែកលុយសុទ្ធ + ស្កេន ABA ➔ បើក Mode Split អូតូ
+    if (kCash > 0 && kScan > 0) {
+      setSettlePayMode('Split');
+      var cashInp = document.getElementById('splitKhrCash');
+      var scanInp = document.getElementById('splitKhrScan');
+      var abaLabel = document.getElementById('splitAbaAmountLabel');
+
+      if (cashInp) cashInp.value = kCash;
+      if (scanInp) scanInp.value = kScan;
+      if (abaLabel) abaLabel.innerText = kScan.toLocaleString();
+
+    } else if (method && method.indexOf('ABA') !== -1) {
+      setSettlePayMode('ABA');
+      document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+    } else {
+      setSettlePayMode('Cash');
+      document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+    }
+
+    calcSettleChange();
+
+    var card = document.getElementById('settlement_card');
+    if (card) card.scrollIntoView({ behavior: 'smooth' });
+
+    showToast("បានបញ្ចូលទិន្នន័យទូទាត់របស់ [" + custName + "] រួចរាល់!", "success");
+
+  } catch(e) {
+    showToast("កំហុសបញ្ចូលសំណើ៖ " + e.message, "error");
   }
-
-  document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
-  calcSettleChange();
-
-  var card = document.getElementById('settlement_card');
-  if (card) card.scrollIntoView({ behavior: 'smooth' });
-
-  showToast("បានបញ្ចូលសំណើទូទាត់របស់ [" + custName + "] រួចរាល់!", "success");
 }
-
 async function dismissPendingCard(pendingId) {
-  if (!confirm("តើអ្នកចង់បដិសេធសំណើទូទាត់នេះមែនទេ?")) return;
+  // 🌟 ប្រើ Pop-up បញ្ជាក់បែប Danger ពណ៌ក្រហមរបស់ KC POS
+  var ok = await kcConfirm({
+    title: "បដិសេធសំណើទូទាត់",
+    message: "តើអ្នកពិតជាចង់បដិសេធសំណើទូទាត់ប្រាក់នេះមែនទេ?",
+    type: "danger",
+    confirmText: "យល់ព្រមបដិសេធ"
+  });
+  if (!ok) return;
+
   try {
     await supabaseClient.from('pending_payments').update({ status: 'Cancelled' }).eq('id', pendingId);
     showToast("បានបដិសេធសំណើជោគជ័យ!", "info");
     checkAdminPendingPayments();
   } catch(e) {}
 }
-
 // ==========================================
 // 📋 ៥. ស្រង់បញ្ជីឈ្មោះម៉ូយជំពាក់ពី SUPABASE
 // ==========================================
@@ -496,6 +541,7 @@ async function loadSettlementDebtorsList() {
 async function selectCustomerForSettlement(custName) {
   if (!custName) {
     document.getElementById('settlement_ui').classList.add('hidden');
+    currentSettlementOldDebt = 0; // ✅ សម្អាតបំណុលចាស់ឱ្យស្មើ 0 បើមិនបានរើសឈ្មោះម៉ូយ
     return;
   }
 
@@ -533,7 +579,12 @@ async function selectCustomerForSettlement(custName) {
     var html = '';
     currentSettlementItems.forEach(function(item) {
       var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
-      var recTag = item.recorded_by ? '<br><span class="text-[9px] text-amber-800 font-bold bg-amber-50 px-1 py-0.2 rounded border border-amber-200 inline-block mt-0.5"><i class="fas fa-truck mr-1"></i>ដកដោយ៖ ' + item.recorded_by + '</span>' : '';
+
+      // 🚚 បង្ហាញផ្លាកឈ្មោះកូនចៅឱ្យច្បាស់ បើជាការដកជំនួសមេ
+      var isWithdrawnByOther = (item.recorded_by && item.recorded_by !== item.customer_name && item.recorded_by !== 'Admin');
+      var recTag = isWithdrawnByOther ? 
+        ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + item.recorded_by + '</span>') : 
+        (item.recorded_by && item.recorded_by === 'Admin' ? '<br><small class="text-slate-400 font-normal text-[9px]">កត់ត្រាដោយ Admin</small>' : '');
 
       html += '<tr class="border-b hover:bg-blue-50/40 transition">' +
         '<td class="p-2 text-center">' +
@@ -697,18 +748,25 @@ async function submitSettlementPayment() {
   }
 
   var remainingBalance = Math.max(0, totalDue - paid);
+  // ✅ គណនាសាច់ប្រាក់សុទ្ធពិតប្រាកដដែលត្រូវទុកក្នុងថត (កាត់ប្រាក់អាប់ចេញរួចជាស្រេច)
+  var actualSettledPaid = Math.min(paid, totalDue);
+  var changeKhr = Math.max(0, paid - totalDue);
   var cashKhrRecorded = 0;
   var scanKhrRecorded = 0;
 
   if (currentSettlementPayMode === 'Split') {
-    cashKhrRecorded = parseFloat(document.getElementById('splitKhrCash') ? document.getElementById('splitKhrCash').value || 0 : 0);
-    scanKhrRecorded = parseFloat(document.getElementById('splitKhrScan') ? document.getElementById('splitKhrScan').value || 0 : 0);
+    var rawCash = parseFloat(document.getElementById('splitKhrCash') ? document.getElementById('splitKhrCash').value || 0 : 0);
+    var rawScan = parseFloat(document.getElementById('splitKhrScan') ? document.getElementById('splitKhrScan').value || 0 : 0);
+    // ប្រាក់អាប់ត្រូវកាត់ចេញពីលុយសុទ្ធ
+    cashKhrRecorded = Math.max(0, rawCash - changeKhr);
+    scanKhrRecorded = Math.min(rawScan, actualSettledPaid - cashKhrRecorded);
   } else if (currentSettlementPayMode === 'Cash') {
-    cashKhrRecorded = paid;
+    cashKhrRecorded = actualSettledPaid; // កត់ត្រាតែប្រាក់ដែលត្រូវទទួលពិតប្រាកដ (៣៥,០០០៛)
+    scanKhrRecorded = 0;
   } else {
-    scanKhrRecorded = paid;
+    cashKhrRecorded = 0;
+    scanKhrRecorded = actualSettledPaid;
   }
-
   var btn = document.getElementById('btnSubmitSettlement');
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងទូទាត់ប្រាក់...';
@@ -733,7 +791,8 @@ async function submitSettlementPayment() {
       admin_name: currentUser.fullName || "Admin",
       pay_method: currentSettlementPayMode,
       cash_khr: cashKhrRecorded,
-      scan_khr: scanKhrRecorded
+      scan_khr: scanKhrRecorded,
+      settled_at: new Date().toISOString()
     }]);
     if (setErr) throw setErr;
 
@@ -759,7 +818,7 @@ async function submitSettlementPayment() {
       sendTelegramAlert(tgMsg);
     } catch(e) {}
 
-    // ៥. 🔔 បន្លឺសំឡេងរោទ៍ Chime & បាញ់កាំជ្រួចអបអរសាទរ
+    // ៥. 🔔 សំឡេងរោទ៍ Chime & បាញ់កាំជ្រួច
     playPaymentSuccessAudio();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
 
