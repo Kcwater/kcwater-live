@@ -47,19 +47,16 @@ function renderStockModule() {
           '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ថ្លៃដើមទិញចូល (Cost)</label>' +
           '<input type="number" id="pCo" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs">' +
         '</div>' +
-        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
-          '<div>' +
-            '<label class="text-[10px] font-extrabold text-amber-900 uppercase block mb-1">🚚 តម្លៃបោះដុំដេប៉ូ (POS) *</label>' +
-            '<input type="number" id="pPr" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
-          '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-extrabold text-emerald-900 uppercase block mb-1">🌐 តម្លៃលក់លើ Web តាមផ្ទះ *</label>' +
-            '<input type="number" id="pOnlinePr" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
-          '</div>' +
-        '</div>' +
-
-        // 🏷️ ផ្នែកកំណត់ផ្លាកសម្គាល់ (Badge) & ប៉ុស្តិ៍លក់
+        // 🏷️ ផ្នែកកំណត់ ប៉ុស្តិ៍លក់ & ផ្លាកសម្គាល់ (Badge)
         '<div class="grid grid-cols-2 gap-2">' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប៉ុស្តិ៍លក់ (Channel) *</label>' +
+            '<select id="pChannel" onchange="toggleChannelPrices()" class="border-2 border-emerald-400 p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
+              '<option value="ALL">🔄 លក់ទាំងសងខាង (POS + Web)</option>' +
+              '<option value="POS">🚚 លក់តែលើ POS ដេប៉ូ</option>' +
+              '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
+            '</select>' +
+          '</div>' +
           '<div>' +
             '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">🏷️ ផ្លាកសម្គាល់លើ Web (Badge)</label>' +
             '<select id="pBadge" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
@@ -70,16 +67,20 @@ function renderStockModule() {
               '<option value="NONE">❌ គ្មានផ្លាក</option>' +
             '</select>' +
           '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប៉ុស្តិ៍លក់ (Channel)</label>' +
-            '<select id="pChannel" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
-              '<option value="ALL">🔄 លក់ទាំងសងខាង (POS + Web)</option>' +
-              '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
-              '<option value="POS">🚚 លក់តែលើ POS ដេប៉ូ</option>' +
-            '</select>' +
-          '</div>' +
         '</div>' +
 
+        // 💵 ប្រអប់តម្លៃ (បង្ហាញ ឬលាក់តាមប៉ុស្តិ៍លក់)
+        '<div id="priceInputsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
+          '<div id="secPosPrice">' +
+            '<label class="text-[10px] font-extrabold text-amber-900 uppercase block mb-1">🚚 តម្លៃបោះដុំដេប៉ូ (POS) *</label>' +
+            '<input type="number" id="pPr" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
+          '</div>' +
+          '<div id="secOnlinePrice">' +
+            '<label class="text-[10px] font-extrabold text-emerald-900 uppercase block mb-1">🌐 តម្លៃលក់លើ Web តាមផ្ទះ *</label>' +
+            '<input type="number" id="pOnlinePr" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
+          '</div>' +
+        '</div>' +
+    
         // ✍️ ផ្នែកសរសេរការពិពណ៌នាទំនិញ (Product Description)
         '<div>' +
           '<label class="text-[10px] font-bold text-emerald-900 uppercase block mb-1"><i class="fas fa-file-lines text-emerald-600 mr-1"></i> ការរៀបរាប់ពីមុខទំនិញ (Description បង្ហាញលើ Web ពេលភ្ញៀវចុចមើល)</label>' +
@@ -140,6 +141,7 @@ function renderStockModule() {
   '</div>';
 
   tCF();
+  toggleChannelPrices();
   initStockModuleDropdowns();
 
   // ធានាថាបើ allProducts អត់ទាន់មកដល់ ឱ្យទាញ Database មកបង្ហាញភ្លាម
@@ -157,6 +159,27 @@ function tCF() {
   var pTy = document.getElementById('pTy');
   var c = document.getElementById('cSec');
   if (pTy && c) c.style.display = (pTy.value === 'ផលិតឯង' ? 'none' : 'block');
+}
+
+function toggleChannelPrices() {
+  var ch = document.getElementById('pChannel') ? document.getElementById('pChannel').value : 'ALL';
+  var posSec = document.getElementById('secPosPrice');
+  var onlineSec = document.getElementById('secOnlinePrice');
+  var cont = document.getElementById('priceInputsContainer');
+
+  if (ch === 'POS') {
+    if (posSec) posSec.style.display = 'block';
+    if (onlineSec) onlineSec.style.display = 'none';
+    if (cont) cont.className = 'grid grid-cols-1 gap-2.5 bg-amber-50/60 p-3 rounded-2xl border border-amber-200';
+  } else if (ch === 'ONLINE') {
+    if (posSec) posSec.style.display = 'none';
+    if (onlineSec) onlineSec.style.display = 'block';
+    if (cont) cont.className = 'grid grid-cols-1 gap-2.5 bg-sky-50/60 p-3 rounded-2xl border border-sky-200';
+  } else {
+    if (posSec) posSec.style.display = 'block';
+    if (onlineSec) onlineSec.style.display = 'block';
+    if (cont) cont.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200';
+  }
 }
 
 function initStockModuleDropdowns() {
@@ -263,6 +286,7 @@ function cancelEditProduct() {
   document.getElementById('pImgBase64').value = '';
   document.getElementById('pImgNote').innerText = 'អាចថតរូប ឬជ្រើសរូបភាពពីទូរស័ព្ទ';
   tCF();
+  toggleChannelPrices();
 }
 
 // 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Description & Badge ចាស់មកបង្ហាញ)
@@ -307,6 +331,7 @@ async function prepareEditProduct(id) {
   document.getElementById('pImgBase64').value = p.img || '';
 
   tCF();
+  toggleChannelPrices();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
