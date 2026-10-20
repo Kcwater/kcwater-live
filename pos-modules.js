@@ -1126,8 +1126,10 @@ function filterUsersModuleTable() {
     '</tr>';
   });
 
-  tbody.innerHTML = html;
-}}async function fetchSpecialPricesTable() {
+ tbody.innerHTML = html;
+}
+
+async function fetchSpecialPricesTable() {
   var tbody = document.getElementById('specialPricesTableBody');
   if (!tbody) return;
 
