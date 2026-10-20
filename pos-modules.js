@@ -87,9 +87,15 @@ function renderStockModule() {
           '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ ក្រដាសអនាម័យគុណភាពខ្ពស់ ទន់ ស្វិត ស្រូបទឹកបានល្អ ប្រើប្រាស់បានច្រើនយ៉ាង..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2.5 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
         '</div>' +
 
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">កម្រិតដំណឹងស្តុកទាប</label>' +
-          '<input type="number" id="pMin" placeholder="ឧ៖ 5" value="5" class="border p-2.5 rounded-xl font-bold w-full text-xs text-center">' +
+        '<div class="grid grid-cols-2 gap-2">' +
+          '<div>' +
+            '<label class="text-[10px] font-black text-blue-900 uppercase block mb-1">🔢 លេខរៀងបង្ហាញ (១, ២, ៣...)</label>' +
+            '<input type="number" id="pSort" placeholder="ឧ៖ 1" value="1" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-blue-900 bg-blue-50/50 outline-none">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">កម្រិតដំណឹងស្តុកទាប</label>' +
+            '<input type="number" id="pMin" placeholder="ឧ៖ 5" value="5" class="border p-2.5 rounded-xl font-bold w-full text-xs text-center outline-none">' +
+          '</div>' +
         '</div>' +
 
         // រូបភាព
@@ -280,6 +286,8 @@ function cancelEditProduct() {
   document.getElementById('pN').value = '';
   document.getElementById('pPr').value = '';
   document.getElementById('pOnlinePr').value = '';
+  if (document.getElementById('pSort')) document.getElementById('pSort').value = 1;
+  if (document.getElementById('pMin')) document.getElementById('pMin').value = 5;
   if (document.getElementById('pBadge')) document.getElementById('pBadge').value = 'គុណភាពខ្ពស់';
   if (document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
   document.getElementById('pImgPreview').src = 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
@@ -310,6 +318,7 @@ async function prepareEditProduct(id) {
   document.getElementById('pPr').value = p.price || 0;
   document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
   document.getElementById('pMin').value = p.min_stock || 5;
+  if (document.getElementById('pSort')) document.getElementById('pSort').value = p.sort_order || 1;
   document.getElementById('pChannel').value = p.channel || 'ALL';
 
   // ទាញយក Badge និង Description ពី Settings
@@ -355,6 +364,7 @@ async function saveProductToSupabase() {
     online_price: parseFloat(document.getElementById('pOnlinePr').value || 0),
     min_stock: parseFloat(document.getElementById('pMin').value || 5),
     channel: document.getElementById('pChannel').value,
+    sort_order: parseInt(document.getElementById('pSort') ? document.getElementById('pSort').value || 99 : 99),
     img: imgData
   };
 
