@@ -88,8 +88,8 @@ body {
 }
 
 @media (min-width: 1024px) { 
-  #mainApp { padding-left: 275px; } 
+  /* ✅ ដករនាំង padding-left 275px ចេញ ដើម្បីឱ្យ Navbar និងទំព័ររត់ពេញអេក្រង់ ១០០% ឥតចន្លោះ */
+  #mainApp { padding-left: 0; } 
   .sidebar { position: fixed; } 
-  .hidden-sidebar { left: 0 !important; } 
   #sidebarBackdrop { display: none !important; }
 }
