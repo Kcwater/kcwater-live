@@ -115,7 +115,9 @@ async function fetchInitialPOSData() {
       .from('products')
       .select('*')
       .order('id', { ascending: true });
-    if (prods) allProducts = prods;
+    if (prods) {
+  allProducts = prods.sort((a, b) => (parseInt(a.sort_order) || 99) - (parseInt(b.sort_order) || 99));
+}
 
     const { data: custs } = await supabaseClient
       .from('users')
