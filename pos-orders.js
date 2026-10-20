@@ -303,9 +303,10 @@ function renderAdminOnlineOrdersUI() {
       '</button>' : '') +
 
       (o.photo_url ? 
-      '<button type="button" onclick="viewOrderHousePhoto(\'' + o.photo_url + '\', \'' + safeName + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+      (storeOrderPhoto(o.order_id, o.photo_url, o.customer_name),
+      '<button type="button" onclick="viewOrderHousePhotoById(\'' + o.order_id + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-camera text-xs text-amber-600"></i> រូបផ្ទះ' +
-      '</button>' : '');
+      '</button>') : '');
 
     // បន្ថែមប៊ូតុង "បោះបង់" និង "ដឹកដល់" តែលើ Order ដែលមិនទាន់ដឹកដល់ប៉ុណ្ណោះ
     if (!isDelivered) {
