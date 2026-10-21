@@ -236,13 +236,13 @@ async function renderDashboardModule() {
 }
 
 // ==========================================
-// 📊 ទាញទិន្នន័យ DASHBOARD & មុខងារបោះបង់ការលក់ (VOID SALE)
+// 📊 ទាញទិន្នន័យ DASHBOARD (បានកែសម្រួលម៉ោងកម្ពុជាត្រឹមត្រូវ ១០០%)
 // ==========================================
 async function loadDashboardData() {
   try {
-    var now = new Date();
-    var todayStr = now.toISOString().split('T')[0];
-    var firstDayMonthStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    // 🇰🇭 ប្រើម៉ោងកម្ពុជា UTC+7 មិនឱ្យបាត់ការលក់ពេលព្រឹកព្រលឹមឡើយ
+    var todayStr = (typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toLocaleDateString('en-CA');
+    var firstDayMonthStr = todayStr.substring(0, 7) + '-01'; // ថ្ងៃទី ១ នៃខែនេះ
 
     const { data: monthTrans } = await supabaseClient
       .from('transactions')
@@ -311,120 +311,126 @@ async function loadDashboardData() {
     var totalDebtKHR = 0;
     (unpaids || []).forEach(u => { totalDebtKHR += parseFloat(u.total || 0); });
 
-    document.getElementById('dashTodaySales').innerText = '៛ ' + todaySalesKHR.toLocaleString();
-    document.getElementById('dashTodayCashTotal').innerText = '៛ ' + todayTotalCash.toLocaleString();
-    document.getElementById('dashTodayCashInHand').innerText = '៛ ' + todayCashInHand.toLocaleString();
-    document.getElementById('dashTodayBankAba').innerText = '៛ ' + todayBankAba.toLocaleString();
-    document.getElementById('dashTotalDebt').innerText = '៛ ' + totalDebtKHR.toLocaleString();
-    document.getElementById('dashMonthSales').innerText = '៛ ' + monthSalesKHR.toLocaleString();
-    document.getElementById('dashMonthExpenses').innerText = '៛ ' + totalMonthExpensesKHR.toLocaleString();
-    document.getElementById('dashMonthExpDetail').innerText = '(ប្រតិបត្តិការ: ៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + (monthCOGS > 0 ? ' | ដើមទឹកយួរ: ៛ ' + Math.round(monthCOGS).toLocaleString() : '') + ')';
+    // បង្ហាញទិន្នន័យលើ Dashboard ដោយសុវត្ថិភាព
+    if (document.getElementById('dashTodaySales')) document.getElementById('dashTodaySales').innerText = '៛ ' + todaySalesKHR.toLocaleString();
+    if (document.getElementById('dashTodayCashTotal')) document.getElementById('dashTodayCashTotal').innerText = '៛ ' + todayTotalCash.toLocaleString();
+    if (document.getElementById('dashTodayCashInHand')) document.getElementById('dashTodayCashInHand').innerText = '៛ ' + todayCashInHand.toLocaleString();
+    if (document.getElementById('dashTodayBankAba')) document.getElementById('dashTodayBankAba').innerText = '៛ ' + todayBankAba.toLocaleString();
+    if (document.getElementById('dashTotalDebt')) document.getElementById('dashTotalDebt').innerText = '៛ ' + totalDebtKHR.toLocaleString();
+    if (document.getElementById('dashMonthSales')) document.getElementById('dashMonthSales').innerText = '៛ ' + monthSalesKHR.toLocaleString();
+    if (document.getElementById('dashMonthExpenses')) document.getElementById('dashMonthExpenses').innerText = '៛ ' + totalMonthExpensesKHR.toLocaleString();
+    if (document.getElementById('dashMonthExpDetail')) document.getElementById('dashMonthExpDetail').innerText = '(ប្រតិបត្តិការ: ៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + (monthCOGS > 0 ? ' | ដើមទឹកយួរ: ៛ ' + Math.round(monthCOGS).toLocaleString() : '') + ')';
 
     var netEl = document.getElementById('dashNetProfit');
-    var isPositive = netProfitKHR >= 0;
-    netEl.innerText = (isPositive ? '+ ៛ ' : '- ៛ ') + Math.abs(Math.round(netProfitKHR)).toLocaleString();
-    netEl.className = 'mt-2 font-black text-base sm:text-lg ' + (isPositive ? 'text-emerald-700' : 'text-red-600');
+    if (netEl) {
+      var isPositive = netProfitKHR >= 0;
+      netEl.innerText = (isPositive ? '+ ៛ ' : '- ៛ ') + Math.abs(Math.round(netProfitKHR)).toLocaleString();
+      netEl.className = 'mt-2 font-black text-base sm:text-lg ' + (isPositive ? 'text-emerald-700' : 'text-red-600');
+    }
 
     var pqArea = document.getElementById('dashProductQtyArea');
-    var pqHtml = "";
-    for (var p in todayProdQty) {
-      pqHtml += '<div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border"><span class="font-bold text-gray-800">' + p + '</span><span class="px-3 py-1 bg-blue-100 text-blue-800 font-black rounded-lg">' + todayProdQty[p] + '</span></div>';
+    if (pqArea) {
+      var pqHtml = "";
+      for (var p in todayProdQty) {
+        pqHtml += '<div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border"><span class="font-bold text-gray-800">' + p + '</span><span class="px-3 py-1 bg-blue-100 text-blue-800 font-black rounded-lg">' + todayProdQty[p] + '</span></div>';
+      }
+      pqArea.innerHTML = pqHtml || '<p class="text-gray-400 italic text-center py-4">មិនទាន់មានការដកលក់ថ្ងៃនេះនៅឡើយទេ</p>';
     }
-    pqArea.innerHTML = pqHtml || '<p class="text-gray-400 italic text-center py-4">មិនទាន់មានការដកលក់ថ្ងៃនេះនៅឡើយទេ</p>';
 
     var alertArea = document.getElementById('dashStockAlertArea');
-    var saHtml = "";
-    var lowStockItems = [];
-    var resaleItems = [];
+    if (alertArea) {
+      var saHtml = "";
+      var lowStockItems = [];
+      var resaleItems = [];
 
-    allProducts.forEach(function(prod) {
-      if (prod.type === 'ទិញគេ') {
-        var s = parseFloat(prod.stock || 0);
-        var min = parseFloat(prod.min_stock || 5);
-        resaleItems.push(prod);
-        if (s <= min) {
-          lowStockItems.push(prod);
+      allProducts.forEach(function(prod) {
+        if (prod.type === 'ទិញគេ') {
+          var s = parseFloat(prod.stock || 0);
+          var min = parseFloat(prod.min_stock || 5);
+          resaleItems.push(prod);
+          if (s <= min) lowStockItems.push(prod);
         }
+      });
+
+      if (lowStockItems.length > 0) {
+        lowStockItems.forEach(function(prod) {
+          var isZero = parseFloat(prod.stock || 0) <= 0;
+          var unitLabel = (prod.name.indexOf("យួរ") !== -1) ? "យួរ" : ((prod.name.indexOf("ធុង") !== -1) ? "ធុង" : "ឯកតា");
+
+          saHtml += '<div class="flex justify-between items-center p-2.5 rounded-xl border ' + (isZero ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200') + ' mb-1.5">' +
+            '<div>' +
+              '<b class="' + (isZero ? 'text-red-900' : 'text-orange-900') + '">' + prod.name + '</b>' +
+              '<div class="text-[10px] text-gray-400 font-bold">កម្រិតកំណត់៖ ' + (prod.min_stock || 5) + ' ' + unitLabel + '</div>' +
+            '</div>' +
+            '<div class="flex items-center gap-1.5">' +
+              '<span class="px-2.5 py-1 font-black rounded-lg text-xs ' + (isZero ? 'bg-red-600 text-white' : 'bg-orange-500 text-white') + '">' +
+                (isZero ? 'អស់ (០)' : 'សល់ ' + prod.stock + ' ' + unitLabel) +
+              '</span>' +
+              '<button type="button" onclick="openQuickRestockModal(\'' + prod.id + '\', \'' + prod.name.replace(/'/g, "\\'") + '\', ' + (prod.cost || 0) + ')" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-black shadow-2xs active:scale-95 transition flex items-center gap-1">' +
+                '<i class="fas fa-plus"></i> បញ្ចូល' +
+              '</button>' +
+            '</div>' +
+          '</div>';
+        });
+      } else {
+        saHtml += '<div class="p-2.5 bg-green-50 text-green-800 rounded-xl text-xs text-center font-bold flex items-center justify-center gap-1.5 border border-green-200 mb-2">' +
+          '<i class="fas fa-check-circle text-green-600"></i> ស្តុកទំនិញទិញចូលទាំងអស់មានសុវត្ថិភាពល្អ' +
+        '</div>';
       }
-    });
 
-    if (lowStockItems.length > 0) {
-      lowStockItems.forEach(function(prod) {
-        var isZero = parseFloat(prod.stock || 0) <= 0;
-        var unitLabel = (prod.name.indexOf("យួរ") !== -1) ? "យួរ" : ((prod.name.indexOf("ធុង") !== -1) ? "ធុង" : "ឯកតា");
+      if (resaleItems.length > 0) {
+        saHtml += '<div class="pt-1 space-y-1.5">';
+        resaleItems.forEach(function(r) {
+          var uLabel = (r.name.indexOf("យួរ") !== -1) ? "យួរ" : ((r.name.indexOf("ធុង") !== -1) ? "ធុង" : "ឯកតា");
+          var isLowNow = parseFloat(r.stock || 0) <= parseFloat(r.min_stock || 5);
 
-        saHtml += '<div class="flex justify-between items-center p-2.5 rounded-xl border ' + (isZero ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200') + ' mb-1.5">' +
-          '<div>' +
-            '<b class="' + (isZero ? 'text-red-900' : 'text-orange-900') + '">' + prod.name + '</b>' +
-            '<div class="text-[10px] text-gray-400 font-bold">កម្រិតកំណត់៖ ' + (prod.min_stock || 5) + ' ' + unitLabel + '</div>' +
-          '</div>' +
-          '<div class="flex items-center gap-1.5">' +
-            '<span class="px-2.5 py-1 font-black rounded-lg text-xs ' + (isZero ? 'bg-red-600 text-white' : 'bg-orange-500 text-white') + '">' +
-              (isZero ? 'អស់ (០)' : 'សល់ ' + prod.stock + ' ' + unitLabel) +
-            '</span>' +
-            '<button type="button" onclick="openQuickRestockModal(\'' + prod.id + '\', \'' + prod.name.replace(/'/g, "\\'") + '\', ' + (prod.cost || 0) + ')" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-black shadow-2xs active:scale-95 transition flex items-center gap-1">' +
-              '<i class="fas fa-plus"></i> បញ្ចូល' +
-            '</button>' +
-          '</div>' +
-        '</div>';
-      });
-    } else {
-      saHtml += '<div class="p-2.5 bg-green-50 text-green-800 rounded-xl text-xs text-center font-bold flex items-center justify-center gap-1.5 border border-green-200 mb-2">' +
-        '<i class="fas fa-check-circle text-green-600"></i> ស្តុកទំនិញទិញចូលទាំងអស់មានសុវត្ថិភាពល្អ' +
-      '</div>';
+          saHtml += '<div class="flex justify-between items-center p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-xs">' +
+            '<span><i class="fas fa-box text-blue-500 mr-1.5"></i><b>' + r.name + '</b></span>' +
+            '<span class="font-black ' + (isLowNow ? 'text-red-600' : 'text-blue-900') + '">' + Number(r.stock).toLocaleString() + ' ' + uLabel + '</span>' +
+          '</div>';
+        });
+        saHtml += '</div>';
+      }
+
+      alertArea.innerHTML = saHtml || '<p class="text-gray-400 italic text-center py-4">គ្មានទំនិញទិញគេក្នុងឃ្លាំង</p>';
     }
-
-    if (resaleItems.length > 0) {
-      saHtml += '<div class="pt-1 space-y-1.5">';
-      resaleItems.forEach(function(r) {
-        var uLabel = (r.name.indexOf("យួរ") !== -1) ? "យួរ" : ((r.name.indexOf("ធុង") !== -1) ? "ធុង" : "ឯកតា");
-        var isLowNow = parseFloat(r.stock || 0) <= parseFloat(r.min_stock || 5);
-
-        saHtml += '<div class="flex justify-between items-center p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-xs">' +
-          '<span><i class="fas fa-box text-blue-500 mr-1.5"></i><b>' + r.name + '</b></span>' +
-          '<span class="font-black ' + (isLowNow ? 'text-red-600' : 'text-blue-900') + '">' + Number(r.stock).toLocaleString() + ' ' + uLabel + '</span>' +
-        '</div>';
-      });
-      saHtml += '</div>';
-    }
-
-    alertArea.innerHTML = saHtml || '<p class="text-gray-400 italic text-center py-4">គ្មានទំនិញទិញគេក្នុងឃ្លាំង</p>';
 
     var tbodyRecent = document.getElementById('dashRecentTbody');
     var badgeCount = document.getElementById('dashRecentCountBadge');
     if (badgeCount) badgeCount.innerText = todayRecentSales.length + " លើក";
 
-    if (todayRecentSales.length === 0) {
-      tbodyRecent.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រតិបត្តិការដកទំនិញថ្ងៃនេះនៅឡើយ</td></tr>';
-    } else {
-      var rHtml = '';
-      var isAdmin = (currentUser && currentUser.role === 'Admin');
+    if (tbodyRecent) {
+      if (todayRecentSales.length === 0) {
+        tbodyRecent.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រតិបត្តិការដកទំនិញថ្ងៃនេះនៅឡើយ</td></tr>';
+      } else {
+        var rHtml = '';
+        var isAdmin = (currentUser && currentUser.role === 'Admin');
 
-      todayRecentSales.forEach(function(r) {
-        var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+        todayRecentSales.forEach(function(r) {
+          var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
 
-        var isWithdrawnByOther = (r.recorded_by && r.recorded_by !== r.customer_name && r.recorded_by !== 'Admin');
-        var withdrawTag = isWithdrawnByOther ? 
-          ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + r.recorded_by + '</span>') : 
-          (r.recorded_by && r.recorded_by !== 'Admin' && r.recorded_by !== r.customer_name ? ('<br><small class="text-slate-400 font-normal text-[9px]">កត់ដោយ៖ ' + r.recorded_by + '</small>') : '');
+          var isWithdrawnByOther = (r.recorded_by && r.recorded_by !== r.customer_name && r.recorded_by !== 'Admin');
+          var withdrawTag = isWithdrawnByOther ? 
+            ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + r.recorded_by + '</span>') : 
+            (r.recorded_by && r.recorded_by !== 'Admin' && r.recorded_by !== r.customer_name ? ('<br><small class="text-slate-400 font-normal text-[9px]">កត់ដោយ៖ ' + r.recorded_by + '</small>') : '');
 
-        // 🗑️ ប៊ូតុងបោះបង់ការលក់ (បង្ហាញសម្រាប់តែ Admin ប៉ុណ្ណោះ)
-        var voidBtnHtml = isAdmin ? 
-          ('<button type="button" onclick="voidTransaction(' + r.id + ', \'' + (r.transaction_id || '') + '\', \'' + (r.product_name || '').replace(/'/g, "\\'") + '\', ' + (r.qty || 1) + ', ' + (r.total || 0) + ')" class="ml-1.5 text-slate-300 hover:text-red-600 active:scale-90 transition p-1" title="បោះបង់ការកត់ត្រានេះ"><i class="fas fa-trash-can text-xs"></i></button>') : '';
+          var voidBtnHtml = isAdmin ? 
+            ('<button type="button" onclick="voidTransaction(' + r.id + ', \'' + (r.transaction_id || '') + '\', \'' + (r.product_name || '').replace(/'/g, "\\'") + '\', ' + (r.qty || 1) + ', ' + (r.total || 0) + ')" class="ml-1.5 text-slate-300 hover:text-red-600 active:scale-90 transition p-1" title="បោះបង់ការកត់ត្រានេះ"><i class="fas fa-trash-can text-xs"></i></button>') : '';
 
-        rHtml += '<tr class="border-b hover:bg-gray-50">' +
-          '<td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
-          '<td class="p-2.5 font-bold text-gray-800">' + r.customer_name + withdrawTag + '</td>' +
-          '<td class="p-2.5">' + r.product_name + '</td>' +
-          '<td class="p-2.5 text-center font-bold text-blue-700">' + r.qty + '</td>' +
-          '<td class="p-2.5 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
-          '<td class="p-2.5 text-center whitespace-nowrap">' +
-            '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span>' +
-            voidBtnHtml +
-          '</td>' +
-        '</tr>';
-      });
-      tbodyRecent.innerHTML = rHtml;
+          rHtml += '<tr class="border-b hover:bg-gray-50">' +
+            '<td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
+            '<td class="p-2.5 font-bold text-gray-800">' + r.customer_name + withdrawTag + '</td>' +
+            '<td class="p-2.5">' + r.product_name + '</td>' +
+            '<td class="p-2.5 text-center font-bold text-blue-700">' + r.qty + '</td>' +
+            '<td class="p-2.5 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
+            '<td class="p-2.5 text-center whitespace-nowrap">' +
+              '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span>' +
+              voidBtnHtml +
+            '</td>' +
+          '</tr>';
+        });
+        tbodyRecent.innerHTML = rHtml;
+      }
     }
   } catch(e) {
     console.error("Dashboard error:", e);
