@@ -1170,7 +1170,7 @@
       if (typeof updateCheckoutCalculation === 'function') updateCheckoutCalculation();
       if (typeof checkActiveOrderLiveStatus === 'function') checkActiveOrderLiveStatus();
     }
-   // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description ដែលបានវាយក្នុង POS (បានជួសជុលរួចរាល់)
+   // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description & Category ផ្ទាល់ពី POS
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
@@ -1186,7 +1186,7 @@
 
         if (error) throw error;
 
-        // ទាញយកការពិពណ៌នា និង Badge ពី Settings
+        // ទាញយកការពិពណ៌នា, Badge និង Category ពី Settings
         var setMap = {};
         try {
           const { data: setList } = await supabaseClient.from('settings').select('key, value');
@@ -1198,18 +1198,27 @@
         if (list && list.length > 0) {
           STORE_CATALOG = list.map(function(p) {
             var nameLower = (p.name || '').toLowerCase();
-            var cat = 'EQUIP';
+            var cat = 'GENERAL';
             var isBarrel = false;
 
-            if (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1 || nameLower.indexOf('២០') !== -1) {
-              cat = 'BARREL';
-              isBarrel = true;
-            } else if (nameLower.indexOf('យួរ') !== -1 || nameLower.indexOf('ដប') !== -1 || nameLower.indexOf('កេស') !== -1) {
-              cat = 'PACK';
-            } else if (nameLower.indexOf('ក្រដាស') !== -1 || nameLower.indexOf('អង្ករ') !== -1 || nameLower.indexOf('មី') !== -1 || nameLower.indexOf('ប្រេង') !== -1) {
-              cat = 'GENERAL';
+            // 📂 ១. យក Category ដែលបានកំណត់ផ្ទាល់ពី POS ជាចម្បង
+            var assignedCat = (setMap['CAT_' + p.id] || p.category || '').trim().toUpperCase();
+
+            if (assignedCat) {
+              cat = assignedCat;
+              if (cat === 'BARREL') isBarrel = true;
             } else {
-              cat = 'EQUIP';
+              // បើទំនិញចាស់ៗមិនទាន់បានកំណត់ Category ទេ ឱ្យប្រព័ន្ធជួយទាយស្វ័យប្រវត្តិ
+              if (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1 || nameLower.indexOf('២០') !== -1) {
+                cat = 'BARREL';
+                isBarrel = true;
+              } else if (nameLower.indexOf('យួរ') !== -1 || nameLower.indexOf('ដប') !== -1 || nameLower.indexOf('កេស') !== -1) {
+                cat = 'PACK';
+              } else if (nameLower.indexOf('ជើងទម្រ') !== -1 || nameLower.indexOf('រ៉ូប៊ីណេ') !== -1 || nameLower.indexOf('ម៉ាស៊ីន') !== -1) {
+                cat = 'EQUIP';
+              } else {
+                cat = 'GENERAL';
+              }
             }
 
             var imgDisplay = '';
@@ -1235,7 +1244,7 @@
               price: onlinePrice,
               svg: imgDisplay,
               desc: customDesc,
-              badge: customBadge, // ✅ បានបន្ថែមសញ្ញាក្បៀស (,) ត្រង់នេះរួចរាល់
+              badge: customBadge,
               sort_order: parseInt(p.sort_order || 99)
             };
           });
