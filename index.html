@@ -1182,7 +1182,7 @@
           .from('products')
           .select('*')
           .in('channel', ['ALL', 'ONLINE', 'all', 'online'])
-          .order('id', { ascending: true });
+          .order('sort_order', { ascending: true });
 
         if (error) throw error;
 
@@ -1236,6 +1236,7 @@
               svg: imgDisplay,
               desc: customDesc,
               badge: customBadge
+              sort_order: parseInt(p.sort_order || 99)
             };
           });
 
