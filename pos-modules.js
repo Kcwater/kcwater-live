@@ -1459,9 +1459,13 @@ async function renderCustomerPortalHome() {
   await fetchCustomerPortalData();
 }
 
+// ==========================================
+// 🏠 ទាញទិន្នន័យគណនីម៉ូយប្រចាំ (បានកែសម្រួលម៉ោងកម្ពុជាត្រឹមត្រូវ)
+// ==========================================
 async function fetchCustomerPortalData() {
   try {
-    var todayStr = new Date().toISOString().split('T')[0];
+    // 🇰🇭 ប្រើម៉ោងកម្ពុជា UTC+7 មិនឱ្យច្រឡំជើងទឹកថ្ងៃនេះ និងបំណុលចាស់
+    var todayStr = (typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toLocaleDateString('en-CA');
 
     const { data: trans } = await supabaseClient
       .from('transactions')
@@ -1516,10 +1520,10 @@ async function fetchCustomerPortalData() {
       todayItems: todayItems
     };
 
-    document.getElementById('cpTodayTotal').innerText = '៛ ' + todayTotal.toLocaleString();
-    document.getElementById('cpOldDebt').innerText = '៛ ' + grandOldDebt.toLocaleString();
-    document.getElementById('cpGrandTotalDue').innerText = '៛ ' + grandTotalDue.toLocaleString();
-    document.getElementById('cpBorrowedBottles').innerText = totalBottles + ' ធុង';
+    if (document.getElementById('cpTodayTotal')) document.getElementById('cpTodayTotal').innerText = '៛ ' + todayTotal.toLocaleString();
+    if (document.getElementById('cpOldDebt')) document.getElementById('cpOldDebt').innerText = '៛ ' + grandOldDebt.toLocaleString();
+    if (document.getElementById('cpGrandTotalDue')) document.getElementById('cpGrandTotalDue').innerText = '៛ ' + grandTotalDue.toLocaleString();
+    if (document.getElementById('cpBorrowedBottles')) document.getElementById('cpBorrowedBottles').innerText = totalBottles + ' ធុង';
 
     var tbody = document.getElementById('cpTodayItemsTbody');
     if (tbody) {
@@ -1546,7 +1550,6 @@ async function fetchCustomerPortalData() {
     console.error("Portal error:", e);
   }
 }
-
 // ==========================================
 // 💳 ៧. ផ្ទាំងស្នើទូទាត់លុយរបស់ម៉ូយ (CUSTOMER PAYMENT REQUEST MODAL)
 // ==========================================
