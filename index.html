@@ -82,19 +82,19 @@
 </head>
 <body class="pb-36 antialiased select-none">
 
-  <!-- ១. NAVBAR -->
+  <!-- ១. NAVBAR (KC MART - ទឹកពិសា & ទំនិញទូទៅ) -->
   <header class="sticky top-0 z-40 kc-glass-nav">
     <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white text-xl shadow-md">
-          <i class="fas fa-droplet"></i>
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 via-green-600 to-teal-700 flex items-center justify-center text-white text-lg shadow-md">
+          <i class="fas fa-shop"></i>
         </div>
         <div>
           <div class="flex items-center gap-1.5">
-            <h1 class="text-base font-black text-slate-900 tracking-tight leading-none">KC WATER</h1>
-            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Poipet</span>
+            <h1 class="text-base font-black text-slate-900 tracking-tight leading-none">KC MART</h1>
+            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Mart & Delivery</span>
           </div>
-          <p class="text-[10px] text-emerald-700 font-bold mt-0.5" id="txtTopSubtitle">រោងចក្រទឹកបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)</p>
+          <p class="text-[10px] text-emerald-700 font-bold mt-0.5" id="txtTopSubtitle">ខេ ស៊ី ម៉ាត — ទឹកពិសា & ទំនិញទូទៅ (ប៉ោយប៉ែត)</p>
         </div>
       </div>
 
@@ -615,36 +615,36 @@
     var storeOperatingConfig = { isOpen: true, openTime: "07:00", closeTime: "18:00" };
     var telegramSettings = { token: "", chatId: "", status: "ON" };
 
-    // 📚 វចនានុក្រមបកប្រែ ៣ ភាសាពេញលេញ (100% Complete Multilingual Dictionary)
+    // 📚 វចនានុក្រមបកប្រែ ៣ ភាសាពេញលេញ (KC MART - ទឹកពិសា & ទំនិញទូទៅ)
     var DICT = {
       km: {
-        topSub: "រោងចក្រទឹកបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)",
+        topSub: "ខេ ស៊ី ម៉ាត — ទឹកពិសា & ទំនិញទូទៅ (ប៉ោយប៉ែត)",
         bannerTag: "សេវាដឹកដល់ផ្ទះរហ័ស ៣០-៤៥ នាទី",
-        bannerTitle: "ទឹកពិសាបរិសុទ្ធគុណភាពខ្ពស់",
-        bannerDesc: "ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន ស្តង់ដារសុខភាព ១០០%",
+        bannerTitle: "ទំនិញទូទៅ & ទឹកពិសាគុណភាពខ្ពស់",
+        bannerDesc: "សេវាដឹកជូនដល់មុខផ្ទះរហ័ស៖ ទឹកពិសា ស្បៀងអាហារ គ្រឿងទេស និងសម្ភារប្រើប្រាស់ប្រចាំថ្ងៃ",
         tbSafe: "សុវត្ថិភាពខ្ពស់",
         tbSpeed: "ដឹកដល់មុខផ្ទះ",
         tbSpeedSub: "ក្រុងប៉ោយប៉ែត",
         tbStandard: "ស្តង់ដារជាតិ",
         reorderTag: "ធ្លាប់កុម្ម៉ង់ពីមុន?",
         reorderBtn: "កុម្ម៉ង់ម្ដងទៀត",
-        catTitle: "មុខទំនិញទឹកពិសា (Products)",
+        catTitle: "មុខទំនិញចម្រុះ (KC Mart Products)",
         catAll: "ទាំងអស់",
         catBarrel: "ទឹកធុង ២០L",
         catPack: "ទឹកយួរ / ដប",
         catEquip: "ជើងទម្រ / បរិក្ខារ",
         btnSelect: "រើសទិញ",
-        modalBadge: "ស្តង់ដារ KC WATER",
+        modalBadge: "ស្តង់ដារ KC MART",
         modalQty: "ចំនួនកុម្ម៉ង់៖",
         modalAdd: "បញ្ចូលកន្ត្រក",
         dockItems: "មុខទំនិញ",
         dockCheckout: "គិតលុយ",
-        coHeading: "ព័ត៌មានដឹកជញ្ជូនទឹក (ប៉ោយប៉ែត)",
-        coSub: "ដឹកជូនដល់មុខផ្ទះរហ័សដោយអ្នកដឹក KC WATER",
-        coSecUser: "១. ព័ត៌មានអ្នកទទួលទឹក",
+        coHeading: "ព័ត៌មានដឹកជញ្ជូនទំនិញ (ប៉ោយប៉ែត)",
+        coSub: "ដឹកជូនដល់មុខផ្ទះរហ័សដោយអ្នកដឹក KC MART",
+        coSecUser: "១. ព័ត៌មានអ្នកទទួលទំនិញ",
         phName: "ឈ្មោះអ្នកទទួល (*)",
         phPhone: "លេខទូរស័ព្ទ (*)",
-        coSecTime: "២. ម៉ោងចង់ទទួលទឹក (Delivery Time)",
+        coSecTime: "២. ម៉ោងចង់ទទួលទំនិញ (Delivery Time)",
         optTimeAsap: "⚡ ដឹកភ្លាមៗ (៣០-៤៥ នាទី)",
         optTimeSchedule: "⏰ កំណត់ម៉ោងដឹក",
         coSecBuilding: "៣. ប្រភេទកន្លែងស្នាក់នៅ (Building Type)",
@@ -666,7 +666,7 @@
         optAba: "📱 ស្កេន ABA KHQR",
         abaInstruction: "ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម",
         coTotal: "សរុបទឹកប្រាក់ត្រូវបង់៖",
-        btnOrderNow: "បញ្ជាក់ការកុម្ម៉ង់ទឹកឥឡូវនេះ (Order Now)",
+        btnOrderNow: "បញ្ជាក់ការកុម្ម៉ង់ឥឡូវនេះ (Order Now)",
         btnSubmitting: "កំពុងបញ្ជូនការកុម្ម៉ង់...",
         breakdownBarrelFee: "ថ្លៃទិញសំបកធុងថ្មីដាច់",
         breakdownDeliveryFree: "សេវាដឹកជញ្ជូនដល់ផ្ទះ",
@@ -674,47 +674,47 @@
         breakdownDeliveryFee: "សេវាដឹកជញ្ជូន",
         breakdownMinFreeHint: "កុម្ម៉ង់ចាប់ពី {min} ធុងឡើង ដឹក Free",
         breakdownPromoTag: "ប្រូម៉ូសិន",
-        errName: "សូមបញ្ចូលឈ្មោះរបស់អ្នកទទួលទឹក!",
-        errPhone: "សូមបញ្ចូលលេខទូរស័ព្ទរបស់អ្នកទទួលទឹក!",
+        errName: "សូមបញ្ចូលឈ្មោះរបស់អ្នកទទួលទំនិញ!",
+        errPhone: "សូមបញ្ចូលលេខទូរស័ព្ទរបស់អ្នកទទួលទំនិញ!",
         errAddress: "សូមចុចចាប់ GPS ឬវាយអាសយដ្ឋានផ្ទះរបស់អ្នក!",
-        errEmptyCart: "កន្ត្រកទទេ! សូមជ្រើសរើសទឹកជាមុនសិន។",
-        trackTitle: "📦 ស្ថានភាពការកុម្ម៉ង់ទឹករបស់អ្នក",
+        errEmptyCart: "កន្ត្រកទទេ! សូមជ្រើសរើសទំនិញជាមុនសិន។",
+        trackTitle: "📦 ស្ថានភាពការកុម្ម៉ង់របស់អ្នក",
         trackRefresh: "Refresh",
-        trackPending: "⏳ រង់ចាំរោងចក្រពិនិត្យ",
+        trackPending: "⏳ រង់ចាំហាងពិនិត្យ & រៀបចំ",
         trackAssigned: "🚚 អ្នកដឹកកំពុងធ្វើដំណើរ",
-        trackDriverLabel: "អ្នកដឹកជញ្ជូនរោងចក្រ៖",
+        trackDriverLabel: "អ្នកដឹកជញ្ជូន KC MART៖",
         trackCallDriver: "ខលទៅអ្នកដឹក",
         trackSendSlip: "📲 ផ្ញើបង្កាន់ដៃ (Slip ABA) ទៅ Telegram",
         trackTotal: "សរុបទឹកប្រាក់៖",
         closedTitle: "បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!",
-        closedHint: "ម៉ោងទទួលកុម្ម៉ង់៖ {open} ដល់ {close}។ លោកអ្នកនៅតែអាចកុម្ម៉ង់ទុកជាមុនបាន ហើយរោងចក្រនឹងចាត់ចែងដឹកជូននៅព្រឹកស្អែក!",
+        closedHint: "ម៉ោងទទួលកុម្ម៉ង់៖ {open} ដល់ {close}។ លោកអ្នកនៅតែអាចកុម្ម៉ង់ទុកជាមុនបាន ហើយហាងនឹងចាត់ចែងដឹកជូននៅព្រឹកស្អែក!",
         promoBannerTag: "PROMOTION កំពុងដំណើរការ",
         promoBannerBtn: "កុម្ម៉ង់ឥឡូវ"
       },
       en: {
-        topSub: "KC Purified Water Factory (Poipet)",
+        topSub: "KC MART — Water & Groceries (Poipet)",
         bannerTag: "Fast Home Delivery in 30-45 mins",
-        bannerTitle: "Premium Purified Drinking Water",
-        bannerDesc: "7-Stage UV & Ozone Filtration System. 100% Certified Healthy Hydration.",
+        bannerTitle: "Daily Groceries & Pure Drinking Water",
+        bannerDesc: "Fast home delivery: purified water, food staples, groceries, and daily essentials.",
         tbSafe: "Ultra Safe",
         tbSpeed: "Home Delivery",
         tbSpeedSub: "Poipet City",
-        tbStandard: "National Certified",
+        tbStandard: "Certified",
         reorderTag: "Ordered before?",
         reorderBtn: "Reorder",
-        catTitle: "Water Products",
+        catTitle: "All Products (KC Mart Catalog)",
         catAll: "All",
         catBarrel: "20L Barrels",
         catPack: "Bottled Packs",
         catEquip: "Stands & Accessories",
         btnSelect: "Order",
-        modalBadge: "KC WATER Standard",
+        modalBadge: "KC MART Standard",
         modalQty: "Quantity:",
         modalAdd: "Add to Cart",
         dockItems: "items",
         dockCheckout: "Checkout",
         coHeading: "Delivery Details (Poipet)",
-        coSub: "Fast direct home delivery by KC WATER couriers",
+        coSub: "Fast direct home delivery by KC MART couriers",
         coSecUser: "1. Customer Details",
         phName: "Recipient Name (*)",
         phPhone: "Phone Number (*)",
@@ -740,7 +740,7 @@
         optAba: "📱 Scan ABA KHQR",
         abaInstruction: "After scanning payment, please click order button below",
         coTotal: "Total Amount to Pay:",
-        btnOrderNow: "Confirm Water Order (Order Now)",
+        btnOrderNow: "Confirm Order Now",
         btnSubmitting: "Submitting order...",
         breakdownBarrelFee: "New barrel deposit fee",
         breakdownDeliveryFree: "Home delivery fee",
@@ -751,12 +751,12 @@
         errName: "Please enter recipient name!",
         errPhone: "Please enter recipient phone number!",
         errAddress: "Please pin GPS or enter your home address!",
-        errEmptyCart: "Cart is empty! Please select water items.",
+        errEmptyCart: "Cart is empty! Please select items.",
         trackTitle: "📦 Your Order Status",
         trackRefresh: "Refresh",
         trackPending: "⏳ Awaiting Review",
         trackAssigned: "🚚 Out for Delivery",
-        trackDriverLabel: "Factory Courier:",
+        trackDriverLabel: "KC MART Courier:",
         trackCallDriver: "Call Driver",
         trackSendSlip: "📲 Send Payment Slip to Telegram",
         trackTotal: "Total Amount:",
@@ -766,33 +766,33 @@
         promoBannerBtn: "Order Now"
       },
       zh: {
-        topSub: "波贝KC优质纯净水厂 (Poipet)",
-        bannerTag: "30-45分钟快速送水上门",
-        bannerTitle: "优质健康纯净饮用水",
-        bannerDesc: "采用7道深层过滤，UV紫外线与臭氧杀菌消毒，健康有保障。",
+        topSub: "波贝KC超市 — 优质饮用水与日常百货 (Poipet)",
+        bannerTag: "30-45分钟快速送货上门",
+        bannerTitle: "优质健康饮用水与生活百货",
+        bannerDesc: "快速送货上门：桶装水、瓶装水、大米、食品粮油与生活日用品。",
         tbSafe: "安全健康",
         tbSpeed: "配送到家",
         tbSpeedSub: "波贝市区",
         tbStandard: "国家认证",
         reorderTag: "曾订购过？",
         reorderBtn: "再来一单",
-        catTitle: "精选商品 (Products)",
+        catTitle: "精选商品 (KC Mart)",
         catAll: "全部",
         catBarrel: "20L 大桶水",
         catPack: "小瓶装/提装",
         catEquip: "水桶支架/配件",
         btnSelect: "选购",
-        modalBadge: "KC WATER 认证",
+        modalBadge: "KC MART 认证",
         modalQty: "订购数量：",
         modalAdd: "加入购物车",
         dockItems: "件商品",
         dockCheckout: "去结算",
         coHeading: "配送与支付信息 (波贝)",
-        coSub: "KC WATER 专业送水员快速送达您的住处",
+        coSub: "KC MART 专业送货员快速送达您的住处",
         coSecUser: "1. 收货人信息",
         phName: "收货人姓名 (*)",
         phPhone: "电话号码 (*)",
-        coSecTime: "2. 期望送水时间",
+        coSecTime: "2. 期望送达时间",
         optTimeAsap: "⚡ 尽快送达 (30-45分钟)",
         optTimeSchedule: "⏰ 预约时间",
         coSecBuilding: "3. 住所建筑类型",
@@ -801,7 +801,7 @@
         phFloorDetail: "例如：2楼 204房 (有电梯/走楼梯)",
         coSecLoc: "4. 波贝送货地址",
         btnGps: "📍 点击获取我的GPS定位",
-        gpsHint: "💡 点击上方蓝色按钮自动定位您的送水住处",
+        gpsHint: "💡 点击上方蓝色按钮自动定位您的送货住处",
         gpsDetecting: "正在定位GPS地址...",
         gpsSuccess: "✅ GPS定位成功！",
         gpsFail: "⚠️ 无法获取定位 (请允许权限或手动输入地址)",
@@ -814,7 +814,7 @@
         optAba: "📱 ABA KHQR 扫码支付",
         abaInstruction: "扫码付款完成后，请点击下方确认按钮提交",
         coTotal: "应付总金额：",
-        btnOrderNow: "立即提交订水 (Order Now)",
+        btnOrderNow: "立即提交订单 (Order Now)",
         btnSubmitting: "正在提交订单...",
         breakdownBarrelFee: "购买空桶押金费",
         breakdownDeliveryFree: "送货上门费",
@@ -824,23 +824,23 @@
         breakdownPromoTag: "特惠活动",
         errName: "请输入收货人姓名！",
         errPhone: "请输入收货人电话号码！",
-        errAddress: "请定位GPS或输入您的送水地址！",
+        errAddress: "请定位GPS或输入您的送货地址！",
         errEmptyCart: "购物车为空！请先选购商品。",
         trackTitle: "📦 您的订单状态",
         trackRefresh: "刷新",
-        trackPending: "⏳ 等待水厂确认",
+        trackPending: "⏳ 等待商家确认",
         trackAssigned: "🚚 配送员正在派送",
-        trackDriverLabel: "水厂配送员：",
+        trackDriverLabel: "KC MART 配送员：",
         trackCallDriver: "拨打配送员",
         trackSendSlip: "📲 发送付款水单至 Telegram",
         trackTotal: "应付总额：",
         closedTitle: "当前已超过配送营业时间！",
-        closedHint: "接单时间：{open} 至 {close}。您仍可预先提交订单，水厂将于明早优先为您安排派送！",
+        closedHint: "接单时间：{open} 至 {close}。您仍可预先提交订单，我们将于明早优先为您安排派送！",
         promoBannerTag: "限时特惠进行中",
         promoBannerBtn: "立即抢购"
       }
     };
-
+    
     function toggleSupportWidget() {
       var box = document.getElementById('supportPopupBox');
       if (box) box.classList.toggle('hidden');
