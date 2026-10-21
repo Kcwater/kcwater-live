@@ -3,10 +3,96 @@
  *  (Supabase Client, Global App State & Telegram Alerts)
  *  ========================================================================== */
 
-// 🔑 ១. SUPABASE CLIENT INITIALIZATION (សម្រាប់ប្រព័ន្ធពិត KC WATER LIVE)
-const SUPABASE_URL = "https://hocndqkoumgjijtzpzby.supabase.co";
-const SUPABASE_KEY = "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI";
+// ==========================================================================
+// 🌐 ១. ការកំណត់បរិយាកាស (ENVIRONMENT SWITCH: 'PROD' = ប្រព័ន្ធពិត | 'TEST' = សាកល្បង)
+// ==========================================================================
+const CURRENT_ENV = 'PROD'; // 👈 គ្រាន់តែប្តូរទៅ 'TEST' ពេលចង់សាកល្បង ឬ 'PROD' សម្រាប់ដំណើរការជាក់ស្តែង
+
+const SUPABASE_CONFIGS = {
+  // 🏢 ១. ប្រព័ន្ធពិត (Production Live)
+  PROD: {
+    url: "https://hocndqkoumgjijtzpzby.supabase.co",
+    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
+  },
+  // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Environment)
+  TEST: {
+    url: "https://hocndqkoumgjijtzpzby.supabase.co", // 👈 ដាក់ URL គម្រោងសាកល្បងរបស់អ្នកនៅទីនេះ
+    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI" // 👈 ដាក់ Key សាកល្បងរបស់អ្នកនៅទីនេះ
+  }
+};
+
+const activeEnv = SUPABASE_CONFIGS[CURRENT_ENV] || SUPABASE_CONFIGS.PROD;
+const SUPA// ==========================================================================
+// 🌐 ១. ការកំណត់បរិយាកាស (ENVIRONMENT SWITCH: 'PROD' = ប្រព័ន្ធពិត | 'TEST' = សាកល្បង)
+// ==========================================================================
+const CURRENT_ENV = 'PROD'; // 👈 គ្រាន់តែប្តូរទៅ 'TEST' ពេលចង់សាកល្បង ឬ 'PROD' សម្រាប់ដំណើរការជាក់ស្តែង
+
+const SUPABASE_CONFIGS = {
+  // 🏢 ១. ប្រព័ន្ធពិត (Production Live)
+  PROD: {
+    url: "https://hocndqkoumgjijtzpzby.supabase.co",
+    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
+  },
+  // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Environment)
+  TEST: {
+    url: "https://ntftdylkcnkxsytptket.supabase.co";, // 👈 ដាក់ URL គម្រោងសាកល្បងរបស់អ្នកនៅទីនេះ
+    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v"; // 👈 ដាក់ Key សាកល្បងរបស់អ្នកនៅទីនេះ
+  }
+};
+
+const activeEnv = SUPABASE_CONFIGS[CURRENT_ENV] || SUPABASE_CONFIGS.PROD;
+const SUPABASE_URL = activeEnv.url;
+const SUPABASE_KEY = activeEnv.key;
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 🇰🇭 មុខងារជំនួយគណនាថ្ងៃខែតាមម៉ោងកម្ពុជា (UTC+7) ការពារកុំឱ្យខុសថ្ងៃចន្លោះម៉ោង ១២យប់ ដល់ ៧ព្រឹក
+function getCambodiaToday() {
+  var d = new Date();
+  var formatter = new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'Asia/Phnom_Penh', 
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit' 
+  });
+  return formatter.format(d); // ផ្ដល់ផលជា 'YYYY-MM-DD' ត្រឹមត្រូវតាមម៉ោងខ្មែរជានិច្ច
+}BASE_URL = activeEnv.url;
+const SUPABASE_KEY = activeEnv.key;
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 🇰🇭 មុខងារជំនួយគណនាថ្ងៃខែតាមម៉ោងកម្ពុជា (UTC+7) ការពារកុំឱ្យខុសថ្ងៃចន្លោះម៉ោង ១២យប់ ដល់ ៧ព្រឹក
+function getCambodiaToday() {
+  var d = new Date();
+  var formatter = new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'Asia/Phnom_Penh', 
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit' 
+  });
+  return formatter.format(d); // ផ្ដល់ផលជា 'YYYY-MM-DD' ត្រឹមត្រូវតាមម៉ោងខ្មែរជានិច្ច
+}
+
+// 🏷️ មុខងារបង្ហាញផ្លាកព្រមានពេលកំពុងនៅ Mode សាកល្បង (Test Mode Banner)
+function renderEnvironmentBanner() {
+  var oldBanner = document.getElementById('kcTestModeBanner');
+  if (oldBanner) oldBanner.remove();
+
+  // បើកំពុងនៅប្រព័ន្ធពិត (PROD) មិនបាច់បង្ហាញអ្វីឡើយ
+  if (CURRENT_ENV !== 'TEST') return;
+
+  var bannerHtml = '<div id="kcTestModeBanner" class="sticky top-0 z-[9999] bg-gradient-to-r from-amber-500 via-orange-600 to-amber-600 text-white px-4 py-2 text-center text-xs font-black shadow-lg flex items-center justify-center gap-2 border-b-2 border-amber-300 animate-in slide-in-from-top duration-300">' +
+    '<span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>' +
+    '<span>🧪 កំពុងស្ថិតក្នុងប្រព័ន្ធសាកល្បង (TEST MODE) — រាល់ការលក់ និងទិន្នន័យនៅទីនេះ មិនប៉ះពាល់ដល់បញ្ជីពិតឡើយ!</span>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('afterbegin', bannerHtml);
+}
+
+// ដំណើរការបង្ហាញផ្លាកព្រមានភ្លាមៗពេលបើកទំព័រ
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderEnvironmentBanner);
+} else {
+  renderEnvironmentBanner();
+}
 
 // 🌐 ២. GLOBAL APP STATE (អថេររួមទូទាំងកម្មវិធី POS)
 var currentUser = {};
