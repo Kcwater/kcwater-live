@@ -14,8 +14,8 @@ var SUPABASE_CONFIGS = {
   },
   // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Environment)
   TEST: {
-    url: "https://hocndqkoumgjijtzpzby.supabase.co", // 👈 ដាក់ URL គម្រោងសាកល្បងរបស់អ្នកនៅទីនេះ
-    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI" // 👈 ដាក់ Key សាកល្បងរបស់អ្នកនៅទីនេះ
+    url: "https://ntftdylkcnkxsytptket.supabase.co"; // 👈 ដាក់ URL គម្រោងសាកល្បងរបស់អ្នកនៅទីនេះ
+    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v"; // 👈 ដាក់ Key សាកល្បងរបស់អ្នកនៅទីនេះ
   }
 };
 
