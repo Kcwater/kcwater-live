@@ -88,37 +88,76 @@
     </div>
   </div>
 
-  <!-- ៤. Modal រើសចំនួន & តម្លៃទំនិញចូលកន្ត្រក POS -->
-  <div id="productSelectModal" class="fixed inset-0 z-[4000] flex items-center justify-center p-4 hidden">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closeProductModal()"></div>
-    <div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-5 space-y-3 text-center relative border">
-      <button onclick="closeProductModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
-      <div class="w-16 h-16 mx-auto flex items-center justify-center bg-gray-50 rounded-2xl p-1.5 border shadow-inner">
+  <!-- ៤. Modal រើសចំនួន & តម្លៃទំនិញចូលកន្ត្រក POS (គាំទ្រ ៣ រូបិយប័ណ្ណ & គិតលុយរហ័ស) -->
+  <div id="productSelectModal" class="fixed inset-0 z-[4000] flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeProductModal()"></div>
+    <div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm overflow-hidden p-5 space-y-3 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">
+      <button type="button" onclick="closeProductModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center absolute top-4 right-4">&times;</button>
+      
+      <div class="w-16 h-16 mx-auto flex items-center justify-center bg-slate-50 rounded-2xl p-1.5 border shadow-inner">
         <img id="modalProdImg" src="" class="max-w-full max-h-full object-contain">
       </div>
+      
       <div>
-        <h3 id="modalProdTitle" class="font-extrabold text-gray-800 text-base leading-snug"></h3>
-        <span id="modalStockStatusBadge" class="inline-block mt-0.5 text-[10px] px-2 py-0.5 bg-green-100 text-green-800 font-bold rounded-full"></span>
-      </div>
-      <div class="p-3 bg-blue-50/70 rounded-2xl border border-blue-200 text-left space-y-1">
-        <label class="text-[10px] font-black text-blue-900 uppercase block">តម្លៃលក់ក្នុងមួយឯកតា (៛)</label>
-        <input type="number" id="modalPriceInput" oninput="updateModalSubtotal()" class="w-full text-center text-xl font-black bg-white py-2 rounded-xl border border-blue-300 text-blue-900 outline-none">
-      </div>
-      <div class="bg-green-50/70 p-2.5 rounded-2xl border border-green-200 space-y-1">
-        <label class="text-[10px] font-bold text-gray-600 uppercase block">ចំនួនទំនិញ</label>
-        <div class="flex items-center justify-center gap-3">
-          <button onclick="changeModalQty(-1)" class="w-11 h-10 bg-white text-red-500 border rounded-xl text-xl font-bold shadow-2xs active:scale-90">-</button>
-          <input type="number" id="modalQtyInput" oninput="updateModalSubtotal()" value="1" min="1" class="w-20 h-10 text-center text-xl font-black text-green-800 bg-white border-2 border-green-300 rounded-xl outline-none">
-          <button onclick="changeModalQty(1)" class="w-11 h-10 bg-green-600 text-white rounded-xl text-xl font-bold shadow-md active:scale-90">+</button>
+        <h3 id="modalProdTitle" class="font-black text-slate-900 text-base leading-snug"></h3>
+        <div class="flex items-center justify-center gap-1.5 mt-1">
+          <span id="modalStockStatusBadge" class="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold rounded-full"></span>
+          <span id="modalOriginalCostHint" class="text-[10px] text-slate-400 font-bold"></span>
         </div>
       </div>
-      <div class="text-xs font-bold text-gray-600 flex justify-between px-2">
+
+      <!-- ជ្រើសរើស ៣ រូបិយប័ណ្ណ (៛ / ฿ / $) -->
+      <div class="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl border text-xs font-bold">
+        <button type="button" id="btnModalCurr_KHR" onclick="setModalCurrency('KHR')" class="py-2 rounded-xl text-xs font-black shadow-xs bg-blue-600 text-white transition flex items-center justify-center gap-1">៛ រៀល</button>
+        <button type="button" id="btnModalCurr_THB" onclick="setModalCurrency('THB')" class="py-2 rounded-xl text-xs font-black text-slate-600 hover:bg-white transition flex items-center justify-center gap-1">฿ បាត</button>
+        <button type="button" id="btnModalCurr_USD" onclick="setModalCurrency('USD')" class="py-2 rounded-xl text-xs font-black text-slate-600 hover:bg-white transition flex items-center justify-center gap-1">$ ដុល្លារ</button>
+      </div>
+
+      <!-- ប្រអប់តម្លៃលក់ -->
+      <div class="p-3 bg-blue-50/70 rounded-2xl border border-blue-200 text-left space-y-1.5">
+        <label class="text-[10px] font-black text-blue-900 uppercase block">តម្លៃលក់ក្នុងមួយឯកតា</label>
+        <div class="relative">
+          <input type="text" id="modalPriceInput" oninput="onModalPriceInput(this.value)" class="w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8">
+          <span id="modalCurrencySymbolSuffix" class="absolute right-3 top-3 font-black text-blue-600 text-sm">៛</span>
+        </div>
+
+        <!-- ប៊ូតុងថែមសូន្យរហ័ស +00 សម្រាប់លុយខ្មែរ -->
+        <div id="modalKhrQuickButtonsRow" class="flex gap-1 pt-1 text-[11px] font-bold">
+          <button type="button" onclick="appendModalZeros('00')" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border border-blue-200 shadow-2xs active:scale-95 transition">+00</button>
+          <button type="button" onclick="appendModalZeros('000')" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border border-blue-200 shadow-2xs active:scale-95 transition">+000</button>
+          <button type="button" onclick="setModalExactPrice(500)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border border-blue-200 shadow-2xs active:scale-95 transition">500</button>
+          <button type="button" onclick="setModalExactPrice(1000)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border border-blue-200 shadow-2xs active:scale-95 transition">1,000</button>
+          <button type="button" onclick="setModalExactPrice(2000)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border border-blue-200 shadow-2xs active:scale-95 transition">2,000</button>
+        </div>
+        <p id="modalKhrHintText" class="text-[9.5px] text-blue-600 font-bold text-center mt-0.5">*វាយលេខ 1 ឡើង 100, វាយ 6 ឡើង 600, 15 ឡើង 1,500 អូតូ</p>
+      </div>
+
+      <!-- ប្រអប់ចំនួនទំនិញ -->
+      <div class="bg-emerald-50/70 p-2.5 rounded-2xl border border-emerald-200 space-y-1">
+        <label class="text-[10px] font-bold text-emerald-900 uppercase block">ចំនួនទំនិញ (Quantity)</label>
+        <div class="flex items-center justify-center gap-3">
+          <button type="button" onclick="changeModalQty(-1)" class="w-11 h-10 bg-white text-red-500 border border-slate-200 rounded-xl text-xl font-bold shadow-2xs active:scale-90">-</button>
+          <input type="number" id="modalQtyInput" oninput="updateModalSubtotal()" value="1" min="1" class="w-20 h-10 text-center text-xl font-black text-emerald-800 bg-white border-2 border-emerald-300 rounded-xl outline-none">
+          <button type="button" onclick="changeModalQty(1)" class="w-11 h-10 bg-emerald-600 text-white rounded-xl text-xl font-bold shadow-md active:scale-90">+</button>
+        </div>
+      </div>
+
+      <!-- សរុបប្រាក់ -->
+      <div class="text-xs font-bold text-slate-600 flex justify-between px-2 pt-0.5">
         <span>សរុបមុខទំនិញនេះ៖</span>
         <span id="modalSubtotalText" class="font-black text-base text-blue-700">0 ៛</span>
       </div>
-      <button onclick="confirmAddToCart()" class="w-full py-3.5 btn-green shadow-md text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
-        <i class="fas fa-cart-plus"></i> បញ្ចូលកន្ត្រក
-      </button>
+
+      <!-- ប៊ូតុង ២៖ គិតលុយភ្លាមៗ (Quick Pay) vs បញ្ចូលកន្ត្រក -->
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button type="button" id="btnModalQuickPay" onclick="quickCheckoutSingleItem()" class="py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:opacity-95 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i class="fas fa-bolt text-yellow-300"></i> ទូទាត់រហ័ស
+        </button>
+        <button type="button" id="btnModalAddToCart" onclick="confirmAddToCart()" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i class="fas fa-cart-plus"></i> បញ្ចូលកន្ត្រក
+        </button>
+      </div>
+
     </div>
   </div>
 
