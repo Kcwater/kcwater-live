@@ -183,12 +183,14 @@
       <span class="text-[11px] font-bold text-emerald-700 cursor-pointer" onclick="filterCatalog('ALL', document.getElementById('catBtn_ALL'))" id="txtCatalogAll">ទាំងអស់</span>
     </div>
 
+    <!-- របាររើសប្រភេទទំនិញ KC MART (រំកិល Scroll បានរលូន) -->
     <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
-      <button onclick="filterCatalog('ALL', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl bg-emerald-700 text-white shadow-xs whitespace-nowrap active:scale-95 transition">ទាំងអស់</button>
-      <button onclick="filterCatalog('BARREL', this)" id="catBtn_BARREL" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">ទឹកធុង ២០L</button>
-      <button onclick="filterCatalog('PACK', this)" id="catBtn_PACK" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">ទឹកយួរ / ដប</button>
-      <button onclick="filterCatalog('GENERAL', this)" id="catBtn_GENERAL" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">ទំនិញទូទៅ / គ្រឿងទេស</button>
-      <button onclick="filterCatalog('EQUIP', this)" id="catBtn_EQUIP" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">ជើងទម្រ / បរិក្ខារ</button>
+      <button type="button" onclick="filterCatalog('ALL', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl bg-emerald-700 text-white shadow-xs whitespace-nowrap active:scale-95 transition">ទាំងអស់</button>
+      <button type="button" onclick="filterCatalog('GROCERY', this)" id="catBtn_GROCERY" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">🍚 ស្បៀង & គ្រឿងទេស</button>
+      <button type="button" onclick="filterCatalog('HOUSEHOLD', this)" id="catBtn_HOUSEHOLD" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">🧻 របស់ប្រើប្រាស់</button>
+      <button type="button" onclick="filterCatalog('BARREL', this)" id="catBtn_BARREL" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">💧 ទឹកធុង ២០L</button>
+      <button type="button" onclick="filterCatalog('PACK', this)" id="catBtn_PACK" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">📦 ទឹកយួរ / ដប</button>
+      <button type="button" onclick="filterCatalog('EQUIP', this)" id="catBtn_EQUIP" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">🛢️ ជើងទម្រ / បរិក្ខារ</button>
     </div>
 
     <div id="catalogGrid" class="grid grid-cols-2 gap-3 pt-1"></div>
@@ -1140,7 +1142,7 @@
       return result;
     }
 
-    // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) ដោយសុវត្ថិភាព ១០០% គ្មានថ្ងៃគាំង Error ទៀតឡើយ
+    // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) សុវត្ថិភាព ១០០% គាំទ្រគ្រប់ Category ថ្មីនៃ KC MART
     function changeAppLanguage(lang) {
       currentLang = lang;
       var d = DICT[lang] || DICT.km;
@@ -1182,10 +1184,11 @@
       }
       setSafeText('txtCatalogAll', d.catAll);
       setSafeText('catBtn_ALL', d.catAll);
-      setSafeText('catBtn_BARREL', d.catBarrel);
-      setSafeText('catBtn_PACK', d.catPack);
-      setSafeText('catBtn_GENERAL', (lang === 'km' ? 'ទំនិញទូទៅ / គ្រឿងទេស' : (lang === 'zh' ? '日常百货' : 'General Goods')));
-      setSafeText('catBtn_EQUIP', d.catEquip);
+      setSafeText('catBtn_BARREL', (lang === 'km' ? '💧 ទឹកធុង ២០L' : (lang === 'zh' ? '💧 20L 大桶水' : '💧 20L Barrels')));
+      setSafeText('catBtn_PACK', (lang === 'km' ? '📦 ទឹកយួរ / ដប' : (lang === 'zh' ? '📦 瓶装/提装' : '📦 Bottled Packs')));
+      setSafeText('catBtn_GROCERY', (lang === 'km' ? '🍚 ស្បៀង & គ្រឿងទេស' : (lang === 'zh' ? '🍚 粮油副食' : '🍚 Food & Groceries')));
+      setSafeText('catBtn_HOUSEHOLD', (lang === 'km' ? '🧻 របស់ប្រើប្រាស់' : (lang === 'zh' ? '🧻 日常百货' : '🧻 Daily Essentials')));
+      setSafeText('catBtn_EQUIP', (lang === 'km' ? '🛢️ បរិក្ខារ / ជើងទម្រ' : (lang === 'zh' ? '🛢️ 支架配件' : '🛢️ Equipment & Stands')));
 
       setSafeText('modalBadge', d.modalBadge);
       setSafeText('modalQtyLabel', d.modalQty);
@@ -1233,6 +1236,7 @@
       if (typeof updateCheckoutCalculation === 'function') updateCheckoutCalculation();
       if (typeof checkActiveOrderLiveStatus === 'function') checkActiveOrderLiveStatus();
     }
+    
    // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description & Category ផ្ទាល់ពី POS
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
