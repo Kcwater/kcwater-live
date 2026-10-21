@@ -1215,7 +1215,7 @@ async function quickCheckoutSingleItem() {
     }
   }
 
-  cart = {
+  cart = [{
     id: selectedModalProduct.id,
     name: selectedModalProduct.name,
     price: pr,
