@@ -3,12 +3,10 @@
  *  (Supabase Client, Global App State & Telegram Alerts)
  *  ========================================================================== */
 
-// ==========================================================================
 // 🌐 ១. ការកំណត់បរិយាកាស (ENVIRONMENT SWITCH: 'PROD' = ប្រព័ន្ធពិត | 'TEST' = សាកល្បង)
-// ==========================================================================
-const CURRENT_ENV = 'PROD'; // 👈 គ្រាន់តែប្តូរទៅ 'TEST' ពេលចង់សាកល្បង ឬ 'PROD' សម្រាប់ដំណើរការជាក់ស្តែង
+var CURRENT_ENV = 'PROD'; // 👈 ប្តូរទៅ 'TEST' ពេលចង់សាកល្បង ឬ 'PROD' សម្រាប់ដំណើរការជាក់ស្តែង
 
-const SUPABASE_CONFIGS = {
+var SUPABASE_CONFIGS = {
   // 🏢 ១. ប្រព័ន្ធពិត (Production Live)
   PROD: {
     url: "https://hocndqkoumgjijtzpzby.supabase.co",
@@ -21,31 +19,12 @@ const SUPABASE_CONFIGS = {
   }
 };
 
-const activeEnv = SUPABASE_CONFIGS[CURRENT_ENV] || SUPABASE_CONFIGS.PROD;
-const SUPA// ==========================================================================
-// 🌐 ១. ការកំណត់បរិយាកាស (ENVIRONMENT SWITCH: 'PROD' = ប្រព័ន្ធពិត | 'TEST' = សាកល្បង)
-// ==========================================================================
-const CURRENT_ENV = 'PROD'; // 👈 គ្រាន់តែប្តូរទៅ 'TEST' ពេលចង់សាកល្បង ឬ 'PROD' សម្រាប់ដំណើរការជាក់ស្តែង
+var activeEnv = SUPABASE_CONFIGS[CURRENT_ENV] || SUPABASE_CONFIGS.PROD;
+var SUPABASE_URL = activeEnv.url;
+var SUPABASE_KEY = activeEnv.key;
+var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const SUPABASE_CONFIGS = {
-  // 🏢 ១. ប្រព័ន្ធពិត (Production Live)
-  PROD: {
-    url: "https://hocndqkoumgjijtzpzby.supabase.co",
-    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
-  },
-  // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Environment)
-  TEST: {
-    url: "https://ntftdylkcnkxsytptket.supabase.co";, // 👈 ដាក់ URL គម្រោងសាកល្បងរបស់អ្នកនៅទីនេះ
-    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v"; // 👈 ដាក់ Key សាកល្បងរបស់អ្នកនៅទីនេះ
-  }
-};
-
-const activeEnv = SUPABASE_CONFIGS[CURRENT_ENV] || SUPABASE_CONFIGS.PROD;
-const SUPABASE_URL = activeEnv.url;
-const SUPABASE_KEY = activeEnv.key;
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// 🇰🇭 មុខងារជំនួយគណនាថ្ងៃខែតាមម៉ោងកម្ពុជា (UTC+7) ការពារកុំឱ្យខុសថ្ងៃចន្លោះម៉ោង ១២យប់ ដល់ ៧ព្រឹក
+// 🇰🇭 មុខងារជំនួយគណនាថ្ងៃខែតាមម៉ោងកម្ពុជា (UTC+7)
 function getCambodiaToday() {
   var d = new Date();
   var formatter = new Intl.DateTimeFormat('en-CA', { 
@@ -54,21 +33,7 @@ function getCambodiaToday() {
     month: '2-digit', 
     day: '2-digit' 
   });
-  return formatter.format(d); // ផ្ដល់ផលជា 'YYYY-MM-DD' ត្រឹមត្រូវតាមម៉ោងខ្មែរជានិច្ច
-}BASE_URL = activeEnv.url;
-const SUPABASE_KEY = activeEnv.key;
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// 🇰🇭 មុខងារជំនួយគណនាថ្ងៃខែតាមម៉ោងកម្ពុជា (UTC+7) ការពារកុំឱ្យខុសថ្ងៃចន្លោះម៉ោង ១២យប់ ដល់ ៧ព្រឹក
-function getCambodiaToday() {
-  var d = new Date();
-  var formatter = new Intl.DateTimeFormat('en-CA', { 
-    timeZone: 'Asia/Phnom_Penh', 
-    year: 'numeric', 
-    month: '2-digit', 
-    day: '2-digit' 
-  });
-  return formatter.format(d); // ផ្ដល់ផលជា 'YYYY-MM-DD' ត្រឹមត្រូវតាមម៉ោងខ្មែរជានិច្ច
+  return formatter.format(d);
 }
 
 // 🏷️ មុខងារបង្ហាញផ្លាកព្រមានពេលកំពុងនៅ Mode សាកល្បង (Test Mode Banner)
