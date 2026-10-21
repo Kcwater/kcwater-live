@@ -1170,7 +1170,7 @@
       if (typeof updateCheckoutCalculation === 'function') updateCheckoutCalculation();
       if (typeof checkActiveOrderLiveStatus === 'function') checkActiveOrderLiveStatus();
     }
-   // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description ដែលបានវាយក្នុង POS
+   // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description ដែលបានវាយក្នុង POS (បានជួសជុលរួចរាល់)
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
@@ -1235,7 +1235,7 @@
               price: onlinePrice,
               svg: imgDisplay,
               desc: customDesc,
-              badge: customBadge
+              badge: customBadge, // ✅ បានបន្ថែមសញ្ញាក្បៀស (,) ត្រង់នេះរួចរាល់
               sort_order: parseInt(p.sort_order || 99)
             };
           });
@@ -1250,6 +1250,7 @@
         if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">Error: ' + err.message + '</div>';
       }
     }
+    
     // 🎨 បង្ហាញកាតទំនិញ (ប្លង់បំបែកជាជួរៗដាច់ពីគ្នា គ្មានថ្ងៃរូបភាពបាំងអក្សរឡើយ ១០០%)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
