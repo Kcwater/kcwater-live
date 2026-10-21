@@ -1185,22 +1185,6 @@ function confirmAddToCart() {
   showToast("បានបញ្ចូល [" + prodName + "] x " + q + " ក្នុងកន្ត្រក!", "success");
 }
 
-  if (existingItem) {
-    existingItem.qty += q;
-  } else {
-    cart.push({
-      id: prodId,
-      name: prodName,
-      price: pr,
-      qty: q,
-      currency: curr
-    });
-  }
-
-  closeProductModal();
-  rC();
-  showToast("បានបញ្ចូល [" + prodName + "] x " + q + " ក្នុងកន្ត្រក!", "success");
-}
 
 // ==========================================
 // ⚡ ៦. មុខងារទូទាត់រហ័ស (QUICK CHECKOUT) សម្រាប់លក់ ១ មុខភ្លាមៗ
@@ -1231,7 +1215,7 @@ async function quickCheckoutSingleItem() {
     }
   }
 
-  cart = [{
+  cart = {
     id: selectedModalProduct.id,
     name: selectedModalProduct.name,
     price: pr,
