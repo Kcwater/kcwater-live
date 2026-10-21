@@ -1296,7 +1296,7 @@ async function delUserFromSupabase(id) {
   }
 }
 // ==========================================
-// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ & TELEGRAM TOGGLE (SETTINGS)
+// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ (SETTINGS & អត្រាប្តូរប្រាក់)
 // ==========================================
 var currentTelegramAlertStatus = "ON";
 
@@ -1308,6 +1308,28 @@ function renderSettingsModule() {
   });
 
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
+    // 💵 កាតកំណត់អត្រាប្តូរប្រាក់ (Exchange Rates)
+    '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3">' +
+      '<div class="flex justify-between items-center">' +
+        '<h3 class="font-extrabold text-emerald-950 text-base flex items-center gap-2">' +
+          '<i class="fas fa-money-bill-transfer text-emerald-600"></i>អត្រាប្តូរប្រាក់ (Exchange Rates)' +
+        '</h3>' +
+        '<span class="text-[10px] text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full font-bold">Auto-Sync លើ Web & POS</span>' +
+      '</div>' +
+      '<p class="text-[11px] text-gray-500 font-bold">*កំណត់អត្រាប្តូរប្រាក់សម្រាប់គណនាក្នុង Dashboard, Settlement និងគណនាតម្លៃ $ លើ Web ភ្ញៀវ</p>' +
+      '<div class="grid grid-cols-2 gap-3 text-xs">' +
+        '<div>' +
+          '<label class="font-black text-blue-900 uppercase block mb-1">💵 $1 ដុល្លារ = (... ៛)</label>' +
+          '<input type="number" id="set_rate_usd" placeholder="ឧ៖ 4100" value="4100" class="font-black border-2 border-blue-200 focus:border-blue-600 p-2.5 rounded-xl w-full text-center text-sm outline-none text-blue-950 bg-blue-50/40">' +
+        '</div>' +
+        '<div>' +
+          '<label class="font-black text-amber-900 uppercase block mb-1">🪙 1฿ បាត = (... ៛)</label>' +
+          '<input type="number" id="set_rate_thb" placeholder="ឧ៖ 115" value="115" class="font-black border-2 border-amber-200 focus:border-amber-600 p-2.5 rounded-xl w-full text-center text-sm outline-none text-amber-950 bg-amber-50/40">' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ម៉ោងបើក/បិទ & សេវាដឹក
     '<div class="card border-t-4 border-indigo-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<h2 class="font-extrabold text-indigo-950 text-base flex items-center gap-2"><i class="fas fa-clock text-indigo-600"></i>ម៉ោងទទួលកុម្ម៉ង់ & សេវាដឹក (Store Rules)</h2>' +
       '<div class="grid grid-cols-2 gap-2 text-xs">' +
@@ -1320,6 +1342,7 @@ function renderSettingsModule() {
       '</div>' +
     '</div>' +
 
+    // ប្រព័ន្ធ Promotion
     '<div class="card border-t-4 border-amber-500 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-amber-950 text-base flex items-center gap-2"><i class="fas fa-gift text-amber-600"></i>ប្រព័ន្ធ Promotion លើ Website</h3>' +
@@ -1335,6 +1358,7 @@ function renderSettingsModule() {
       '</div>' +
     '</div>' +
 
+    // Telegram Bot
     '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-green-950 text-base flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i>Telegram Bot Alert</h3>' +
@@ -1354,7 +1378,6 @@ function renderSettingsModule() {
 
   loadSettingsForm();
 }
-
 function updateTelegramButtonUI(status) {
   currentTelegramAlertStatus = (String(status).trim().toUpperCase() === "OFF") ? "OFF" : "ON";
   telegramConfig.status = currentTelegramAlertStatus;
