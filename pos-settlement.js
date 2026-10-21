@@ -26,15 +26,6 @@ function playPaymentSuccessAudio() {
   } catch(e) {}
 }
 
-// មុខងារជំនួយគណនាថ្ងៃខែតាមម៉ោងកម្ពុជា (Cambodia Local Date)
-function getCambodiaDateString() {
-  var d = new Date();
-  var year = d.getFullYear();
-  var month = String(d.getMonth() + 1).padStart(2, '0');
-  var day = String(d.getDate()).padStart(2, '0');
-  return year + '-' + month + '-' + day;
-}
-
 // ==========================================
 // 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT UI (SMART POS)
 // ==========================================
@@ -45,7 +36,7 @@ async function renderSettlementModule() {
   currentSettlementCustomer = "";
   currentSettlementItems = [];
   currentSettlementPayMode = "Cash";
-  currentSettlementOldDebt = 0; // ✅ កំណត់បំណុលចាស់ឱ្យស្មើ 0 ពេលបើកផ្ទាំងឡើងវិញ
+  currentSettlementOldDebt = 0;
   currentActivePendingPaymentId = null;
 
   var custOptions = '<option value="">-- សូមជ្រើសរើសឈ្មោះម៉ូយ --</option><option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
@@ -318,11 +309,11 @@ function openSplitAbaQrModal() {
 }
 
 // ==========================================
-// 📊 ៣. គណនាទិន្នន័យសង្ខេប & តារាងអ្នកដកថ្ងៃនេះ
+// 📊 ៣. គណនាទិន្នន័យសង្ខេប & តារាងអ្នកដកថ្ងៃនេះ (ប្រើ Timezone កម្ពុជាត្រឹមត្រូវ)
 // ==========================================
 async function fetchSettlementOverviewData() {
   try {
-    var todayStr = getCambodiaDateString();
+    var todayStr = getCambodiaToday(); // 👈 ប្រើមុខងារកម្ពុជាពី pos-config.js ផ្ទាល់
 
     const { data: todayUnpaids } = await supabaseClient
       .from('transactions')
@@ -353,15 +344,14 @@ async function fetchSettlementOverviewData() {
         tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> គ្មានអ្នកដកទំនិញជំពាក់ថ្ងៃនេះទេ</td></tr>';
       } else {
         var html = '';
-       todayUnpaids.forEach(function(item) {
+        todayUnpaids.forEach(function(item) {
           var timeStr = new Date(item.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
           var safeName = String(item.customer_name || '').replace(/'/g, "\\'");
 
-          // 🚚 ឆែកមើលថាតើមានកូនចៅ ឬអ្នកដឹកមកដកជំនួសមេដែរឬទេ
           var isWithdrawnByOther = (item.recorded_by && item.recorded_by !== item.customer_name && item.recorded_by !== 'Admin');
           var withdrawTag = isWithdrawnByOther ? 
             ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + item.recorded_by + '</span>') : 
-            (item.recorded_by && item.recorded_by !== 'Admin' && item.recorded_by !== item.customer_name ? ('<br><small class="text-slate-400 font-normal text-[9px]">កត់ដោយ៖ ' + item.recorded_by + '</small>') : '');
+            (item.recorded_by && item.recorded_by === 'Admin' ? '<br><small class="text-slate-400 font-normal text-[9px]">កត់ត្រាដោយ Admin</small>' : '');
 
           html += '<tr class="border-b hover:bg-gray-50">' +
             '<td class="p-2.5 text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
@@ -436,13 +426,11 @@ async function checkAdminPendingPayments() {
   } catch(e) {}
 }
 
-// ⚡ មុខងារយកសំណើមកទូទាត់ (បំពេញប្រអប់លុយសុទ្ធ & ស្កេន ABA អូតូតាមម៉ូយបានផ្ញើមក)
 async function applyPendingPaymentToSettlement(pendingId, custName, amount, method) {
   currentActivePendingPaymentId = pendingId;
   await selectCustomerForSettlement(custName);
 
   try {
-    // ១. ទាញទិន្នន័យសំណើជាក់ស្តែងពី Supabase
     const { data: item } = await supabaseClient
       .from('pending_payments')
       .select('*')
@@ -452,7 +440,6 @@ async function applyPendingPaymentToSettlement(pendingId, custName, amount, meth
     var kCash = item ? parseFloat(item.khr_cash || 0) : 0;
     var kScan = item ? parseFloat(item.khr_scan || 0) : 0;
 
-    // ២. បើម៉ូយបានបំបែកលុយសុទ្ធ + ស្កេន ABA ➔ បើក Mode Split អូតូ
     if (kCash > 0 && kScan > 0) {
       setSettlePayMode('Split');
       var cashInp = document.getElementById('splitKhrCash');
@@ -482,8 +469,8 @@ async function applyPendingPaymentToSettlement(pendingId, custName, amount, meth
     showToast("កំហុសបញ្ចូលសំណើ៖ " + e.message, "error");
   }
 }
+
 async function dismissPendingCard(pendingId) {
-  // 🌟 ប្រើ Pop-up បញ្ជាក់បែប Danger ពណ៌ក្រហមរបស់ KC POS
   var ok = await kcConfirm({
     title: "បដិសេធសំណើទូទាត់",
     message: "តើអ្នកពិតជាចង់បដិសេធសំណើទូទាត់ប្រាក់នេះមែនទេ?",
@@ -498,6 +485,7 @@ async function dismissPendingCard(pendingId) {
     checkAdminPendingPayments();
   } catch(e) {}
 }
+
 // ==========================================
 // 📋 ៥. ស្រង់បញ្ជីឈ្មោះម៉ូយជំពាក់ពី SUPABASE
 // ==========================================
@@ -541,7 +529,7 @@ async function loadSettlementDebtorsList() {
 async function selectCustomerForSettlement(custName) {
   if (!custName) {
     document.getElementById('settlement_ui').classList.add('hidden');
-    currentSettlementOldDebt = 0; // ✅ សម្អាតបំណុលចាស់ឱ្យស្មើ 0 បើមិនបានរើសឈ្មោះម៉ូយ
+    currentSettlementOldDebt = 0;
     return;
   }
 
@@ -580,7 +568,6 @@ async function selectCustomerForSettlement(custName) {
     currentSettlementItems.forEach(function(item) {
       var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
 
-      // 🚚 បង្ហាញផ្លាកឈ្មោះកូនចៅឱ្យច្បាស់ បើជាការដកជំនួសមេ
       var isWithdrawnByOther = (item.recorded_by && item.recorded_by !== item.customer_name && item.recorded_by !== 'Admin');
       var recTag = isWithdrawnByOther ? 
         ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកជំនួសដោយ៖ ' + item.recorded_by + '</span>') : 
@@ -748,7 +735,6 @@ async function submitSettlementPayment() {
   }
 
   var remainingBalance = Math.max(0, totalDue - paid);
-  // ✅ គណនាសាច់ប្រាក់សុទ្ធពិតប្រាកដដែលត្រូវទុកក្នុងថត (កាត់ប្រាក់អាប់ចេញរួចជាស្រេច)
   var actualSettledPaid = Math.min(paid, totalDue);
   var changeKhr = Math.max(0, paid - totalDue);
   var cashKhrRecorded = 0;
@@ -757,11 +743,10 @@ async function submitSettlementPayment() {
   if (currentSettlementPayMode === 'Split') {
     var rawCash = parseFloat(document.getElementById('splitKhrCash') ? document.getElementById('splitKhrCash').value || 0 : 0);
     var rawScan = parseFloat(document.getElementById('splitKhrScan') ? document.getElementById('splitKhrScan').value || 0 : 0);
-    // ប្រាក់អាប់ត្រូវកាត់ចេញពីលុយសុទ្ធ
     cashKhrRecorded = Math.max(0, rawCash - changeKhr);
     scanKhrRecorded = Math.min(rawScan, actualSettledPaid - cashKhrRecorded);
   } else if (currentSettlementPayMode === 'Cash') {
-    cashKhrRecorded = actualSettledPaid; // កត់ត្រាតែប្រាក់ដែលត្រូវទទួលពិតប្រាកដ (៣៥,០០០៛)
+    cashKhrRecorded = actualSettledPaid;
     scanKhrRecorded = 0;
   } else {
     cashKhrRecorded = 0;
