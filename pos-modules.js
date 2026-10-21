@@ -1429,6 +1429,9 @@ async function loadSettingsForm() {
       if (r.key === 'Promo_Buy_Qty') document.getElementById('set_promo_buy_qty').value = r.value;
       if (r.key === 'Promo_Free_Qty') document.getElementById('set_promo_free_qty').value = r.value;
       if (r.key === 'Promo_Banner_Text') document.getElementById('set_promo_banner').value = r.value;
+      // ទាញអត្រាប្តូរប្រាក់មកបង្ហាញ
+      if (r.key === 'Exchange_Rate_USD') { var eu = document.getElementById('set_rate_usd'); if(eu) eu.value = r.value; }
+      if (r.key === 'Exchange_Rate_THB') { var et = document.getElementById('set_rate_thb'); if(et) et.value = r.value; }
     });
 
     updateTelegramButtonUI(tgStatus);
@@ -1448,7 +1451,10 @@ async function saveSettingsToSupabase() {
     { key: 'Promo_Target_Product', value: document.getElementById('set_promo_product').value },
     { key: 'Promo_Buy_Qty', value: document.getElementById('set_promo_buy_qty').value || "5" },
     { key: 'Promo_Free_Qty', value: document.getElementById('set_promo_free_qty').value || "1" },
-    { key: 'Promo_Banner_Text', value: document.getElementById('set_promo_banner').value.trim() }
+    { key: 'Promo_Banner_Text', value: document.getElementById('set_promo_banner').value.trim() },
+    // រក្សាទុកអត្រាប្តូរប្រាក់
+    { key: 'Exchange_Rate_USD', value: document.getElementById('set_rate_usd').value || "4100" },
+    { key: 'Exchange_Rate_THB', value: document.getElementById('set_rate_thb').value || "115" }
   ];
 
   try {
@@ -1459,7 +1465,6 @@ async function saveSettingsToSupabase() {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 function testTelegramAlertNow() {
   if (currentTelegramAlertStatus === "OFF") {
     showToast("⚠️ ប្រព័ន្ធ Telegram កំពុងបិទ (OFF)! សូមចុចបើក (ON) ជាមុនសិន", "warning");
