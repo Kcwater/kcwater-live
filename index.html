@@ -1049,32 +1049,95 @@
       }
     }
 
+    // 🌐 មុខងារបកប្រែឈ្មោះទំនិញស្តង់ដារផ្សារទំនើប (Smart Retail Lexicon - ត្រឹមត្រូវ រស់រវើក មិនផ្គុំពាក្យ)
     function getLocalizedProductName(p, lang) {
       if (!p || !p.name) return '';
       if (lang === 'km') return p.name;
-      var n = p.name;
+      var n = p.name.trim();
+
+      // ១. វចនានុក្រមទំនិញពេញលេញ (Full Retail & Mart Dictionary)
       var directMap = {
-        'ទឹកធុង ២០L ពណ៌ស': { en: '20L White Barrel Pure Water', zh: '20L 白桶装优质纯净水' },
-        'ទឹកធុង ២០L ពណ៌ខៀវ': { en: '20L Blue Barrel Pure Water', zh: '20L 蓝桶装优质纯净水' },
-        'ទឹកធុង ២០L': { en: '20L Barrel Pure Water', zh: '20L 大桶纯净水' },
-        'ទឹកបរិសុទ្ធ 350ml (យួរ)': { en: '350ml Bottled Water (Pack of 24)', zh: '350ml 瓶装水 (24瓶/提)' },
-        'ទឹកបរិសុទ្ធ 500ml (យួរ)': { en: '500ml Bottled Water (Pack of 24)', zh: '500ml 瓶装水 (24瓶/提)' },
-        'ទឹកបរិសុទ្ធ 1500ml (យួរ)': { en: '1500ml Bottled Water (Pack of 12)', zh: '1500ml 大瓶装水 (12瓶/提)' },
-        'ជើងទម្រធុងទឹក': { en: 'Water Barrel Stand / Rack', zh: '加厚水桶放置支架' },
-        'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve / Faucet', zh: '专用出水嘴/水龙头' },
-        'ម៉ាស៊ីនទឹកក្តៅ-ត្រជាក់': { en: 'Hot & Cold Water Dispenser', zh: '立式冷热饮水机' }
+        // --- ផ្នែកទឹកពិសាបរិសុទ្ធ ---
+        'ទឹកធុង ២០L ពណ៌ស': { en: '20L Pure Drinking Water (White Barrel)', zh: '20L 优质纯净饮用水 (白桶)' },
+        'ទឹកធុង ២០L ពណ៌ខៀវ': { en: '20L Pure Drinking Water (Blue Barrel)', zh: '20L 优质纯净饮用水 (蓝桶)' },
+        'ទឹកធុង ២០L': { en: '20L Pure Drinking Water (Barrel)', zh: '20L 大桶装纯净水' },
+        'ទឹកបរិសុទ្ធ 350ml (យួរ)': { en: '350ml Bottled Water (Pack of 24)', zh: '350ml 瓶装纯净水 (24瓶/提)' },
+        'ទឹកបរិសុទ្ធ 500ml (យួរ)': { en: '500ml Bottled Water (Pack of 24)', zh: '500ml 瓶装纯净水 (24瓶/提)' },
+        'ទឹកបរិសុទ្ធ 1500ml (យួរ)': { en: '1500ml Bottled Water (Pack of 12)', zh: '1500ml 大瓶纯净水 (12瓶/提)' },
+        'សំបកធុង ២០L ពណ៌ស': { en: '20L Empty White Barrel (Deposit)', zh: '20L 空白桶 (押金/买断)' },
+        'សំបកធុង ២០L ពណ៌ខៀវ': { en: '20L Empty Blue Barrel (Deposit)', zh: '20L 空蓝桶 (押金/买断)' },
+        'ជើងទម្រធុងទឹក': { en: 'Heavy-Duty Water Barrel Stand', zh: '加厚多功能水桶放置支架' },
+        'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve Faucet', zh: '食品级专用出水嘴龙头' },
+        'ម៉ាស៊ីនទឹកក្តៅ-ត្រជាក់': { en: 'Hot & Cold Water Dispenser', zh: '立式冷热温饮水机' },
+
+        // --- ផ្នែកស្បៀង & គ្រឿងទេស (Food & Groceries) ---
+        'អង្ករផ្កាម្លិះ': { en: 'Premium Jasmine Fragrant Rice', zh: '特级精选茉莉香米' },
+        'អង្ករនាងមិញ': { en: 'Neang Minh White Rice', zh: '优质柬埔寨白大米' },
+        'អង្ករ': { en: 'Premium Fragrant Rice', zh: '优质精选大米' },
+        'មីម៉ាម៉ា': { en: 'Mama Instant Noodles', zh: '妈妈牌经典方便面' },
+        'មីកំប៉ុង': { en: 'Cup Instant Noodles', zh: '桶装速食方便面' },
+        'មីយីងហ៊ីង': { en: 'Ying-Hing Instant Noodles', zh: '速食方便面' },
+        'ប្រេងឆា': { en: 'Pure Vegetable Cooking Oil', zh: '精炼食用植物调和油' },
+        'ទឹកត្រី': { en: 'Premium Anchovy Fish Sauce', zh: '特级精酿鲜鱼露' },
+        'ទឹកស៊ីអ៊ីវ': { en: 'Premium Soy Sauce', zh: '特级鲜味生抽酱油' },
+        'ត្រីខ': { en: 'Canned Mackerel in Tomato Sauce', zh: '茄汁多汁鲭鱼罐头' },
+        'ស្ករស': { en: 'Pure Refined White Sugar', zh: '优质精制纯白砂糖' },
+        'អំបិល': { en: 'Iodized Cooking Salt', zh: '高品质加碘精制食用盐' },
+        'ប៊ីចេង': { en: 'Monosodium Glutamate (MSG)', zh: '味精调味品' },
+
+        // --- ផ្នែករបស់របរប្រើប្រាស់ & អនាម័យ (Household & Essentials) ---
+        'ក្រដាសអនាម័យ': { en: 'Premium Toilet Tissue Rolls', zh: '高级柔韧加厚卫生卷纸' },
+        'ក្រដាសជូតមាត់': { en: 'Soft Facial Tissue Paper', zh: '抽取式亲肤面巾纸' },
+        'សាប៊ូកក់សក់': { en: 'Hair Care Shampoo', zh: '柔顺去屑洗发露' },
+        'សាប៊ូដុសខ្លួន': { en: 'Body Wash / Shower Gel', zh: '滋润清香沐浴露' },
+        'សាប៊ូបោកខោអាវ': { en: 'Laundry Detergent Powder', zh: '强力去渍洗衣粉' },
+        'ទឹកលាងចាន': { en: 'Dishwashing Liquid', zh: '强效去油洗洁精' },
+        'ថង់សំរាម': { en: 'Heavy-Duty Trash Bags', zh: '加厚加固垃圾环保袋' }
       };
+
       if (directMap[n] && directMap[n][lang]) return directMap[n][lang];
+
+      // ២. បើមានពាក្យលាយខ្នាតវេចខ្ចប់ (Smart Unit & Packaging Parser)
+      var result = n;
       if (lang === 'en') {
-        if (n.indexOf('ធុង') !== -1) return n.replace(/ទឹកធុង|ធុង/g, '20L Barrel Water');
-        if (n.indexOf('យួរ') !== -1) return n.replace(/យួរ/g, 'Pack');
-        if (n.indexOf('ដប') !== -1) return n.replace(/ដប/g, 'Bottle');
+        result = result
+          .replace(/ទឹកធុង\s*២០L/g, '20L Barrel Water')
+          .replace(/ទឹកបរិសុទ្ធ/g, 'Purified Water')
+          .replace(/អង្ករផ្កាម្លិះ/g, 'Jasmine Rice')
+          .replace(/អង្ករ/g, 'Rice')
+          .replace(/ក្រដាសអនាម័យ/g, 'Toilet Tissue')
+          .replace(/ក្រដាស/g, 'Tissue')
+          .replace(/ប្រេងឆា/g, 'Cooking Oil')
+          .replace(/ទឹកត្រី/g, 'Fish Sauce')
+          .replace(/ទឹកស៊ីអ៊ីវ/g, 'Soy Sauce')
+          .replace(/មី/g, 'Noodles')
+          .replace(/\(យួរ\)/g, '(Pack)')
+          .replace(/\(កេស\)/g, '(Box)')
+          .replace(/\(បាវ\)/g, '(Bag)')
+          .replace(/\(កំប៉ុង\)/g, '(Can)')
+          .replace(/\(ដប\)/g, '(Bottle)')
+          .replace(/គីឡូ|គក/g, 'kg');
       } else if (lang === 'zh') {
-        if (n.indexOf('ធុង') !== -1) return n.replace(/ទឹកធុង|ធុង/g, '20L 大桶纯净水');
-        if (n.indexOf('យួរ') !== -1) return n.replace(/យួរ/g, '提');
-        if (n.indexOf('ដប') !== -1) return n.replace(/ដប/g, '瓶');
+        result = result
+          .replace(/ទឹកធុង\s*២០L/g, '20L 大桶纯净水')
+          .replace(/ទឹកបរិសុទ្ធ/g, '优质纯净水')
+          .replace(/អង្ករផ្កាម្លិះ/g, '特级香米')
+          .replace(/អង្ករ/g, '优质大米')
+          .replace(/ក្រដាសអនាម័យ/g, '高级卷纸')
+          .replace(/ក្រដាស/g, '纸巾')
+          .replace(/ប្រេងឆា/g, '食用油')
+          .replace(/ទឹកត្រី/g, '特级鱼露')
+          .replace(/ទឹកស៊ីអ៊ីវ/g, '生抽酱油')
+          .replace(/មី/g, '方便面')
+          .replace(/\(យួរ\)/g, '(提)')
+          .replace(/\(កេស\)/g, '(箱)')
+          .replace(/\(បាវ\)/g, '(袋)')
+          .replace(/\(កំប៉ុង\)/g, '(罐)')
+          .replace(/\(ដប\)/g, '(瓶)')
+          .replace(/គីឡូ|គក/g, '公斤');
       }
-      return n;
+
+      return result;
     }
 
     // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) ដោយសុវត្ថិភាព ១០០% គ្មានថ្ងៃគាំង Error ទៀតឡើយ
