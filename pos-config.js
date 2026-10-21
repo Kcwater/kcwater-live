@@ -126,6 +126,9 @@ function closeSidebar() {
 }
 
 // ⚙️ ៥. ទាញយកការកំណត់ SETTINGS & TELEGRAM BOT ពី SUPABASE
+var exchangeRateUSD = 4100;
+var exchangeRateTHB = 115;
+
 async function loadSettingsAndTelegram() {
   try {
     const { data } = await supabaseClient.from('settings').select('*');
@@ -134,6 +137,8 @@ async function loadSettingsAndTelegram() {
         if (r.key === 'Telegram_Token') telegramConfig.token = r.value;
         if (r.key === 'Telegram_ChatID') telegramConfig.chatId = r.value;
         if (r.key === 'Telegram_Alert_Status') telegramConfig.status = r.value.toUpperCase();
+        if (r.key === 'Exchange_Rate_USD') exchangeRateUSD = parseFloat(r.value) || 4100;
+        if (r.key === 'Exchange_Rate_THB') exchangeRateTHB = parseFloat(r.value) || 115;
       });
     }
   } catch(e) {
