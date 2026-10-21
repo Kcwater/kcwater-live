@@ -10,12 +10,12 @@ var SUPABASE_CONFIGS = {
   // 🏢 ១. ប្រព័ន្ធពិត (Production Live)
   PROD: {
     url: "https://hocndqkoumgjijtzpzby.supabase.co",
-    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI",
+    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
   },
   // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Environment)
   TEST: {
-    url: "https://ntftdylkcnkxsytptket.supabase.co", // 👈 ដាក់ URL គម្រោងសាកល្បងរបស់អ្នកនៅទីនេះ
-    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v, // 👈 ដាក់ Key សាកល្បងរបស់អ្នកនៅទីនេះ
+    url: "https://hocndqkoumgjijtzpzby.supabase.co",
+    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
   }
 };
 
