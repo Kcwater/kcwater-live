@@ -1260,7 +1260,7 @@
       }
     }
     
-    // 🎨 បង្ហាញកាតទំនិញ (ប្លង់បំបែកជាជួរៗដាច់ពីគ្នា គ្មានថ្ងៃរូបភាពបាំងអក្សរឡើយ ១០០%)
+    // 🎨 បង្ហាញកាតទំនិញទំនើបស្តង់ដារ e-Commerce (មិនចង្អៀត ស្គាល់ Category & មានប៊ូតុង Quick Add)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -1269,10 +1269,21 @@
       var html = '';
 
       STORE_CATALOG.forEach(function(item) {
-        if (filterCat !== 'ALL' && item.cat !== filterCat) return;
+        // 🔍 តម្រង Category (គាំទ្រទាំង ស្បៀង/គ្រឿងទេស, របស់ប្រើប្រាស់, ទឹកធុង, ទឹកយួរ)
+        if (filterCat !== 'ALL') {
+          var isMatch = (item.cat === filterCat);
+          if (filterCat === 'GENERAL' && (item.cat === 'GROCERY' || item.cat === 'HOUSEHOLD' || item.cat === 'GENERAL')) {
+            isMatch = true;
+          }
+          if (!isMatch) return;
+        }
+
         var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
-        var inCartBadge = inCart > 0 ? '<span class="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shadow-md shrink-0">' + inCart + '</span>' : '<span></span>';
+        
+        // ផ្លាករង្វង់ចំនួនក្នុងកន្ត្រក
+        var inCartBadge = inCart > 0 ? 
+          '<span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs animate-bounce shrink-0">' + inCart + '</span>' : '<span></span>';
 
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
@@ -1281,34 +1292,55 @@
         var badgeLabel = isOutOfStock ? 
           '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ស្តុក</span>' : 
           ((badgeText !== 'NONE') ? 
-            '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200">' + badgeText + '</span>' : '<span></span>');
+            '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[90px]">' + badgeText + '</span>' : '<span></span>');
 
         var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
-        var cardOpacity = isOutOfStock ? 'opacity-65 grayscale-[30%]' : '';
+        var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
 
-        var btnAction = isOutOfStock ? 
-          '<button type="button" disabled class="mt-2 w-full py-2 rounded-xl bg-slate-200 text-slate-400 font-black text-[11px] cursor-not-allowed flex items-center justify-center gap-1"><i class="fas fa-ban text-[10px]"></i> អស់ស្តុក</button>' : 
-          '<button type="button" class="mt-2 w-full py-2 rounded-xl bg-slate-100 group-hover:bg-emerald-600 text-slate-700 group-hover:text-white font-black text-[11px] transition flex items-center justify-center gap-1 shadow-2xs"><i class="fas fa-plus text-[10px]"></i> ' + (inCart > 0 ? (d.btnSelect + ' (' + inCart + ')') : d.btnSelect) + '</button>';
+        // ប៊ូតុងរង្វង់មូល + បែបទំនើប
+        var actionBtn = isOutOfStock ? 
+          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">អស់ស្តុក</span>' : 
+          '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0" title="រើសទិញ">' +
+            (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
+          '</button>';
 
-        // 🌟 ប្លង់កាតថ្មី៖ ជួរទី ១ ជាផ្លាកអក្សរ និងជួរទី ២ ជារូបភាព (នៅដាច់ពីគ្នា មិនបាំងអក្សរឡើយ)
-        html += '<div ' + clickAction + ' class="kc-glass-card p-3 flex flex-col justify-between cursor-pointer group ' + cardOpacity + '">' +
-          // ជួរទី ១៖ ផ្លាកអក្សរ & ចំនួនកន្ត្រក (នៅដាច់ដោយឡែកពីលើរូបភាព ១០០% គ្មានថ្ងៃបាំងឡើយ)
+        // 🌟 រចនាបថកាតទំនើប ស្រឡះភ្នែក រូបភាពកណ្តាលស្មើគ្នា មិនចង្អៀត
+        html += '<div ' + clickAction + ' class="kc-glass-card p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
+          // ជួរទី ១៖ ផ្លាក Badge & ចំនួនក្នុងកន្ត្រក
           '<div class="flex justify-between items-center w-full mb-1 min-h-[22px]">' +
             badgeLabel +
             inCartBadge +
           '</div>' +
-          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ
-          '<div class="w-full h-28 flex items-center justify-center p-1 my-1 bg-slate-50/70 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/40 transition">' + 
+
+          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ (ផ្ទៃស្អាត រូបភាពកណ្តាល)
+          '<div class="w-full h-28 flex items-center justify-center p-1.5 my-1 bg-slate-50/80 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/50 transition">' + 
             item.svg + 
           '</div>' +
-          // ជួរទី ៣៖ ឈ្មោះ & តម្លៃ
-          '<div class="space-y-1 text-left px-0.5 mt-1">' +
-            '<h4 class="text-xs font-bold text-slate-900 line-clamp-2 h-8 leading-snug">' + localizedName + '</h4>' +
-            '<div class="text-xs font-black text-emerald-700">៛ ' + Number(item.price).toLocaleString() + '</div>' +
+
+          // ជួរទី ៣៖ ឈ្មោះទំនិញ (កំណត់កម្ពស់ស្មើគ្នា ២ ជួរ មិនរត់ខុសជួរ)
+          '<div class="text-left px-0.5 mt-1.5 mb-2">' +
+            '<h4 class="text-xs font-bold text-slate-800 line-clamp-2 h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
           '</div>' +
-          btnAction +
+
+          // ជួរទី ៤៖ តម្លៃនៅខាងឆ្វេង & ប៊ូតុង Quick Add នៅខាងស្តាំ (ស្តង់ដារ e-Commerce)
+          '<div class="flex items-center justify-between pt-2 border-t border-slate-100 mt-auto">' +
+            '<div>' +
+              '<span class="text-[9px] text-slate-400 font-bold block">តម្លៃ</span>' +
+              '<div class="text-xs sm:text-sm font-black text-emerald-700 leading-none">៛ ' + Number(item.price).toLocaleString() + '</div>' +
+            '</div>' +
+            actionBtn +
+          '</div>' +
         '</div>';
       });
+
+      // បង្ហាញដំណឹងបើគ្មានទំនិញក្នុងផ្នែកនោះ
+      if (!html) {
+        html = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs space-y-2">' +
+          '<div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg"><i class="fas fa-box-open"></i></div>' +
+          '<span>មិនទាន់មានទំនិញក្នុងផ្នែកនេះនៅឡើយទេ</span>' +
+        '</div>';
+      }
+
       grid.innerHTML = html;
     }
     
