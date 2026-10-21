@@ -334,7 +334,7 @@ function cancelEditProduct() {
   var nameInp = document.getElementById('pN');
   if (nameInp) setTimeout(function() { nameInp.focus(); }, 150);
 }
-// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Description & Badge ចាស់មកបង្ហាញ)
+// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, Description & Badge ចាស់មកបង្ហាញអូតូ)
 async function prepareEditProduct(id) {
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
@@ -351,18 +351,20 @@ async function prepareEditProduct(id) {
   document.getElementById('pN').value = p.name;
   document.getElementById('pTy').value = p.type;
   document.getElementById('pCu').value = p.currency || 'KHR';
-  if (document.getElementById('pCo')) document.getElementById('pCo').value = p.cost || 0;
+  if (document.getElementById('pCo')) document.getElementById('pCo').value = p.cost || '';
   document.getElementById('pPr').value = p.price || 0;
   document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
   document.getElementById('pMin').value = p.min_stock || 5;
   if (document.getElementById('pSort')) document.getElementById('pSort').value = p.sort_order || 1;
   document.getElementById('pChannel').value = p.channel || 'ALL';
 
-  // ទាញយក Badge និង Description ពី Settings
+  // ទាញយក Category, Badge និង Description មកបង្ហាញលើប្រអប់
+  var catInp = document.getElementById('pCategory');
   var badgeInp = document.getElementById('pBadge');
   var descInp = document.getElementById('pDesc');
   if (badgeInp) badgeInp.value = p.badge || 'គុណភាពខ្ពស់';
   if (descInp) descInp.value = p.description || p.desc || '';
+  if (catInp) catInp.value = p.category || 'GROCERY';
 
   try {
     const { data: setDesc } = await supabaseClient.from('settings').select('value').eq('key', 'DESC_' + p.id).maybeSingle();
@@ -370,6 +372,9 @@ async function prepareEditProduct(id) {
 
     const { data: setBadge } = await supabaseClient.from('settings').select('value').eq('key', 'BADGE_' + p.id).maybeSingle();
     if (setBadge && setBadge.value && badgeInp) badgeInp.value = setBadge.value;
+
+    const { data: setCat } = await supabaseClient.from('settings').select('value').eq('key', 'CAT_' + p.id).maybeSingle();
+    if (setCat && setCat.value && catInp) catInp.value = setCat.value;
   } catch(e) {}
 
   var preview = document.getElementById('pImgPreview');
@@ -380,7 +385,6 @@ async function prepareEditProduct(id) {
   toggleChannelPrices();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 // 💾 រក្សាទុកទំនិញ (រក្សាទុក Category, Description & Badge ដោយស្វ័យប្រវត្តិ)
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
