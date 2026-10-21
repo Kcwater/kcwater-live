@@ -300,15 +300,15 @@ function renderAdminOnlineOrdersUI() {
       (o.location_url || o.address ? 
       '<button type="button" onclick="openOrderMap(\'' + (o.location_url || o.address).replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> ផែនទី' +
-      '</button>' : '') +
+      '</button>' : '');
 
-      // ✅ ជំនួសមកជាបែបនេះវិញ៖
-if (o.photo_url) {
-  storeOrderPhoto(o.order_id, o.photo_url, o.customer_name);
-  actionButtonsHtml += '<button type="button" onclick="viewOrderHousePhotoById(\'' + o.order_id + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
-    '<i class="fas fa-camera text-xs text-amber-600"></i> រូបផ្ទះ' +
-  '</button>';
-}
+    // 📷 ភ្ជាប់ប៊ូតុងមើលរូបផ្ទះបើមានរូប
+    if (o.photo_url) {
+      storeOrderPhoto(o.order_id, o.photo_url, o.customer_name);
+      actionButtonsHtml += '<button type="button" onclick="viewOrderHousePhotoById(\'' + o.order_id + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+        '<i class="fas fa-camera text-xs text-amber-600"></i> រូបផ្ទះ' +
+      '</button>';
+    }
 
     // បន្ថែមប៊ូតុង "បោះបង់" និង "ដឹកដល់" តែលើ Order ដែលមិនទាន់ដឹកដល់ប៉ុណ្ណោះ
     if (!isDelivered) {
@@ -321,7 +321,6 @@ if (o.photo_url) {
     }
 
     actionButtonsHtml += '</div>';
-
     html += '<div class="bg-white p-3.5 rounded-2xl border ' + (isDelivered ? 'border-emerald-200 bg-emerald-50/20' : 'border-amber-200') + ' shadow-sm space-y-2.5 hover:shadow-md transition">' +
       '<div class="flex justify-between items-start border-b border-gray-100 pb-2">' +
         '<div>' +
