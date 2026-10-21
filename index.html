@@ -1237,7 +1237,7 @@
       if (typeof checkActiveOrderLiveStatus === 'function') checkActiveOrderLiveStatus();
     }
     
-   // 📦 ១. ទាញយកទំនិញ + អត្ថបទ Description & Category ផ្ទាល់ពី POS
+   // 📦 ១. ទាញយកទំនិញ + គណនា ២ រូបិយប័ណ្ណ ($ និង ៛) ទន្ទឹមគ្នាស្វ័យប្រវត្តិ
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
@@ -1253,7 +1253,7 @@
 
         if (error) throw error;
 
-        // ទាញយកការពិពណ៌នា, Badge និង Category ពី Settings
+        // ទាញយកការពិពណ៌នា, Badge, Category និងអត្រាប្តូរប្រាក់ពី Settings
         var setMap = {};
         try {
           const { data: setList } = await supabaseClient.from('settings').select('key, value');
@@ -1262,20 +1262,22 @@
           }
         } catch(se) {}
 
+        // អត្រាប្តូរប្រាក់ស្តង់ដារ $1 = 4,100៛ (អាចកំណត់ក្នុង Settings បាន)
+        var exchangeRate = parseFloat(setMap['Exchange_Rate_USD'] || 4100);
+
         if (list && list.length > 0) {
           STORE_CATALOG = list.map(function(p) {
             var nameLower = (p.name || '').toLowerCase();
             var cat = 'GENERAL';
             var isBarrel = false;
 
-            // 📂 ១. យក Category ដែលបានកំណត់ផ្ទាល់ពី POS ជាចម្បង
+            // 📂 យក Category ដែលបានកំណត់ផ្ទាល់ពី POS ជាចម្បង
             var assignedCat = (setMap['CAT_' + p.id] || p.category || '').trim().toUpperCase();
 
             if (assignedCat) {
               cat = assignedCat;
               if (cat === 'BARREL') isBarrel = true;
             } else {
-              // បើទំនិញចាស់ៗមិនទាន់បានកំណត់ Category ទេ ឱ្យប្រព័ន្ធជួយទាយស្វ័យប្រវត្តិ
               if (nameLower.indexOf('ធុង') !== -1 || nameLower.indexOf('20l') !== -1 || nameLower.indexOf('២០') !== -1) {
                 cat = 'BARREL';
                 isBarrel = true;
@@ -1297,7 +1299,20 @@
               imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-h-20 max-w-[100px] object-contain opacity-80 mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200">';
             }
 
+            // 💵 គណនា ២ រូបិយប័ណ្ណទន្ទឹមគ្នា ($ និង ៛)
+            var rawCurrency = (p.currency || 'KHR').toUpperCase();
             var onlinePrice = parseFloat(p.online_price || p.price || 0);
+            var priceKhr = 0;
+            var priceUsd = 0;
+
+            if (rawCurrency === 'USD') {
+              priceUsd = onlinePrice;
+              priceKhr = Math.round(onlinePrice * exchangeRate);
+            } else {
+              priceKhr = onlinePrice;
+              priceUsd = parseFloat((onlinePrice / exchangeRate).toFixed(2));
+            }
+
             var customDesc = (setMap['DESC_' + p.id] || p.description || p.desc || '').trim();
             var customBadge = (setMap['BADGE_' + p.id] || p.badge || '').trim();
 
@@ -1308,7 +1323,10 @@
               type: p.type || '',
               stock: parseFloat(p.stock || 0),
               isBarrel20L: isBarrel,
-              price: onlinePrice,
+              price: priceKhr,        // តម្លៃរៀលស្តង់ដារសម្រាប់គណនាកន្ត្រក
+              priceKhr: priceKhr,    // តម្លៃរៀល (៛)
+              priceUsd: priceUsd,    // តម្លៃដុល្លារ ($)
+              currency: rawCurrency, // រូបិយប័ណ្ណដើម (USD ឬ KHR)
               svg: imgDisplay,
               desc: customDesc,
               badge: customBadge,
@@ -1327,7 +1345,7 @@
       }
     }
     
-    // 🎨 បង្ហាញកាតទំនិញទំនើបស្តង់ដារ e-Commerce (មិនចង្អៀត ស្គាល់ Category & មានប៊ូតុង Quick Add)
+    // 🎨 បង្ហាញកាតទំនិញទំនើប (គាំទ្រ ២ រូបិយប័ណ្ណ $ និង ៛ ទន្ទឹមគ្នាស្អាតៗ)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -1336,7 +1354,7 @@
       var html = '';
 
       STORE_CATALOG.forEach(function(item) {
-        // 🔍 តម្រង Category (គាំទ្រទាំង ស្បៀង/គ្រឿងទេស, របស់ប្រើប្រាស់, ទឹកធុង, ទឹកយួរ)
+        // 🔍 តម្រង Category
         if (filterCat !== 'ALL') {
           var isMatch = (item.cat === filterCat);
           if (filterCat === 'GENERAL' && (item.cat === 'GROCERY' || item.cat === 'HOUSEHOLD' || item.cat === 'GENERAL')) {
@@ -1348,7 +1366,6 @@
         var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
         
-        // ផ្លាករង្វង់ចំនួនក្នុងកន្ត្រក
         var inCartBadge = inCart > 0 ? 
           '<span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs animate-bounce shrink-0">' + inCart + '</span>' : '<span></span>';
 
@@ -1364,14 +1381,18 @@
         var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
         var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
 
-        // ប៊ូតុងរង្វង់មូល + បែបទំនើប
         var actionBtn = isOutOfStock ? 
           '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">អស់ស្តុក</span>' : 
           '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0" title="រើសទិញ">' +
             (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
           '</button>';
 
-        // 🌟 រចនាបថកាតទំនើប ស្រឡះភ្នែក រូបភាពកណ្តាលស្មើគ្នា មិនចង្អៀត
+        // 💵 បង្ហាញ ២ រូបិយប័ណ្ណទន្ទឹមគ្នា ($ និង ៛)
+        var priceDisplay = (item.currency === 'USD') ?
+          ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">$' + Number(item.priceUsd || 0).toFixed(2) + ' <span class="text-[10px] text-slate-500 font-bold block leading-none mt-0.5">(៛ ' + Number(item.priceKhr || 0).toLocaleString() + ')</span></div>') :
+          ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">៛ ' + Number(item.priceKhr || 0).toLocaleString() + ' <span class="text-[10px] text-blue-700 font-bold block leading-none mt-0.5">($' + Number(item.priceUsd || 0).toFixed(2) + ')</span></div>');
+
+        // 🌟 រចនាបថកាតទំនើប
         html += '<div ' + clickAction + ' class="kc-glass-card p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
           // ជួរទី ១៖ ផ្លាក Badge & ចំនួនក្នុងកន្ត្រក
           '<div class="flex justify-between items-center w-full mb-1 min-h-[22px]">' +
@@ -1379,28 +1400,27 @@
             inCartBadge +
           '</div>' +
 
-          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ (ផ្ទៃស្អាត រូបភាពកណ្តាល)
+          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ
           '<div class="w-full h-28 flex items-center justify-center p-1.5 my-1 bg-slate-50/80 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/50 transition">' + 
             item.svg + 
           '</div>' +
 
-          // ជួរទី ៣៖ ឈ្មោះទំនិញ (កំណត់កម្ពស់ស្មើគ្នា ២ ជួរ មិនរត់ខុសជួរ)
+          // ជួរទី ៣៖ ឈ្មោះទំនិញ
           '<div class="text-left px-0.5 mt-1.5 mb-2">' +
             '<h4 class="text-xs font-bold text-slate-800 line-clamp-2 h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
           '</div>' +
 
-          // ជួរទី ៤៖ តម្លៃនៅខាងឆ្វេង & ប៊ូតុង Quick Add នៅខាងស្តាំ (ស្តង់ដារ e-Commerce)
+          // ជួរទី ៤៖ តម្លៃ ២ រូបិយប័ណ្ណ ($ & ៛) & ប៊ូតុង Quick Add
           '<div class="flex items-center justify-between pt-2 border-t border-slate-100 mt-auto">' +
             '<div>' +
-              '<span class="text-[9px] text-slate-400 font-bold block">តម្លៃ</span>' +
-              '<div class="text-xs sm:text-sm font-black text-emerald-700 leading-none">៛ ' + Number(item.price).toLocaleString() + '</div>' +
+              '<span class="text-[9px] text-slate-400 font-bold block leading-none mb-0.5">តម្លៃ</span>' +
+              priceDisplay +
             '</div>' +
             actionBtn +
           '</div>' +
         '</div>';
       });
 
-      // បង្ហាញដំណឹងបើគ្មានទំនិញក្នុងផ្នែកនោះ
       if (!html) {
         html = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs space-y-2">' +
           '<div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg"><i class="fas fa-box-open"></i></div>' +
@@ -1420,7 +1440,7 @@
       renderCatalogGrid(cat);
     }
 
-    // 📋 បង្ហាញផ្ទាំងព័ត៌មានទំនិញ (បង្ហាញអក្សរ Description តាមអ្វីដែលបងបានវាយក្នុង POS)
+    // 📋 បង្ហាញផ្ទាំងព័ត៌មានទំនិញ Pop-up (បង្ហាញ ២ រូបិយប័ណ្ណ $ និង ៛ ទន្ទឹមគ្នា)
     function openProductDetailModal(id) {
       var item = STORE_CATALOG.find(function(p){ return p.id === id; });
       if (!item) return;
@@ -1428,40 +1448,42 @@
 
       var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
       var curQty = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 1;
-
-      // ✍️ យកអត្ថបទ Description ដែលបងបានវាយក្នុង POS (ឧទាហរណ៍៖ "ផលិតនៅកម្ពុជា")
       var descText = (item.desc && item.desc.trim()) ? item.desc.trim() : '';
 
-      // បើទំនិញណាដែលបងមិនទាន់បានវាយ Description ទេ ទើបឱ្យចេញពាក្យណែនាំទូទៅ
       if (!descText) {
         var n = (item.raw_name || '').toLowerCase();
         if (n.indexOf('ក្រដាស') !== -1) {
-          descText = 'ក្រដាសគុណភាពខ្ពស់ ទន់ ស្វិត អនាម័យ និងសុវត្ថិភាព។ សេវាដឹកជូនដល់មុខផ្ទះដោយ KC WATER។';
+          descText = 'ក្រដាសគុណភាពខ្ពស់ ទន់ ស្វិត អនាម័យ និងសុវត្ថិភាព។ សេវាដឹកជូនដល់មុខផ្ទះដោយ KC MART។';
         } else if (n.indexOf('អង្ករ') !== -1) {
-          descText = 'អង្ករគុណភាពខ្ពស់ ថ្មី ក្រអូបឆ្ងាញ់ ស្តង់ដារសុវត្ថិភាព។ ដឹកជូនដល់មុខផ្ទះដោយ KC WATER។';
+          descText = 'អង្ករគុណភាពខ្ពស់ ថ្មី ក្រអូបឆ្ងាញ់ ស្តង់ដារសុវត្ថិភាព។ ដឹកជូនដល់មុខផ្ទះដោយ KC MART។';
         } else if (item.cat === 'EQUIP') {
           descText = 'បរិក្ខារ និងជើងទម្រធុងទឹកគុណភាពរឹងមាំ ប្រើប្រាស់បានយូរអង្វែង។';
         } else {
-          descText = 'ទឹកពិសាបរិសុទ្ធស្តង់ដារអនាម័យខ្ពស់ ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន។ ដឹកជញ្ជូនរហ័សដោយ KC WATER។';
+          descText = 'ទំនិញគុណភាពខ្ពស់ ស្តង់ដារសុវត្ថិភាព និងអនាម័យ។ ដឹកជញ្ជូនរហ័សដល់មុខផ្ទះដោយ KC MART (ប៉ោយប៉ែត)។';
         }
       }
 
-      // បង្ហាញផ្លាក Badge
       var modalBadgeEl = document.getElementById('modalBadge');
       if (modalBadgeEl) {
-        modalBadgeEl.innerText = item.badge || 'KC WATER Standard';
+        modalBadgeEl.innerText = item.badge || 'KC MART Standard';
       }
+
+      // 💵 បង្ហាញតម្លៃ ២ រូបិយប័ណ្ណទន្ទឹមគ្នាលើផ្ទាំង Pop-up
+      var khrText = '៛ ' + Number(item.priceKhr || item.price || 0).toLocaleString();
+      var usdText = '$' + Number(item.priceUsd || (item.price / 4100)).toFixed(2);
+      var priceHtml = (item.currency === 'USD') ?
+        (usdText + ' <span class="text-xs text-slate-500 font-bold font-mono">(' + khrText + ')</span>') :
+        (khrText + ' <span class="text-xs text-blue-700 font-bold font-mono">(' + usdText + ')</span>');
 
       document.getElementById('modalSvgArea').innerHTML = item.svg;
       document.getElementById('modalTitle').innerText = localizedName;
-      document.getElementById('modalDesc').innerText = descText; // ✅ បង្ហាញ "ផលិតនៅកម្ពុជា" ត្រឹមត្រូវ ១០០%
-      document.getElementById('modalPrice').innerText = '៛ ' + Number(item.price).toLocaleString();
+      document.getElementById('modalDesc').innerText = descText;
+      document.getElementById('modalPrice').innerHTML = priceHtml;
       document.getElementById('modalQtyDisplay').innerText = curQty;
 
       updateModalButtonText(curQty);
       document.getElementById('productDetailModal').classList.remove('hidden');
     }
-
     function closeProductDetailModal() {
       document.getElementById('productDetailModal').classList.add('hidden');
       activeModalProduct = null;
@@ -1476,11 +1498,17 @@
       updateModalButtonText(val);
     }
 
+   // 🔘 មុខងារបូកសរុបតម្លៃលើប៊ូតុង "បញ្ចូលកន្ត្រក" ជា ២ រូបិយប័ណ្ណ ($ & ៛)
     function updateModalButtonText(qty) {
       if (!activeModalProduct) return;
-      var tot = qty * activeModalProduct.price;
-      var d = DICT[currentLang];
-      document.getElementById('btnModalAddCartLabel').innerText = d.modalAdd + ' (៛ ' + tot.toLocaleString() + ')';
+      var totKhr = qty * (activeModalProduct.priceKhr || activeModalProduct.price || 0);
+      var totUsd = (totKhr / 4100).toFixed(2);
+      var d = DICT[currentLang] || DICT.km;
+      
+      var btnLabel = document.getElementById('btnModalAddCartLabel');
+      if (btnLabel) {
+        btnLabel.innerText = (d.modalAdd || 'បញ្ចូលកន្ត្រក') + ' (៛ ' + totKhr.toLocaleString() + ' / $' + totUsd + ')';
+      }
     }
 
     function confirmAddToCart() {
@@ -1499,13 +1527,13 @@
       recalcCartDock();
     }
 
-    // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត (មាន Safe Check ការពារកុំឱ្យ Error 100%)
+    // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត (បង្ហាញ ២ រូបិយប័ណ្ណ $ និង ៛ ទន្ទឹមគ្នា)
     function recalcCartDock() {
-      var totalUnits = 0, totalPrice = 0;
+      var totalUnits = 0, totalPriceKhr = 0;
       for (var k in cartItems) {
         if (cartItems[k].qty > 0) {
           totalUnits += cartItems[k].qty;
-          totalPrice += (cartItems[k].qty * cartItems[k].price);
+          totalPriceKhr += (cartItems[k].qty * cartItems[k].price);
         }
       }
 
@@ -1519,12 +1547,16 @@
       var priceEl = document.getElementById('dockTotalPrice');
       var d = DICT[currentLang] || DICT.km;
 
-      // 🛡️ ប្រព័ន្ធការពារ៖ បើមិនទាន់មានប្រអប់កន្ត្រក មិនឱ្យ Crash ដាច់ខាត
+      // 🛡️ ប្រព័ន្ធការពារកុំឱ្យ Crash
       if (!dock) return;
 
       if (totalUnits > 0) {
+        var totalUsd = (totalPriceKhr / 4100).toFixed(2);
         if (countEl) countEl.innerText = totalUnits + ' ' + (d.dockItems || 'មុខទំនិញ');
-        if (priceEl) priceEl.innerText = '៛ ' + totalPrice.toLocaleString();
+        if (priceEl) {
+          priceEl.innerHTML = '<span class="text-white text-sm font-black">៛ ' + totalPriceKhr.toLocaleString() + '</span>' +
+                              '<span class="text-emerald-300 font-bold text-xs ml-1.5 font-mono">($' + totalUsd + ')</span>';
+        }
         dock.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
       } else {
         dock.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
@@ -1541,7 +1573,7 @@
       document.getElementById('checkoutModal').classList.add('hidden');
     }
 
-    // 🛒 មុខងារគណនាកន្ត្រកទំនិញ (Auto-Healing: បង្កើតប្រអប់ស្វ័យប្រវត្តិកុំឱ្យ Error ១០០%)
+    // 🛒 មុខងារគណនាកន្ត្រកទំនិញ (គណនា ២ រូបិយប័ណ្ណ $ និង ៛ ទន្ទឹមគ្នាលើផ្ទាំង Checkout)
     function updateCheckoutCalculation() {
       var listCont = document.getElementById('checkoutCartItemsList');
       var grandText = document.getElementById('coGrandTotalText');
@@ -1549,7 +1581,6 @@
       var barrelHint = document.getElementById('barrelCountSummaryBadge');
       var d = DICT[currentLang] || DICT.km;
 
-      // 🛡️ ប្រព័ន្ធស្វ័យប្រវត្តិ៖ បើបាត់ប្រអប់នេះក្នុង HTML វានឹងបង្កើតខ្លួនឯងភ្លាម (គ្មានថ្ងៃ Error ឡើយ)
       if (!listCont) {
         var modalBox = document.querySelector('#checkoutModal .modal-scrollable') || document.getElementById('checkoutModal');
         if (modalBox) {
@@ -1570,7 +1601,7 @@
       var eligibleSubTotal = 0;
       var eligibleUnitPrice = 0;
 
-      // ១. រាប់ចំនួនទំនិញ និងបំបែកពណ៌ធុង (ខៀវ vs ស)
+      // ១. រាប់ចំនួនទំនិញ និងគណនាតម្លៃ
       for (var k in cartItems) {
         if (cartItems[k].qty > 0) {
           var sub = cartItems[k].qty * cartItems[k].price;
@@ -1594,11 +1625,13 @@
           }
 
           var displayName = getLocalizedProductName({ name: cartItems[k].raw_name }, currentLang);
+          var subUsd = (sub / 4100).toFixed(2);
+          var unitUsd = (cartItems[k].price / 4100).toFixed(2);
 
           html += '<div class="flex items-center justify-between py-1.5 border-b border-slate-200 last:border-none gap-2">' +
             '<div class="flex-1 min-w-0 text-left">' +
               '<b class="text-slate-800 block truncate text-xs">' + displayName + '</b>' +
-              '<span class="text-[10px] text-emerald-700 font-bold">៛ ' + Number(cartItems[k].price).toLocaleString() + '</span>' +
+              '<span class="text-[10px] text-emerald-700 font-bold">៛ ' + Number(cartItems[k].price).toLocaleString() + ' <small class="text-slate-400 font-mono font-normal">($' + unitUsd + ')</small></span>' +
             '</div>' +
             '<div class="flex items-center gap-1.5 shrink-0">' +
               '<button type="button" onclick="adjustCheckoutItemQty(\'' + k + '\', -1)" class="w-6 h-6 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-black flex items-center justify-center text-xs active:scale-90">-</button>' +
@@ -1606,7 +1639,10 @@
               '<button type="button" onclick="adjustCheckoutItemQty(\'' + k + '\', 1)" class="w-6 h-6 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black flex items-center justify-center text-xs active:scale-90">+</button>' +
               '<button type="button" onclick="removeCheckoutItem(\'' + k + '\')" class="w-6 h-6 text-red-400 hover:text-red-600 ml-1 active:scale-90 flex items-center justify-center" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
             '</div>' +
-            '<b class="text-emerald-800 text-right w-16 text-xs whitespace-nowrap">៛ ' + sub.toLocaleString() + '</b>' +
+            '<div class="text-right w-20 shrink-0">' +
+              '<b class="text-emerald-800 text-xs whitespace-nowrap block">៛ ' + sub.toLocaleString() + '</b>' +
+              '<span class="text-[9.5px] text-blue-700 font-bold font-mono block">($' + subUsd + ')</span>' +
+            '</div>' +
           '</div>';
         }
       }
@@ -1622,38 +1658,17 @@
       var blueBarrelProd = STORE_CATALOG.find(function(p) {
         var n = (p.raw_name || '').toLowerCase();
         return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
-      }) || STORE_CATALOG.find(function(p) {
-        var n = (p.raw_name || '').toLowerCase();
-        var withoutSombok = n.replace(/សំបក/g, '').replace(/empty/g, '').trim();
-        return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && withoutSombok.indexOf('ស') === -1;
       });
 
       var whiteBarrelProd = STORE_CATALOG.find(function(p) {
         var n = (p.raw_name || '').toLowerCase();
         if (n.indexOf('សំបក') === -1 && n.indexOf('empty') === -1) return false;
         var withoutSombok = n.replace(/សំបក/g, '').replace(/empty/g, '').trim();
-        var hasWhiteWord = (withoutSombok.indexOf('ពណ៌ស') !== -1 || withoutSombok.indexOf('ធុងស') !== -1 || withoutSombok.indexOf('ស') !== -1 || withoutSombok.indexOf('white') !== -1);
-        var hasBlueWord = (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
-        return hasWhiteWord && !hasBlueWord;
+        return (withoutSombok.indexOf('ពណ៌ស') !== -1 || withoutSombok.indexOf('ធុងស') !== -1 || withoutSombok.indexOf('ស') !== -1 || withoutSombok.indexOf('white') !== -1);
       });
 
       var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.price || 0) : 10000;
       var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.price || 0) : 0;
-
-      var optSwapNoEl = document.getElementById('optSwapNo');
-      if (optSwapNoEl) {
-        if (blueBarrelsQty > 0 && whiteBarrelsQty > 0) {
-          optSwapNoEl.innerText = '🛒 គ្មានសំបកដូរ (ទិញសំបកខៀវថ្មី +៛ ' + blueBarrelPrice.toLocaleString() + '/ធុង | ធុងស: ត្រូវមានសំបកដូរ)';
-        } else if (blueBarrelsQty > 0) {
-          optSwapNoEl.innerText = '🛒 គ្មានសំបកដូរ (ទិញសំបកខៀវថ្មី +៛ ' + blueBarrelPrice.toLocaleString() + '/ធុង)';
-        } else if (whiteBarrelsQty > 0) {
-          optSwapNoEl.innerText = whiteBarrelProd ? 
-            ('🛒 គ្មានសំបកដូរ (ទិញសំបកសថ្មី +៛ ' + whiteBarrelPrice.toLocaleString() + '/ធុង)') : 
-            '🛒 ទឹកធុងស៖ ត្រូវមានសំបកដូរ (មិនទាន់មានសំបកសលក់)';
-        } else {
-          optSwapNoEl.innerText = d.optSwapNo || '🛒 គ្មានសំបកធុងដូរទេ (+១២,០០០៛/ធុង)';
-        }
-      }
 
       var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
       var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
@@ -1694,16 +1709,11 @@
               '<span><i class="fas fa-cart-shopping mr-1 text-amber-800"></i><b>' + wLabel + ' (' + whiteBarrelsQty + ' x ' + Number(whiteBarrelPrice).toLocaleString() + '៛)</b></span>' +
               '<b class="text-amber-900 font-black">+៛ ' + wTotal.toLocaleString() + '</b>' +
             '</div>';
-          } else {
-            html += '<div class="flex justify-between items-center py-1.5 border-t border-slate-200 text-slate-700 bg-slate-100 px-2 rounded-lg mt-1 text-[11px]">' +
-              '<span><i class="fas fa-info-circle mr-1 text-slate-500"></i><b>ទឹកធុងស៖ ត្រូវមានសំបកដូរ (មិនទាន់មានសំបកសលក់)</b></span>' +
-              '<b class="text-slate-500 font-bold">+៛ 0</b>' +
-            '</div>';
           }
         }
       }
 
-      // ៤. គណនាថ្លៃដឹកជញ្ជូន
+      // ៣. គណនាថ្លៃដឹកជញ្ជូន
       var deliveryFee = 0;
       var stdFee = parseFloat((storeDeliveryConfig && storeDeliveryConfig.standardFee) || 0);
       var minFreeQty = parseInt((storeDeliveryConfig && storeDeliveryConfig.freeMinQty) || 2);
@@ -1724,47 +1734,43 @@
         }
       }
 
-      // ៥. គណនា Promotion
+      // ៤. គណនា Promotion
       var promoDiscount = 0;
-      var promoNote = '';
       if (activePromoConfig && activePromoConfig.active && eligibleQty > 0) {
-        var prodLabel = (targetProdName === 'ALL') ? '' : (' [' + getLocalizedProductName({ name: targetProdName }, currentLang) + ']');
-
         if (activePromoConfig.type === 'BUY_X_GET_Y' && eligibleQty >= activePromoConfig.buyQty) {
           var freeCount = Math.floor(eligibleQty / activePromoConfig.buyQty) * activePromoConfig.freeQty;
           promoDiscount = freeCount * eligibleUnitPrice;
-          promoNote = (d.breakdownPromoTag || 'ប្រូម៉ូសិន') + prodLabel + ' (Buy ' + activePromoConfig.buyQty + ' Get ' + activePromoConfig.freeQty + ' Free): +' + freeCount;
         } else if (activePromoConfig.type === 'PERCENT_DISCOUNT' && activePromoConfig.discountVal > 0) {
           promoDiscount = Math.round((eligibleSubTotal * activePromoConfig.discountVal) / 100);
-          promoNote = (d.breakdownPromoTag || 'ប្រូម៉ូសិន') + prodLabel + ' -' + activePromoConfig.discountVal + '%';
         } else if (activePromoConfig.type === 'CASH_DISCOUNT' && activePromoConfig.discountVal > 0) {
           promoDiscount = Math.min(eligibleSubTotal, activePromoConfig.discountVal);
-          promoNote = (d.breakdownPromoTag || 'ប្រូម៉ូសិន') + prodLabel;
         }
 
         if (promoDiscount > 0) {
           html += '<div class="flex justify-between items-center py-1.5 border-t border-emerald-300 text-emerald-950 bg-emerald-100/90 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-gift text-emerald-700 mr-1"></i><b>' + promoNote + '</b></span>' +
+            '<span><i class="fas fa-gift text-emerald-700 mr-1"></i><b>' + (d.breakdownPromoTag || 'ប្រូម៉ូសិន') + '</b></span>' +
             '<b class="text-emerald-800 font-black">-៛ ' + promoDiscount.toLocaleString() + '</b>' +
           '</div>';
         }
       }
 
-      var grandTotal = Math.max(0, waterTotal + barrelFee + deliveryFee - promoDiscount);
+      var grandTotalKhr = Math.max(0, waterTotal + barrelFee + deliveryFee - promoDiscount);
+      var grandTotalUsd = (grandTotalKhr / 4100).toFixed(2);
 
-      // 🛡️ ចាក់ទិន្នន័យចូលប្រអប់ដោយសុវត្ថិភាពខ្ពស់
+      // 💵 បង្ហាញ ២ រូបិយប័ណ្ណទន្ទឹមគ្នាលើផ្ទាំងគិតលុយ និង KHQR
       if (listCont) {
         listCont.innerHTML = html || '<div class="text-center py-3 text-slate-400 italic text-xs">កន្ត្រកទទេ</div>';
       }
       if (grandText) {
-        grandText.innerText = '៛ ' + grandTotal.toLocaleString();
+        grandText.innerHTML = '៛ ' + grandTotalKhr.toLocaleString() + ' <span class="text-xs sm:text-sm font-bold text-blue-700 font-mono">($' + grandTotalUsd + ')</span>';
       }
       if (khqrDue) {
-        khqrDue.innerText = '៛ ' + grandTotal.toLocaleString();
+        khqrDue.innerHTML = '៛ ' + grandTotalKhr.toLocaleString() + ' <span class="text-xs text-blue-700 font-bold font-mono">($' + grandTotalUsd + ')</span>';
       }
 
       return {
-        grandTotal: grandTotal,
+        grandTotal: grandTotalKhr,
+        grandTotalUsd: grandTotalUsd,
         deliveryFee: deliveryFee,
         barrelFee: barrelFee,
         barrelItemsToCharge: barrelItemsToCharge
