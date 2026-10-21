@@ -881,19 +881,6 @@
       autoSaveCustomerInput();
     }
 
-    // ✍️ មុខងារបើកប្រអប់វាយម៉ោងដោយដៃពេលភ្ញៀវរើស Custom
-    function onSchedulePresetChange(val) {
-      var manualRow = document.getElementById('customTimeManualInputRow');
-      var manualInp = document.getElementById('inp_customTimeManual');
-      if (manualRow) {
-        if (val === 'CUSTOM') {
-          manualRow.classList.remove('hidden');
-          if (manualInp) setTimeout(() => manualInp.focus(), 100);
-        } else {
-          manualRow.classList.add('hidden');
-        }
-      }
-    }
     // ២. រើសប្រភេទអគារ (Building Type Chips)
     function selectBuildingTypeChip(type, btn) {
       currentBuildingType = type;
