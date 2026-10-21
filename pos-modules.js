@@ -381,7 +381,7 @@ async function prepareEditProduct(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 💾 រក្សាទុកទំនិញ (រក្សាទុក Description & Badge ចូល Settings ធានាជោគជ័យ ១០០%)
+// 💾 រក្សាទុកទំនិញ (រក្សាទុក Category, Description & Badge ដោយស្វ័យប្រវត្តិ)
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
   if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
@@ -390,6 +390,7 @@ async function saveProductToSupabase() {
   var imgData = document.getElementById('pImgBase64').value || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
   var descVal = document.getElementById('pDesc') ? document.getElementById('pDesc').value.trim() : '';
   var badgeVal = document.getElementById('pBadge') ? document.getElementById('pBadge').value : 'គុណភាពខ្ពស់';
+  var catVal = document.getElementById('pCategory') ? document.getElementById('pCategory').value : 'GROCERY';
 
   var payload = {
     id: prodId,
@@ -416,10 +417,11 @@ async function saveProductToSupabase() {
       await supabaseClient.from('products').insert([payload]);
     }
 
-    // រក្សាទុក Description និង Badge ចូលតារាង Settings ដោយសុវត្ថិភាព
+    // 🛡️ រក្សាទុក Category, Description និង Badge ចូលតារាង Settings ដោយសុវត្ថិភាពខ្ពស់
     var settingRows = [
       { key: 'DESC_' + prodId, value: descVal },
-      { key: 'BADGE_' + prodId, value: badgeVal }
+      { key: 'BADGE_' + prodId, value: badgeVal },
+      { key: 'CAT_' + prodId, value: catVal }
     ];
     await supabaseClient.from('settings').upsert(settingRows);
 
@@ -434,6 +436,7 @@ async function saveProductToSupabase() {
     btn.disabled = false;
   }
 }
+
 async function saveStockInToSupabase() {
   var id = document.getElementById('si_prod').value;
   var qty = parseFloat(document.getElementById('si_qty').value || 0);
