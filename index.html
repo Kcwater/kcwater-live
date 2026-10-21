@@ -2444,12 +2444,15 @@
       }
     }
 
+   // 🔄 បើកទំព័រដំបូង៖ ស្តារកន្ត្រកទំនិញ & ព័ត៌មានភ្ញៀវជាមុនសិនបង្អស់ (Refresh មិនបាត់ទំនិញឡើយ ១០០%)
     window.addEventListener('DOMContentLoaded', async function() {
+      restoreSavedCartOnLoad();   // 👈 ១. ស្រង់កន្ត្រកទំនិញចាស់មកវិញមុនគេបង្អស់
+      loadSavedCustomerProfile(); // 👈 ២. ស្រង់ឈ្មោះ លេខទូរស័ព្ទ និងទីតាំងផ្ទះមកវិញភ្លាមៗ
+      
       await loadStoreOnlineProducts();
       await loadStoreSettingsFromSupabase();
+      
       changeAppLanguage('km');
-      restoreSavedCartOnLoad(); // ✅ ស្តារកន្ត្រកទំនិញមកវិញភ្លាមៗ មិនបាត់បង់ឡើយទោះ Refresh ក៏ដោយ
-      loadSavedCustomerProfile(); // ✅ ស្តារឈ្មោះ លេខទូរស័ព្ទ និងអាសយដ្ឋានមកវិញអូតូ
       checkQuickReorderAvailability();
       checkActiveOrderLiveStatus();
       trackingPollTimer = setInterval(checkActiveOrderLiveStatus, 10000);
@@ -2621,19 +2624,46 @@
       }
     }
 
-    // ២. បើកផ្ទាំងប្រវត្តិទិញទឹករបស់ភ្ញៀវ
+    // 📜 ២. បើកផ្ទាំងប្រវត្តិទិញទំនិញរបស់ភ្ញៀវ (ស្គាល់លេខទូរស័ព្ទអូតូ + មិនបាត់ប្រវត្តិពេល Refresh)
     async function openCustomerHistoryModal() {
       var modal = document.getElementById('customerHistoryModal');
       var listArea = document.getElementById('custHistoryListArea');
       if (modal) modal.classList.remove('hidden');
 
+      // ១. ស្វែងរកលេខទូរស័ព្ទពីគ្រប់ប្រភព (Memory, ប្រអប់កំពុងវាយ, ឬ Saved Profile)
       var phone = localStorage.getItem('kc_order_phone') || '';
       if (!phone) {
-        if (listArea) listArea.innerHTML = '<div class="text-center py-8 text-slate-400 italic text-xs">លោកអ្នកមិនទាន់ធ្លាប់មានប្រវត្តិកុម្ម៉ង់ទឹកឡើយ។</div>';
+        var inpPhone = document.getElementById('inp_custPhone');
+        if (inpPhone && inpPhone.value.trim()) {
+          phone = inpPhone.value.trim();
+        }
+      }
+      if (!phone) {
+        try {
+          var p = JSON.parse(localStorage.getItem('kc_saved_customer_profile') || '{}');
+          if (p && p.phone) phone = p.phone.trim();
+        } catch(e) {}
+      }
+
+      // ២. បើនៅតែរកមិនឃើញលេខទូរស័ព្ទ បង្ហាញប្រអប់ឱ្យភ្ញៀវវាយលេខទូរស័ព្ទដើម្បីឆែកប្រវត្តិភ្លាមៗ
+      if (!phone) {
+        if (listArea) {
+          listArea.innerHTML = '<div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-2.5 my-2">' +
+            '<i class="fas fa-phone-volume text-emerald-600 text-2xl"></i>' +
+            '<p class="text-xs text-slate-600 font-bold">សូមបញ្ចូលលេខទូរស័ព្ទរបស់អ្នកដើម្បីឆែកមើលប្រវត្តិកុម្ម៉ង់៖</p>' +
+            '<div class="flex gap-2">' +
+              '<input type="tel" id="inpManualHistoryPhone" placeholder="វាយលេខទូរស័ព្ទ..." class="p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold flex-1 outline-none focus:border-emerald-600">' +
+              '<button type="button" onclick="searchHistoryByManualPhone()" class="px-3.5 py-2.5 bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition">ស្វែងរក</button>' +
+            '</div>' +
+          '</div>';
+        }
         return;
       }
 
-      if (listArea) listArea.innerHTML = '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញប្រវត្តិកុម្ម៉ង់...</div>';
+      // រក្សាទុកលេខទូរស័ព្ទទុកប្រើលើកក្រោយ
+      localStorage.setItem('kc_order_phone', phone);
+
+      if (listArea) listArea.innerHTML = '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញប្រវត្តិកុម្ម៉ង់សម្រាប់លេខ ' + phone + '...</div>';
 
       try {
         const { data: orders, error } = await supabaseClient
@@ -2646,11 +2676,15 @@
         if (error) throw error;
 
         if (!orders || orders.length === 0) {
-          listArea.innerHTML = '<div class="text-center py-8 text-slate-400 italic text-xs">មិនមានប្រវត្តិកុម្ម៉ង់សម្រាប់លេខទូរស័ព្ទ ' + phone + ' ឡើយ។</div>';
+          listArea.innerHTML = '<div class="text-center py-8 text-slate-400 italic text-xs">មិនមានប្រវត្តិកុម្ម៉ង់សម្រាប់លេខទូរស័ព្ទ <b>' + phone + '</b> ឡើយ។</div>';
           return;
         }
 
-        var html = '';
+        var html = '<div class="text-[10px] text-slate-400 font-bold mb-1 flex justify-between items-center px-1">' +
+          '<span>ប្រវត្តិសម្រាប់លេខ៖ <b class="text-emerald-700">' + phone + '</b></span>' +
+          '<button type="button" onclick="localStorage.removeItem(\'kc_order_phone\'); openCustomerHistoryModal();" class="text-blue-600 underline text-[10px]">ប្តូរលេខ</button>' +
+        '</div>';
+
         orders.forEach(function(o) {
           var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
           var isDelivered = (o.status === 'Delivered');
@@ -2678,6 +2712,15 @@
         listArea.innerHTML = html;
       } catch(e) {
         if (listArea) listArea.innerHTML = '<div class="text-center py-4 text-red-500 font-bold text-xs">កំហុសទាញទិន្នន័យ៖ ' + e.message + '</div>';
+      }
+    }
+
+    // មុខងារជំនួយវាយលេខទូរស័ព្ទដោយដៃដើម្បីឆែកប្រវត្តិ
+    function searchHistoryByManualPhone() {
+      var inp = document.getElementById('inpManualHistoryPhone');
+      if (inp && inp.value.trim()) {
+        localStorage.setItem('kc_order_phone', inp.value.trim());
+        openCustomerHistoryModal();
       }
     }
 
