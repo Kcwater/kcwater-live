@@ -235,73 +235,12 @@ async function renderDashboardModule() {
   await loadDashboardData();
 }
 
-// ==========================================
-// 📊 ទាញទិន្នន័យ DASHBOARD (បានកែសម្រួលម៉ោងកម្ពុជាត្រឹមត្រូវ ១០០%)
-// ==========================================
-async function loadDashboardData() {
-  try {
-    // 🇰🇭 ប្រើម៉ោងកម្ពុជា UTC+7 មិនឱ្យបាត់ការលក់ពេលព្រឹកព្រលឹមឡើយ
-    var todayStr = (typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toLocaleDateString('en-CA');
-    var firstDayMonthStr = todayStr.substring(0, 7) + '-01'; // ថ្ងៃទី ១ នៃខែនេះ
-
-    const { data: monthTrans } = await supabaseClient
-      .from('transactions')
-      .select('*')
-      .gte('created_at', firstDayMonthStr + 'T00:00:00Z')
-      .order('created_at', { ascending: false });
-
-    const { data: todaySettles } = await supabaseClient
-      .from('settlements')
-      .select('*')
-      .gte('settled_at', todayStr + 'T00:00:00Z');
-
-    const { data: monthExpenses } = await supabaseClient
-      .from('expenses')
-      .select('*')
-      .gte('created_at', firstDayMonthStr + 'T00:00:00Z');
-
-    const { data: unpaids } = await supabaseClient
-      .from('transactions')
-      .select('total')
-      .eq('status', 'Unpaid');
-
-    var todaySalesKHR = 0, todayCashInHand = 0, todayBankAba = 0, monthSalesKHR = 0, monthCOGS = 0;
-    var todayProdQty = {}, todayRecentSales = [];
-
-    (monthTrans || []).forEach(function(t) {
-      var isToday = String(t.created_at).startsWith(todayStr);
-      var tot = parseFloat(t.total || 0);
-      var qty = parseFloat(t.qty || 0);
-      monthSalesKHR += tot;
-
-      var pObj = allProducts.find(p => p.name === t.product_name);
-      if (pObj && pObj.type === 'ទិញគេ' && pObj.cost > 0) {
-        monthCOGS += (qty * parseFloat(pObj.cost));
-      }
-
-      if (isToday) {
-        todaySalesKHR += tot;
-        var paid = parseFloat(t.paid_khr || 0);
-        if (t.payment_method === 'ABA') todayBankAba += paid;
-        else todayCashInHand += paid;
-
-        if (t.product_name) todayProdQty[t.product_name] = (todayProdQty[t.product_name] || 0) + qty;
-        todayRecentSales.push(t);
-      }
-    });
-
-    (todaySettles || []).forEach(function(s) {
-      todayCashInHand += parseFloat(s.cash_khr || 0);
-      todayBankAba += parseFloat(s.scan_khr || 0);
-    });
-
-    var todayTotalCash = todayCashInHand + todayBankAba;
-
+// កូដជំនួសសម្រាប់ការគណនា Dashboard
     var monthOperatingExpKHR = 0;
     (monthExpenses || []).forEach(function(e) {
       var amt = parseFloat(e.amount || 0);
-      if (e.currency === 'USD') monthOperatingExpKHR += (amt * 4100);
-      else if (e.currency === 'THB') monthOperatingExpKHR += (amt * 115);
+      if (e.currency === 'USD') monthOperatingExpKHR += (amt * exchangeRateUSD);
+      else if (e.currency === 'THB') monthOperatingExpKHR += (amt * exchangeRateTHB);
       else monthOperatingExpKHR += amt;
     });
 
@@ -311,7 +250,6 @@ async function loadDashboardData() {
     var totalDebtKHR = 0;
     (unpaids || []).forEach(u => { totalDebtKHR += parseFloat(u.total || 0); });
 
-    // បង្ហាញទិន្នន័យលើ Dashboard ដោយសុវត្ថិភាព
     if (document.getElementById('dashTodaySales')) document.getElementById('dashTodaySales').innerText = '៛ ' + todaySalesKHR.toLocaleString();
     if (document.getElementById('dashTodayCashTotal')) document.getElementById('dashTodayCashTotal').innerText = '៛ ' + todayTotalCash.toLocaleString();
     if (document.getElementById('dashTodayCashInHand')) document.getElementById('dashTodayCashInHand').innerText = '៛ ' + todayCashInHand.toLocaleString();
@@ -321,11 +259,18 @@ async function loadDashboardData() {
     if (document.getElementById('dashMonthExpenses')) document.getElementById('dashMonthExpenses').innerText = '៛ ' + totalMonthExpensesKHR.toLocaleString();
     if (document.getElementById('dashMonthExpDetail')) document.getElementById('dashMonthExpDetail').innerText = '(ប្រតិបត្តិការ: ៛ ' + Math.round(monthOperatingExpKHR).toLocaleString() + (monthCOGS > 0 ? ' | ដើមទឹកយួរ: ៛ ' + Math.round(monthCOGS).toLocaleString() : '') + ')';
 
+    // 💡 ផ្លាស់ប្តូរអត្ថបទអត្រាប្តូរប្រាក់នៅខាងក្រោម Dashboard ឱ្យលោតអូតូ
     var netEl = document.getElementById('dashNetProfit');
     if (netEl) {
       var isPositive = netProfitKHR >= 0;
       netEl.innerText = (isPositive ? '+ ៛ ' : '- ៛ ') + Math.abs(Math.round(netProfitKHR)).toLocaleString();
       netEl.className = 'mt-2 font-black text-base sm:text-lg ' + (isPositive ? 'text-emerald-700' : 'text-red-600');
+      
+      // បង្កើត tag អត្រាប្តូរប្រាក់ថ្មីពីក្រោម
+      if (!document.getElementById('dashExchangeRateHint')) {
+        netEl.insertAdjacentHTML('afterend', '<div id="dashExchangeRateHint" class="text-[10px] text-gray-500 font-bold mt-0.5"></div>');
+      }
+      document.getElementById('dashExchangeRateHint').innerText = 'គិតតាមអត្រា $1=' + exchangeRateUSD.toLocaleString() + '៛ | 1฿=' + exchangeRateTHB.toLocaleString() + '៛';
     }
 
     var pqArea = document.getElementById('dashProductQtyArea');
@@ -1134,7 +1079,6 @@ function confirmAddToCart() {
     return;
   }
 
-  // 🛡️ ឆែកស្តុកទំនិញប្រភេទ «ទិញគេ»
   if (selectedModalProduct.type === 'ទិញគេ') {
     var inCartQty = cart.filter(i => i.id === selectedModalProduct.id).reduce((sum, i) => sum + i.qty, 0);
     var curStock = parseFloat(selectedModalProduct.stock || 0);
@@ -1150,10 +1094,31 @@ function confirmAddToCart() {
   var prodId = selectedModalProduct.id;
   var curr = currentModalCurrency || "KHR";
 
-  // 🔍 បូកបញ្ចូលចំនួនបើឈ្មោះទំនិញដូចគ្នា
+  // 💵 បំប្លែងតម្លៃទៅជារៀលអូតូ (Auto-convert to KHR based on exchange rate)
+  var prKhr = pr;
+  if (curr === 'USD') prKhr = pr * exchangeRateUSD;
+  else if (curr === 'THB') prKhr = pr * exchangeRateTHB;
+
   var existingItem = cart.find(function(item) {
-    return item.id === prodId && item.price === pr && item.currency === curr;
+    return item.id === prodId && item.price === prKhr;
   });
+
+  if (existingItem) {
+    existingItem.qty += q;
+  } else {
+    cart.push({
+      id: prodId,
+      name: prodName,
+      price: prKhr,
+      qty: q,
+      currency: 'KHR' // បង្ខំឱ្យកន្ត្រកគិតជារៀលទាំងអស់ ការពារកុំឱ្យគាំង
+    });
+  }
+
+  closeProductModal();
+  rC();
+  showToast("បានបញ្ចូល [" + prodName + "] x " + q + " ក្នុងកន្ត្រក!", "success");
+}
 
   if (existingItem) {
     existingItem.qty += q;
