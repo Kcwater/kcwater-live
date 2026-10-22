@@ -164,6 +164,16 @@ function renderStockModule() {
       '</button>' +
     '</div>' +
 
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2 px-1">' +
+      '<div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs">' +
+        '<button type="button" onclick="switchStockSortView(\'WEB\')" id="btnSortViewWEB" class="px-3 py-1.5 rounded-lg transition bg-white text-emerald-800 shadow-xs font-black">🌐 មើលតាមលំដាប់ Web</button>' +
+        '<button type="button" onclick="switchStockSortView(\'POS\')" id="btnSortViewPOS" class="px-3 py-1.5 rounded-lg transition text-gray-500 hover:text-gray-800 font-bold">🚚 មើលតាមលំដាប់ POS</button>' +
+      '</div>' +
+      '<button type="button" onclick="autoFixAllSortDuplicates()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
+        '<i class="fas fa-wand-magic-sparkles text-yellow-300"></i> ⚡ រៀបលេខរៀងឡើងវិញកុំឱ្យស្ទួន' +
+      '</button>' +
+    '</div>' +
+
     '<div class="card p-0 overflow-x-auto shadow-lg rounded-2xl border">' +
       '<table class="w-full text-left text-xs border-collapse">' +
         '<thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3 text-center w-16">🔢 លេខរៀង</th><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>' +
@@ -263,13 +273,59 @@ function previewProductImageFile(input) {
   }
 }
 
-// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (មានប៊ូតុងរៀបលេខរៀងអូតូ និងគ្មានលេខស្ទួន)
+// ==========================================
+// 📋 ប្រព័ន្ធគ្រប់គ្រងលេខរៀង POS & WEB (ស៊ីសង្វាក់គ្នា ១០០% គ្មានលេខស្ទួន)
+// ==========================================
+var currentStockViewTab = 'WEB'; // 'WEB' ឬ 'POS'
+
+// 🔄 ប្តូរទិដ្ឋភាពមើលតាម POS ឬ Web
+function switchStockSortView(tab) {
+  currentStockViewTab = tab;
+  var btnPos = document.getElementById('btnSortViewPOS');
+  var btnWeb = document.getElementById('btnSortViewWEB');
+  if (btnPos && btnWeb) {
+    if (tab === 'POS') {
+      btnPos.className = "px-3 py-1 rounded-lg transition bg-white text-blue-900 shadow-xs font-black";
+      btnWeb.className = "px-3 py-1 rounded-lg transition text-gray-500 hover:text-gray-800 font-bold";
+    } else {
+      btnWeb.className = "px-3 py-1 rounded-lg transition bg-white text-emerald-800 shadow-xs font-black";
+      btnPos.className = "px-3 py-1 rounded-lg transition text-gray-500 hover:text-gray-800 font-bold";
+    }
+  }
+  renderStockTableRows();
+}
+
+// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (រៀបតាមលំដាប់ពិតប្រាកដ)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
   var html = '';
 
-  allProducts.forEach(function(p) {
+  // 🔢 តម្រៀបទំនិញក្នុងតារាងតាម Tab ដែលកំពុងមើល (POS ឬ Web)
+  var sortedList = allProducts.slice().sort(function(a, b) {
+    var chA = String(a.channel || 'ALL').toUpperCase();
+    var chB = String(b.channel || 'ALL').toUpperCase();
+
+    if (currentStockViewTab === 'WEB') {
+      var isWebA = (chA === 'ALL' || chA === 'ONLINE');
+      var isWebB = (chB === 'ALL' || chB === 'ONLINE');
+      if (isWebA && !isWebB) return -1;
+      if (!isWebA && isWebB) return 1;
+      var numA = (a.online_sort_order !== null && a.online_sort_order !== undefined) ? parseInt(a.online_sort_order) : parseInt(a.sort_order || 99);
+      var numB = (b.online_sort_order !== null && b.online_sort_order !== undefined) ? parseInt(b.online_sort_order) : parseInt(b.sort_order || 99);
+      return numA - numB;
+    } else {
+      var isPosA = (chA === 'ALL' || chA === 'POS');
+      var isPosB = (chB === 'ALL' || chB === 'POS');
+      if (isPosA && !isPosB) return -1;
+      if (!isPosA && isPosB) return 1;
+      var pNumA = parseInt(a.sort_order || 99);
+      var pNumB = parseInt(b.sort_order || 99);
+      return pNumA - pNumB;
+    }
+  });
+
+  sortedList.forEach(function(p) {
     var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
     var prWholesale = Number(p.price || 0).toLocaleString() + ' ៛';
     var prOnline = Number(p.online_price || p.price || 0).toLocaleString() + ' ៛';
@@ -331,7 +387,7 @@ function renderStockTableRows() {
   tbody.innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
 }
 
-// ⚡ ១. មុខងារ Update លេខរៀង POS (រុញលេខស្ទួនចេញអូតូ)
+// ⚡ ១. មុខងារ Update លេខ POS (រុញលេខស្ទួនអូតូ)
 async function quickUpdateSortPos(prodId, val) {
   var s = parseInt(val) || 1;
   try {
@@ -339,7 +395,6 @@ async function quickUpdateSortPos(prodId, val) {
     if (cur) cur.sort_order = s;
     await supabaseClient.from('products').update({ sort_order: s }).eq('id', prodId);
 
-    // ពិនិត្យរកទំនិញ POS ណាដែលមានលេខ s ដូចគ្នា រួចរំកិលវាទៅលេខបន្ទាប់
     var posItems = allProducts.filter(p => {
       var ch = String(p.channel || 'ALL').toUpperCase();
       return (ch === 'ALL' || ch === 'POS') && p.id !== prodId;
@@ -352,15 +407,14 @@ async function quickUpdateSortPos(prodId, val) {
       await supabaseClient.from('products').update({ sort_order: nextS }).eq('id', conflicts[i].id);
     }
 
-    showToast("បានប្តូរលេខ POS ទៅ #" + s + " និងរំកិលលេខស្ទួនជោគជ័យ!", "success");
-    await fetchInitialPOSData();
+    showToast("បានប្តូរលេខ POS ទៅ #" + s + " ជោគជ័យ!", "success");
     renderStockTableRows();
   } catch(e) {
     showToast("កំហុស៖ " + e.message, "error");
   }
 }
 
-// ⚡ ២. មុខងារ Update លេខរៀង Web (រុញលេខស្ទួនចេញអូតូ)
+// ⚡ ២. មុខងារ Update លេខ Web (រុញលេខស្ទួនអូតូ)
 async function quickUpdateSortWeb(prodId, val) {
   var s = parseInt(val) || 1;
   try {
@@ -368,7 +422,6 @@ async function quickUpdateSortWeb(prodId, val) {
     if (cur) cur.online_sort_order = s;
     await supabaseClient.from('settings').upsert([{ key: 'ONLINE_SORT_' + prodId, value: String(s) }]);
 
-    // ពិនិត្យរកទំនិញ Web ណាដែលមានលេខ s ដូចគ្នា រួចរំកិលវាទៅលេខបន្ទាប់
     var webItems = allProducts.filter(p => {
       var ch = String(p.channel || 'ALL').toUpperCase();
       return (ch === 'ALL' || ch === 'ONLINE') && p.id !== prodId;
@@ -381,7 +434,7 @@ async function quickUpdateSortWeb(prodId, val) {
       await supabaseClient.from('settings').upsert([{ key: 'ONLINE_SORT_' + conflicts[j].id, value: String(nextWebS) }]);
     }
 
-    showToast("បានប្តូរលេខ Web ទៅ #" + s + " និងរំកិលលេខស្ទួនជោគជ័យ!", "success");
+    showToast("បានប្តូរលេខ Web ទៅ #" + s + " ជោគជ័យ!", "success");
     renderStockTableRows();
   } catch(e) {
     showToast("កំហុស៖ " + e.message, "error");
@@ -392,7 +445,7 @@ async function quickUpdateSortWeb(prodId, val) {
 async function autoFixAllSortDuplicates() {
   showToast("កំពុងរៀបចំលេខរៀងកុំឱ្យស្ទួន...", "info");
   try {
-    // ក. រៀបចំលេខ POS ឡើងវិញ
+    // ក. រៀបចំលេខ POS ឡើងវិញ (1, 2, 3...)
     var posItems = allProducts.filter(p => {
       var ch = String(p.channel || 'ALL').toUpperCase();
       return ch === 'ALL' || ch === 'POS';
@@ -404,7 +457,7 @@ async function autoFixAllSortDuplicates() {
       await supabaseClient.from('products').update({ sort_order: nPos }).eq('id', posItems[i].id);
     }
 
-    // ខ. រៀបចំលេខ Web ឡើងវិញ
+    // ខ. រៀបចំលេខ Web ឡើងវិញ (1, 2, 3...)
     var webItems = allProducts.filter(p => {
       var ch = String(p.channel || 'ALL').toUpperCase();
       return ch === 'ALL' || ch === 'ONLINE';
@@ -423,6 +476,17 @@ async function autoFixAllSortDuplicates() {
   }
 }
 
+// 🔄 ទាញលេខ Web ពី Database មកបញ្ចូលលើ allProducts ជានិច្ច
+async function syncOnlineSortsFromDatabase() {
+  try {
+    const { data: setList } = await supabaseClient.from('settings').select('key, value').like('key', 'ONLINE_SORT_%');
+    var map = {};
+    (setList || []).forEach(r => { map[r.key.replace('ONLINE_SORT_', '')] = parseInt(r.value); });
+    allProducts.forEach(p => {
+      if (map[p.id] !== undefined) p.online_sort_order = map[p.id];
+    });
+  } catch(e) {}
+}
 // 🧹 មុខងារជម្រះប្រអប់បញ្ចូលទិន្នន័យទំនិញឱ្យនៅទទេស្អាត ១០០% ត្រៀមបញ្ចូលទំនិញថ្មី
 function cancelEditProduct() {
   editingProductId = null;
