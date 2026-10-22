@@ -102,7 +102,7 @@ function renderStockModule() {
           '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ អង្ករផ្កាម្លិះគុណភាពលេខ១ ក្រអូប ស្រទន់ ឆ្ងាញ់..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2.5 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
         '</div>' +
 
-       '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
+        '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
           '<div>' +
             '<label class="text-[10px] font-black text-blue-900 uppercase block mb-1">🔢 លេខ POS</label>' +
             '<input type="number" id="pSortPos" placeholder="ឧ៖ 1" value="1" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-blue-900 bg-blue-50/50 outline-none">' +
@@ -159,7 +159,7 @@ function renderStockModule() {
 
     '<div class="card p-0 overflow-x-auto shadow-lg rounded-2xl border">' +
       '<table class="w-full text-left text-xs border-collapse">' +
-        <!-- ✅ កូដថ្មី៖ --><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3 text-center w-16">🔢 លេខរៀង</th><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>
+        '<thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3 text-center w-16">🔢 លេខរៀង</th><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>' +
         '<tbody id="stockModuleTableBody"></tbody>' +
       '</table>' +
     '</div>' +
