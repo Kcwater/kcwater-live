@@ -252,7 +252,7 @@ function previewProductImageFile(input) {
   }
 }
 
-// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (លេខរៀង & រូបភាពត្រឹមត្រូវ មិនស្ទួន)
+// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (អាចវាយដូរលេខរៀងក្នុងតារាងបានភ្លាមៗ)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
@@ -270,10 +270,13 @@ function renderStockTableRows() {
     var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs">-</span>' : 
       ('<span class="font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
 
-    var sortNum = (p.sort_order !== null && p.sort_order !== undefined) ? p.sort_order : 99;
+    var sortNum = (p.sort_order !== null && p.sort_order !== undefined && p.sort_order !== '') ? p.sort_order : 99;
 
     html += '<tr class="border-b hover:bg-gray-50">' +
-      '<td class="p-2.5 text-center font-black text-blue-900 bg-blue-50/50 text-xs sm:text-sm">#' + sortNum + '</td>' +
+      // 🔢 ប្រអប់វាយលេខរៀងផ្ទាល់ក្នុងតារាង
+      '<td class="p-2 text-center bg-blue-50/40">' +
+        '<input type="number" value="' + sortNum + '" onchange="quickUpdateSortOrder(\'' + p.id + '\', this.value)" class="w-14 text-center font-black text-blue-900 border-2 border-blue-200 focus:border-blue-600 rounded-xl py-1 text-xs outline-none bg-white shadow-2xs" title="វាយលេខរៀងដើម្បីដូរភ្លាមៗ">' +
+      '</td>' +
       '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
       '<td class="p-2.5 font-bold text-gray-800">' + p.name + '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + '</span></td>' +
       '<td class="p-2.5 text-center">' + chBadge + '</td>' +
@@ -288,6 +291,26 @@ function renderStockTableRows() {
 
   tbody.innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
 }
+
+// ⚡ មុខងារ Save លេខរៀងថ្មីភ្លាមៗពេលវាយក្នុងតារាង
+async function quickUpdateSortOrder(prodId, newSortVal) {
+  var s = parseInt(newSortVal) || 1;
+  try {
+    const { error } = await supabaseClient
+      .from('products')
+      .update({ sort_order: s })
+      .eq('id', prodId);
+
+    if (error) throw error;
+
+    showToast("បានប្តូរទៅលេខរៀង #" + s + " ជោគជ័យ!", "success");
+    await fetchInitialPOSData();
+    renderStockTableRows();
+  } catch(err) {
+    showToast("កំហុសប្តូរលេខរៀង៖ " + err.message, "error");
+  }
+}
+
 // 🧹 មុខងារជម្រះប្រអប់បញ្ចូលទិន្នន័យទំនិញឱ្យនៅទទេស្អាត ១០០% ត្រៀមបញ្ចូលទំនិញថ្មី
 function cancelEditProduct() {
   editingProductId = null;
