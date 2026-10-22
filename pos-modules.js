@@ -102,12 +102,16 @@ function renderStockModule() {
           '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ អង្ករផ្កាម្លិះគុណភាពលេខ១ ក្រអូប ស្រទន់ ឆ្ងាញ់..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2.5 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
         '</div>' +
 
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<div>' +
-            '<label class="text-[10px] font-black text-blue-900 uppercase block mb-1">🔢 លេខរៀងបង្ហាញ (១, ២, ៣...)</label>' +
-            '<input type="number" id="pSort" placeholder="ឧ៖ 1" value="1" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-blue-900 bg-blue-50/50 outline-none">' +
-          '</div>' +
-          '<div>' +
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[10px] font-black text-blue-900 uppercase block mb-1">🔢 លេខរៀងក្នុង POS</label>
+            <input type="number" id="pSortPos" placeholder="ឧ៖ 1" value="1" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-blue-900 bg-blue-50/50 outline-none">
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-emerald-900 uppercase block mb-1">🌐 លេខរៀងលើ Web</label>
+            <input type="number" id="pSortOnline" placeholder="ឧ៖ 1" value="1" class="border-2 border-emerald-300 focus:border-emerald-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-emerald-900 bg-emerald-50/50 outline-none">
+          </div>
+        </div>
             '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">កម្រិតដំណឹងស្តុកទាប</label>' +
             '<input type="number" id="pMin" placeholder="ឧ៖ 5" value="5" class="border p-2.5 rounded-xl font-bold w-full text-xs text-center outline-none">' +
           '</div>' +
@@ -359,6 +363,8 @@ function cancelEditProduct() {
   if (document.getElementById('pBadge')) document.getElementById('pBadge').value = 'គុណភាពខ្ពស់';
   if (document.getElementById('pPr')) document.getElementById('pPr').value = '';
   if (document.getElementById('pOnlinePr')) document.getElementById('pOnlinePr').value = '';
+  if (document.getElementById('pSortPos')) document.getElementById('pSortPos').value = p.sort_order || 1;
+  if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = p.online_sort_order || p.sort_order || 1;
   if (document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
   if (document.getElementById('pSort')) document.getElementById('pSort').value = (allProducts ? allProducts.length + 1 : 1);
   if (document.getElementById('pMin')) document.getElementById('pMin').value = 5;
@@ -480,10 +486,16 @@ async function saveProductToSupabase() {
       await supabaseClient.from('products').insert([payload]);
     }
 
+    var sortPosNum = parseInt(document.getElementById('pSortPos') ? document.getElementById('pSortPos').value || 1 : 1);
+    var sortOnlineNum = document.getElementById('pSortOnline') ? document.getElementById('pSortOnline').value.trim() : String(sortPosNum);
+
+    payload.sort_order = sortPosNum;
+
     var settingRows = [
       { key: 'DESC_' + prodId, value: descVal },
       { key: 'BADGE_' + prodId, value: badgeVal },
-      { key: 'CAT_' + prodId, value: catVal }
+      { key: 'CAT_' + prodId, value: catVal },
+      { key: 'ONLINE_SORT_' + prodId, value: sortOnlineNum } // 👈 រក្សាទុកលេខលើ Web ដោយឡែក
     ];
     await supabaseClient.from('settings').upsert(settingRows);
 
