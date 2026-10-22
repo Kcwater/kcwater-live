@@ -11,7 +11,7 @@ var currentCustPayMode = "ABA";
 // ==========================================
 // 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានប្រអប់ «📂 ប្រភេទទំនិញ» ច្បាស់លាស់)
 // ==========================================
-function <thead>() {
+function renderStockModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
   var aid = "P-" + Math.floor(Math.random() * 9000 + 1000);
