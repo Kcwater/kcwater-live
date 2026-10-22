@@ -11,7 +11,7 @@ var currentCustPayMode = "ABA";
 // ==========================================
 // 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានប្រអប់ «📂 ប្រភេទទំនិញ» ច្បាស់លាស់)
 // ==========================================
-function renderStockModule() {
+function <thead>() {
   var area = document.getElementById('contentArea');
   if (!area) return;
   var aid = "P-" + Math.floor(Math.random() * 9000 + 1000);
@@ -155,7 +155,7 @@ function renderStockModule() {
 
     '<div class="card p-0 overflow-x-auto shadow-lg rounded-2xl border">' +
       '<table class="w-full text-left text-xs border-collapse">' +
-        '<thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>' +
+        <!-- ✅ កូដថ្មី៖ --><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3 text-center w-16">🔢 លេខរៀង</th><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>
         '<tbody id="stockModuleTableBody"></tbody>' +
       '</table>' +
     '</div>' +
@@ -270,7 +270,12 @@ function renderStockTableRows() {
     var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs">-</span>' : 
       ('<span class="font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
 
+   var sortNum = (p.sort_order !== null && p.sort_order !== undefined) ? p.sort_order : 99;
+
     html += '<tr class="border-b hover:bg-gray-50">' +
+      '<td class="p-2.5 text-center font-black text-blue-900 bg-blue-50/50 text-sm">#' + sortNum + '</td>' +
+      '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
+      '<td class="p-2.5 text-center font-black text-blue-900 bg-blue-50/40 text-xs sm:text-sm">#' + sortNum + '</td>' +
       '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
       '<td class="p-2.5 font-bold text-gray-800">' + p.name + '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + '</span></td>' +
       '<td class="p-2.5 text-center">' + chBadge + '</td>' +
@@ -355,7 +360,7 @@ async function prepareEditProduct(id) {
   document.getElementById('pPr').value = p.price || 0;
   document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
   document.getElementById('pMin').value = p.min_stock || 5;
-  if (document.getElementById('pSort')) document.getElementById('pSort').value = p.sort_order || 1;
+  if (document.getElementById('pSort')) document.getElementById('pSort').value = (p.sort_order !== undefined && p.sort_order !== null) ? p.sort_order : 1;
   document.getElementById('pChannel').value = p.channel || 'ALL';
 
   // ទាញយក Category, Badge និង Description មកបង្ហាញលើប្រអប់
@@ -406,7 +411,7 @@ async function saveProductToSupabase() {
     online_price: parseFloat(document.getElementById('pOnlinePr').value || 0),
     min_stock: parseFloat(document.getElementById('pMin').value || 5),
     channel: document.getElementById('pChannel').value,
-    sort_order: parseInt(document.getElementById('pSort') ? document.getElementById('pSort').value || 99 : 99),
+    sort_order: parseInt(document.getElementById('pSort') ? document.getElementById('pSort').value || 1 : 1),
     img: imgData
   };
 
@@ -660,7 +665,8 @@ function renderExpensesModule() {
     '</div>' +
     '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0">' +
       '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-history"></i>ប្រវត្តិការចំណាយ</h3>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">កាលបរិច្ឆេទ</th><th class="p-2.5">ប្រភេទចំណាយ</th><th class="p-2.5 text-right">ចំនួនទឹកប្រាក់</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="expTableBody"></tbody></table></div>' +
+      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">កាលបរិច្ឆេទ</th><th class="p-2.5">ប្រភេទចំណាយ</th><th class="p-2.5 text-right">
+    ចំនួនទឹកប្រាក់</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="expTableBody"></tbody></table></div>' +
     '</div>' +
   '</div>';
 
