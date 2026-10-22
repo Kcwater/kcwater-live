@@ -1318,7 +1318,7 @@
               svg: imgDisplay,
               desc: customDesc,
               badge: customBadge,
-              sort_order: parseInt(p.sort_order || 99)
+              sort_order: parseInt(setMap['ONLINE_SORT_' + p.id] || p.sort_order || 99)
             };
           });
           
