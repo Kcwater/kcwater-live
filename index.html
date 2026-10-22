@@ -184,7 +184,8 @@
     </div>
 
     <!-- របាររើសប្រភេទទំនិញ KC MART (រំកិល Scroll បានរលូន) -->
-    <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
+    <!-- ✅ កូដថ្មី អូសទាញបានរលូន ១០០%៖ -->
+<div class="flex gap-2 overflow-x-auto pb-2 text-xs font-bold scroll-smooth" style="-webkit-overflow-scrolling: touch; touch-action: pan-x; cursor: grab;">
       <button type="button" onclick="filterCatalog('ALL', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl bg-emerald-700 text-white shadow-xs whitespace-nowrap active:scale-95 transition">ទាំងអស់</button>
       <button type="button" onclick="filterCatalog('GROCERY', this)" id="catBtn_GROCERY" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">🍚 ស្បៀង & គ្រឿងទេស</button>
       <button type="button" onclick="filterCatalog('HOUSEHOLD', this)" id="catBtn_HOUSEHOLD" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">🧻 របស់ប្រើប្រាស់</button>
@@ -1319,6 +1320,11 @@
               badge: customBadge,
               sort_order: parseInt(p.sort_order || 99)
             };
+          });
+          
+          // 🔢 តម្រៀបទំនិញតាមលេខរៀងដែលបានកំណត់ពីតូចទៅធំ (១, ២, ៣...)
+          STORE_CATALOG.sort(function(a, b) {
+            return (parseInt(a.sort_order) || 99) - (parseInt(b.sort_order) || 99);
           });
 
           renderCatalogGrid('ALL');
