@@ -273,9 +273,16 @@ async function loadDashboardData() {
       var qty = parseFloat(t.qty || 0);
       monthSalesKHR += tot;
 
-      var pObj = allProducts.find(p => p.name === t.product_name);
+     var pObj = allProducts.find(p => p.name === t.product_name);
       if (pObj && pObj.type === 'ទិញគេ' && pObj.cost > 0) {
-        monthCOGS += (qty * parseFloat(pObj.cost));
+        var itemCostKHR = parseFloat(pObj.cost);
+        // បើទំនិញនេះទិញចូលគិតជាដុល្លារ ត្រូវគុណនឹងអត្រាប្តូរប្រាក់ទៅជារៀល
+        if (pObj.currency === 'USD') {
+          itemCostKHR = itemCostKHR * (typeof exchangeRateUSD !== 'undefined' ? exchangeRateUSD : 4100);
+        } else if (pObj.currency === 'THB') {
+          itemCostKHR = itemCostKHR * (typeof exchangeRateTHB !== 'undefined' ? exchangeRateTHB : 115);
+        }
+        monthCOGS += (qty * itemCostKHR);
       }
 
       if (isToday) {
@@ -907,7 +914,19 @@ function rPG() {
   var html = '';
   filtered.forEach(function(p) {
     var sp = specialPrices.find(s => s.customer_name === custName && s.product_name === p.name);
-    var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
+   var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
+
+    // 💵 គណនាតម្លៃបង្ហាញ (បើជាដុល្លារ បង្ហាញ $ ផង និងរៀលអូតូផង)
+    var priceDisplay = '';
+    if (p.currency === 'USD') {
+      var khrEquiv = Math.round(unitPrice * (typeof exchangeRateUSD !== 'undefined' ? exchangeRateUSD : 4100));
+      priceDisplay = '$ ' + Number(unitPrice).toFixed(2) + ' <span class="text-[10px] text-gray-400 font-bold block leading-none mt-0.5">(៛ ' + khrEquiv.toLocaleString() + ')</span>';
+    } else if (p.currency === 'THB') {
+      var khrEquivThb = Math.round(unitPrice * (typeof exchangeRateTHB !== 'undefined' ? exchangeRateTHB : 115));
+      priceDisplay = '฿ ' + Number(unitPrice).toLocaleString() + ' <span class="text-[10px] text-gray-400 font-bold block leading-none mt-0.5">(៛ ' + khrEquivThb.toLocaleString() + ')</span>';
+    } else {
+      priceDisplay = Number(unitPrice).toLocaleString() + ' ៛';
+    }
 
     var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
     var spBadge = sp ? '<span class="absolute top-2 left-2 bg-yellow-100 text-yellow-800 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-yellow-300">តម្លៃពិសេស</span>' : '';
@@ -917,7 +936,7 @@ function rPG() {
       '<span class="absolute top-2 right-2 bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">' + (p.type === 'ផលិតឯង' ? 'ផលិតឯង' : ('សល់ ' + p.stock)) + '</span>' +
       '<div class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mb-1"><img src="' + imgUrl + '" class="max-w-full max-h-full object-contain drop-shadow-sm"></div>' +
       '<h4 class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 h-8 flex items-center justify-center">' + p.name + '</h4>' +
-      '<p class="text-xs sm:text-sm font-extrabold text-green-600 mt-1">' + Number(unitPrice).toLocaleString() + ' ៛</p>' +
+      '<div class="text-xs sm:text-sm font-extrabold text-green-600 mt-1 leading-tight">' + priceDisplay + '</div>' +
       '<div class="mt-2 w-full py-1.5 bg-green-50 group-hover:bg-green-600 text-green-700 group-hover:text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"><i class="fas fa-plus text-[10px]"></i> រើសទិញ</div>' +
     '</div>';
   });
