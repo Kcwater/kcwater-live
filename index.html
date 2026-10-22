@@ -1322,9 +1322,11 @@
             };
           });
           
-          // 🔢 តម្រៀបទំនិញតាមលេខរៀងដែលបានកំណត់ពីតូចទៅធំ (១, ២, ៣...)
+         // 🔢 តម្រៀបលេខរៀងឱ្យម៉ត់ចត់ (លេខ ១ ឡើងមុនគេដាច់ខាត)
           STORE_CATALOG.sort(function(a, b) {
-            return (parseInt(a.sort_order) || 99) - (parseInt(b.sort_order) || 99);
+            var orderA = (a.sort_order !== null && a.sort_order !== undefined && a.sort_order !== '') ? parseInt(a.sort_order) : 999;
+            var orderB = (b.sort_order !== null && b.sort_order !== undefined && b.sort_order !== '') ? parseInt(b.sort_order) : 999;
+            return orderA - orderB;
           });
 
           renderCatalogGrid('ALL');
