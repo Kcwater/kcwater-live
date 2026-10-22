@@ -122,14 +122,82 @@
 
   <!-- ២. BANNER & TRUST BADGES -->
   <section class="max-w-md mx-auto px-4 pt-4 pb-2 space-y-3">
-    <div class="p-4 rounded-3xl bg-gradient-to-r from-emerald-800 via-green-800 to-emerald-950 text-white shadow-xl relative overflow-hidden">
-      <div class="relative z-10 space-y-1.5">
-        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-[10px] font-black text-emerald-200">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="txtBannerTag">សេវាដឹកដល់ផ្ទះរហ័ស ៣០-៤៥ នាទី</span>
+   <!-- 🌟 ផ្ទាំង Slide ផ្សព្វផ្សាយស្វ័យប្រវត្តិកំពូលទំនើប (Auto Promo Slider) -->
+    <div class="relative overflow-hidden rounded-3xl shadow-xl border border-emerald-200/50">
+      <div id="promoBannerTrack" class="flex transition-transform duration-500 ease-out">
+        
+        <!-- Slide 1: ទឹកពិសាបរិសុទ្ធ -->
+        <div onclick="clickSlidePromo('BARREL', 'catBtn_BARREL')" class="min-w-full p-4 bg-gradient-to-r from-emerald-800 via-green-800 to-teal-900 text-white relative cursor-pointer select-none">
+          <div class="space-y-1.5">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 border border-white/30 text-[10px] font-black text-emerald-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>💧 ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី (KC WATER)</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-black tracking-tight">ទឹកធុង ២០L & ទឹកយួរដបគ្រប់ចំណុះ</h2>
+            <p class="text-[11px] text-emerald-100/80 leading-relaxed">ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និង Ozone ស្តង់ដារសុខភាព ១០០%</p>
+            <div class="pt-1 flex items-center gap-2">
+              <span class="px-3 py-1 bg-white text-emerald-950 font-black text-[10px] rounded-xl shadow-xs">👉 ចុចមើលមុខទឹក</span>
+              <span class="text-[10px] text-emerald-200 font-bold">ធុងស | ធុងខៀវ | យួរដប</span>
+            </div>
+          </div>
         </div>
-        <h2 class="text-xl font-black tracking-tight" id="txtBannerTitle">ទឹកពិសាបរិសុទ្ធគុណភាពខ្ពស់</h2>
-        <p class="text-[11px] text-emerald-100/80 leading-relaxed" id="txtBannerDesc">ឆ្លងកាត់ការចម្រោះ ៧ ដំណាក់កាល UV និងអូហ្សូន ស្តង់ដារសុខភាព ១០០%</p>
+
+        <!-- Slide 2: ស្បៀង & គ្រឿងទេស -->
+        <div onclick="clickSlidePromo('GROCERY', 'catBtn_GROCERY')" class="min-w-full p-4 bg-gradient-to-r from-amber-700 via-orange-700 to-amber-900 text-white relative cursor-pointer select-none">
+          <div class="space-y-1.5">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 border border-white/30 text-[10px] font-black text-amber-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse"></span>
+              <span>🍚 ស្បៀងអាហារ & គ្រឿងទេសទូទៅ</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-black tracking-tight">អង្ករផ្កាម្លិះ មី ត្រីខ ប្រេងឆា ទឹកត្រី ទឹកស៊ីអ៊ីវ</h2>
+            <p class="text-[11px] text-amber-100/80 leading-relaxed">ស្បៀងអាហារថ្មីៗ គុណភាពខ្ពស់ សេវាដឹកជូនដល់មុខផ្ទះរហ័ស</p>
+            <div class="pt-1 flex items-center gap-2">
+              <span class="px-3 py-1 bg-white text-amber-950 font-black text-[10px] rounded-xl shadow-xs">👉 ចុចមើលគ្រឿងទេស</span>
+              <span class="text-[10px] text-amber-200 font-bold">អង្ករ | មីកញ្ចប់ | គ្រឿងចម្អិន</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 3: របស់ប្រើប្រាស់ប្រចាំថ្ងៃ -->
+        <div onclick="clickSlidePromo('HOUSEHOLD', 'catBtn_HOUSEHOLD')" class="min-w-full p-4 bg-gradient-to-r from-blue-800 via-indigo-800 to-slate-900 text-white relative cursor-pointer select-none">
+          <div class="space-y-1.5">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 border border-white/30 text-[10px] font-black text-blue-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-sky-300 animate-pulse"></span>
+              <span>🧻 របស់ប្រើប្រាស់ & អនាម័យ</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-black tracking-tight">ក្រដាសអនាម័យ សាប៊ូ & បរិក្ខារ</h2>
+            <p class="text-[11px] text-blue-100/80 leading-relaxed">សម្ភារប្រើប្រាស់ក្នុងផ្ទះប្រចាំថ្ងៃ ស្តង់ដារសុវត្ថិភាព និងអនាម័យ</p>
+            <div class="pt-1 flex items-center gap-2">
+              <span class="px-3 py-1 bg-white text-blue-950 font-black text-[10px] rounded-xl shadow-xs">👉 ចុចមើលរបស់ប្រើប្រាស់</span>
+              <span class="text-[10px] text-blue-200 font-bold">ក្រដាស | សាប៊ូ | ជើងទម្រធុង</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4: សេវាដឹកជញ្ជូនរហ័ស -->
+        <div class="min-w-full p-4 bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 text-white relative select-none">
+          <div class="space-y-1.5">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/30 border border-emerald-400/40 text-[10px] font-black text-emerald-300">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>⚡ សេវាដឹកជញ្ជូន KC MART (ប៉ោយប៉ែត)</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-black tracking-tight">សេវាដឹកដល់មុខផ្ទះ ៣០ - ៤៥ នាទី</h2>
+            <p class="text-[11px] text-emerald-100/80 leading-relaxed">ដឹកជូនដល់មុខផ្ទះផ្ទាល់ដី បន្ទប់ជួល ជាន់ខ្ពស់ និងអគារក្នុងក្រុងប៉ោយប៉ែត</p>
+            <div class="pt-1 flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[10px] font-black">🛵 អ្នកដឹកផ្លូវការ KC</span>
+              <span class="text-[10px] text-slate-300 font-bold">បង់លុយសុទ្ធ ឬ ស្កេន ABA KHQR</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ចំណុច Dots សម្គាល់ Slide ខាងក្រោម -->
+      <div class="absolute bottom-2.5 right-4 z-20 flex items-center gap-1.5 bg-black/30 backdrop-blur-xs px-2 py-1 rounded-full">
+        <button type="button" onclick="goToPromoSlide(0)" class="banner-dot w-5 h-1.5 rounded-full bg-white transition-all"></button>
+        <button type="button" onclick="goToPromoSlide(1)" class="banner-dot w-1.5 h-1.5 rounded-full bg-white/40 transition-all"></button>
+        <button type="button" onclick="goToPromoSlide(2)" class="banner-dot w-1.5 h-1.5 rounded-full bg-white/40 transition-all"></button>
+        <button type="button" onclick="goToPromoSlide(3)" class="banner-dot w-1.5 h-1.5 rounded-full bg-white/40 transition-all"></button>
       </div>
     </div>
 
@@ -2444,6 +2512,57 @@
         console.warn("Cart restore error:", e);
       }
     }
+
+    // ==========================================
+    // 🌟 មុខងារគ្រប់គ្រងផ្ទាំង Slide ផ្សព្វផ្សាយស្វ័យប្រវត្តិ (Banner Auto-Slider)
+    // ==========================================
+    var currentPromoIndex = 0;
+    var promoSliderTimer = null;
+    var totalPromoSlides = 4;
+
+    function updatePromoSlideUI() {
+      var track = document.getElementById('promoBannerTrack');
+      if (track) {
+        track.style.transform = 'translateX(-' + (currentPromoIndex * 100) + '%)';
+      }
+      var dots = document.querySelectorAll('.banner-dot');
+      dots.forEach(function(dot, idx) {
+        if (idx === currentPromoIndex) {
+          dot.className = "banner-dot w-5 h-1.5 rounded-full bg-white transition-all";
+        } else {
+          dot.className = "banner-dot w-1.5 h-1.5 rounded-full bg-white/40 transition-all";
+        }
+      });
+    }
+
+    function nextPromoSlide() {
+      currentPromoIndex = (currentPromoIndex + 1) % totalPromoSlides;
+      updatePromoSlideUI();
+    }
+
+    function goToPromoSlide(index) {
+      currentPromoIndex = index;
+      updatePromoSlideUI();
+      resetPromoSliderTimer();
+    }
+
+    function resetPromoSliderTimer() {
+      if (promoSliderTimer) clearInterval(promoSliderTimer);
+      promoSliderTimer = setInterval(nextPromoSlide, 3500); // ផ្លាស់ប្តូរ Slide រៀងរាល់ ៣.៥ វិនាទីម្តង
+    }
+
+    // 🎯 ពេលភ្ញៀវចុចលើ Slide ណាមួយ វានឹងរំកិលទៅចម្រាញ់មុខទំនិញនោះភ្លាម
+    function clickSlidePromo(cat, btnId) {
+      var btn = document.getElementById(btnId);
+      if (typeof filterCatalog === 'function' && btn) {
+        filterCatalog(cat, btn);
+      }
+      var catSec = document.getElementById('catalogSection');
+      if (catSec) catSec.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // ចាប់ផ្តើមដំណើរការ Slide អូតូ
+    resetPromoSliderTimer();
 
    // 🔄 បើកទំព័រដំបូង៖ ស្តារកន្ត្រកទំនិញ & ព័ត៌មានភ្ញៀវជាមុនសិនបង្អស់ (Refresh មិនបាត់ទំនិញឡើយ ១០០%)
     window.addEventListener('DOMContentLoaded', async function() {
