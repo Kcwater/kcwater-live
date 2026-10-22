@@ -157,6 +157,13 @@ function renderStockModule() {
       '<button onclick="saveStockInToSupabase()" id="btnSaveStockInAction" class="btn-green bg-blue-600 hover:bg-blue-700 mt-3 font-bold py-3 text-xs">យល់ព្រមបញ្ចូលស្តុក</button>' +
     '</div>' +
 
+    '<div class="flex justify-between items-center mb-2 px-1">' +
+      '<span class="text-xs font-bold text-gray-500">តារាងទំនិញក្នុងស្តុក</span>' +
+      '<button type="button" onclick="autoFixAllSortDuplicates()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
+        '<i class="fas fa-wand-magic-sparkles text-yellow-300"></i> ⚡ រៀបលេខរៀងឡើងវិញកុំឱ្យស្ទួន (Auto-Fix)' +
+      '</button>' +
+    '</div>' +
+
     '<div class="card p-0 overflow-x-auto shadow-lg rounded-2xl border">' +
       '<table class="w-full text-left text-xs border-collapse">' +
         '<thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3 text-center w-16">🔢 លេខរៀង</th><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>' +
@@ -256,7 +263,7 @@ function previewProductImageFile(input) {
   }
 }
 
-// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (បង្ហាញលេខរៀងតែតាមប៉ុស្តិ៍លក់ជាក់ស្តែង)
+// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (មានប៊ូតុងរៀបលេខរៀងអូតូ និងគ្មានលេខស្ទួន)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
@@ -274,14 +281,13 @@ function renderStockTableRows() {
     var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs">-</span>' : 
       ('<span class="font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
 
-    // 🔍 ពិនិត្យមើលថាតើទំនិញនេះលក់លើ POS ឬ Web
     var isForPos = (ch === 'ALL' || ch === 'POS');
     var isForWeb = (ch === 'ALL' || ch === 'ONLINE');
 
-    var sortPosNum = (p.sort_order !== null && p.sort_order !== undefined && p.sort_order !== '') ? p.sort_order : 99;
-    var sortWebNum = (p.online_sort_order !== null && p.online_sort_order !== undefined && p.online_sort_order !== '') ? p.online_sort_order : sortPosNum;
+    var sortPosNum = (p.sort_order !== null && p.sort_order !== undefined && p.sort_order !== '') ? parseInt(p.sort_order) : 99;
+    var sortWebNum = (p.online_sort_order !== null && p.online_sort_order !== undefined && p.online_sort_order !== '') ? parseInt(p.online_sort_order) : sortPosNum;
 
-    // 🔢 ប្រអប់ POS: បង្ហាញតែពេលណាទំនិញនោះដាក់លក់លើ POS (បើលក់តែលើ Web បង្ហាញសញ្ញា -)
+    // 🔢 ប្រអប់ POS
     var posBoxHtml = isForPos ?
       ('<div class="text-center">' +
         '<span class="text-[9px] text-blue-700 font-black block">POS</span>' +
@@ -292,7 +298,7 @@ function renderStockTableRows() {
         '<span class="w-11 text-center font-bold text-gray-400 py-1 text-xs block bg-gray-100 rounded-lg border border-gray-200">-</span>' +
       '</div>');
 
-    // 🌐 ប្រអប់ Web: បង្ហាញតែពេលណាទំនិញនោះដាក់លក់លើ Web (បើលក់តែលើ POS បង្ហាញសញ្ញា -)
+    // 🌐 ប្រអប់ Web
     var webBoxHtml = isForWeb ?
       ('<div class="text-center">' +
         '<span class="text-[9px] text-emerald-700 font-black block">Web</span>' +
@@ -324,14 +330,29 @@ function renderStockTableRows() {
 
   tbody.innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
 }
-// ⚡ ១. មុខងារ Update លេខរៀងក្នុង POS ភ្លាមៗ
+
+// ⚡ ១. មុខងារ Update លេខរៀង POS (រុញលេខស្ទួនចេញអូតូ)
 async function quickUpdateSortPos(prodId, val) {
   var s = parseInt(val) || 1;
   try {
+    var cur = allProducts.find(i => i.id === prodId);
+    if (cur) cur.sort_order = s;
     await supabaseClient.from('products').update({ sort_order: s }).eq('id', prodId);
-    var p = allProducts.find(i => i.id === prodId);
-    if (p) p.sort_order = s;
-    showToast("បានប្តូរលេខរៀង POS ទៅ #" + s + " ជោគជ័យ!", "success");
+
+    // ពិនិត្យរកទំនិញ POS ណាដែលមានលេខ s ដូចគ្នា រួចរំកិលវាទៅលេខបន្ទាប់
+    var posItems = allProducts.filter(p => {
+      var ch = String(p.channel || 'ALL').toUpperCase();
+      return (ch === 'ALL' || ch === 'POS') && p.id !== prodId;
+    });
+
+    var conflicts = posItems.filter(p => parseInt(p.sort_order) === s);
+    for (var i = 0; i < conflicts.length; i++) {
+      var nextS = s + i + 1;
+      conflicts[i].sort_order = nextS;
+      await supabaseClient.from('products').update({ sort_order: nextS }).eq('id', conflicts[i].id);
+    }
+
+    showToast("បានប្តូរលេខ POS ទៅ #" + s + " និងរំកិលលេខស្ទួនជោគជ័យ!", "success");
     await fetchInitialPOSData();
     renderStockTableRows();
   } catch(e) {
@@ -339,19 +360,69 @@ async function quickUpdateSortPos(prodId, val) {
   }
 }
 
-// ⚡ ២. មុខងារ Update លេខរៀងលើ Web ភ្លាមៗ (មិនប៉ះពាល់ POS ឡើយ)
+// ⚡ ២. មុខងារ Update លេខរៀង Web (រុញលេខស្ទួនចេញអូតូ)
 async function quickUpdateSortWeb(prodId, val) {
   var s = parseInt(val) || 1;
   try {
+    var cur = allProducts.find(i => i.id === prodId);
+    if (cur) cur.online_sort_order = s;
     await supabaseClient.from('settings').upsert([{ key: 'ONLINE_SORT_' + prodId, value: String(s) }]);
-    var p = allProducts.find(i => i.id === prodId);
-    if (p) p.online_sort_order = s;
-    showToast("បានប្តូរលេខរៀង Web ទៅ #" + s + " ជោគជ័យ!", "success");
+
+    // ពិនិត្យរកទំនិញ Web ណាដែលមានលេខ s ដូចគ្នា រួចរំកិលវាទៅលេខបន្ទាប់
+    var webItems = allProducts.filter(p => {
+      var ch = String(p.channel || 'ALL').toUpperCase();
+      return (ch === 'ALL' || ch === 'ONLINE') && p.id !== prodId;
+    });
+
+    var conflicts = webItems.filter(p => parseInt(p.online_sort_order || p.sort_order) === s);
+    for (var j = 0; j < conflicts.length; j++) {
+      var nextWebS = s + j + 1;
+      conflicts[j].online_sort_order = nextWebS;
+      await supabaseClient.from('settings').upsert([{ key: 'ONLINE_SORT_' + conflicts[j].id, value: String(nextWebS) }]);
+    }
+
+    showToast("បានប្តូរលេខ Web ទៅ #" + s + " និងរំកិលលេខស្ទួនជោគជ័យ!", "success");
     renderStockTableRows();
   } catch(e) {
     showToast("កំហុស៖ " + e.message, "error");
   }
 }
+
+// ⚡ ៣. ប៊ូតុងវេទមន្ត៖ ចុច ១ ឃ្លីក រៀបចំលេខរៀងឡើងវិញទាំងអស់ (1, 2, 3, 4, 5...) គ្មានលេខស្ទួនឡើយ!
+async function autoFixAllSortDuplicates() {
+  showToast("កំពុងរៀបចំលេខរៀងកុំឱ្យស្ទួន...", "info");
+  try {
+    // ក. រៀបចំលេខ POS ឡើងវិញ
+    var posItems = allProducts.filter(p => {
+      var ch = String(p.channel || 'ALL').toUpperCase();
+      return ch === 'ALL' || ch === 'POS';
+    }).sort((a, b) => (parseInt(a.sort_order) || 99) - (parseInt(b.sort_order) || 99));
+
+    for (var i = 0; i < posItems.length; i++) {
+      var nPos = i + 1;
+      posItems[i].sort_order = nPos;
+      await supabaseClient.from('products').update({ sort_order: nPos }).eq('id', posItems[i].id);
+    }
+
+    // ខ. រៀបចំលេខ Web ឡើងវិញ
+    var webItems = allProducts.filter(p => {
+      var ch = String(p.channel || 'ALL').toUpperCase();
+      return ch === 'ALL' || ch === 'ONLINE';
+    }).sort((a, b) => (parseInt(a.online_sort_order || a.sort_order) || 99) - (parseInt(b.online_sort_order || b.sort_order) || 99));
+
+    for (var j = 0; j < webItems.length; j++) {
+      var nWeb = j + 1;
+      webItems[j].online_sort_order = nWeb;
+      await supabaseClient.from('settings').upsert([{ key: 'ONLINE_SORT_' + webItems[j].id, value: String(nWeb) }]);
+    }
+
+    showToast("🎉 បានតម្រៀបលេខរៀងទាំង POS និង Web ឡើងវិញរលូន ១០០% គ្មានស្ទួនទៀតឡើយ!", "success");
+    renderStockTableRows();
+  } catch(e) {
+    showToast("កំហុស៖ " + e.message, "error");
+  }
+}
+
 // 🧹 មុខងារជម្រះប្រអប់បញ្ចូលទិន្នន័យទំនិញឱ្យនៅទទេស្អាត ១០០% ត្រៀមបញ្ចូលទំនិញថ្មី
 function cancelEditProduct() {
   editingProductId = null;
