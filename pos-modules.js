@@ -256,7 +256,7 @@ function previewProductImageFile(input) {
   }
 }
 
-// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (មានប្រអប់លេខ POS និងលេខ Web ដាច់ពីគ្នា)
+// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (បង្ហាញលេខរៀងតែតាមប៉ុស្តិ៍លក់ជាក់ស្តែង)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
@@ -274,21 +274,40 @@ function renderStockTableRows() {
     var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs">-</span>' : 
       ('<span class="font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
 
+    // 🔍 ពិនិត្យមើលថាតើទំនិញនេះលក់លើ POS ឬ Web
+    var isForPos = (ch === 'ALL' || ch === 'POS');
+    var isForWeb = (ch === 'ALL' || ch === 'ONLINE');
+
     var sortPosNum = (p.sort_order !== null && p.sort_order !== undefined && p.sort_order !== '') ? p.sort_order : 99;
     var sortWebNum = (p.online_sort_order !== null && p.online_sort_order !== undefined && p.online_sort_order !== '') ? p.online_sort_order : sortPosNum;
 
+    // 🔢 ប្រអប់ POS: បង្ហាញតែពេលណាទំនិញនោះដាក់លក់លើ POS (បើលក់តែលើ Web បង្ហាញសញ្ញា -)
+    var posBoxHtml = isForPos ?
+      ('<div class="text-center">' +
+        '<span class="text-[9px] text-blue-700 font-black block">POS</span>' +
+        '<input type="number" value="' + sortPosNum + '" onchange="quickUpdateSortPos(\'' + p.id + '\', this.value)" class="w-11 text-center font-black text-blue-900 border-2 border-blue-200 focus:border-blue-600 rounded-lg py-1 text-xs outline-none bg-white shadow-2xs" title="លេខរៀងក្នុង POS">' +
+      '</div>') :
+      ('<div class="text-center opacity-30 select-none">' +
+        '<span class="text-[9px] text-gray-400 font-bold block">POS</span>' +
+        '<span class="w-11 text-center font-bold text-gray-400 py-1 text-xs block bg-gray-100 rounded-lg border border-gray-200">-</span>' +
+      '</div>');
+
+    // 🌐 ប្រអប់ Web: បង្ហាញតែពេលណាទំនិញនោះដាក់លក់លើ Web (បើលក់តែលើ POS បង្ហាញសញ្ញា -)
+    var webBoxHtml = isForWeb ?
+      ('<div class="text-center">' +
+        '<span class="text-[9px] text-emerald-700 font-black block">Web</span>' +
+        '<input type="number" value="' + sortWebNum + '" onchange="quickUpdateSortWeb(\'' + p.id + '\', this.value)" class="w-11 text-center font-black text-emerald-800 border-2 border-emerald-300 focus:border-emerald-600 rounded-lg py-1 text-xs outline-none bg-white shadow-2xs" title="លេខរៀងលើ Web ភ្ញៀវ">' +
+      '</div>') :
+      ('<div class="text-center opacity-30 select-none">' +
+        '<span class="text-[9px] text-gray-400 font-bold block">Web</span>' +
+        '<span class="w-11 text-center font-bold text-gray-400 py-1 text-xs block bg-gray-100 rounded-lg border border-gray-200">-</span>' +
+      '</div>');
+
     html += '<tr class="border-b hover:bg-gray-50">' +
-      // 🔢 ប្រអប់វាយលេខ POS និង Web ដាច់ពីគ្នា
-      '<td class="p-2 text-center bg-blue-50/30 whitespace-nowrap">' +
+      '<td class="p-2 text-center bg-blue-50/20 whitespace-nowrap">' +
         '<div class="flex items-center justify-center gap-1.5">' +
-          '<div class="text-center">' +
-            '<span class="text-[9px] text-blue-700 font-black block">POS</span>' +
-            '<input type="number" value="' + sortPosNum + '" onchange="quickUpdateSortPos(\'' + p.id + '\', this.value)" class="w-11 text-center font-black text-blue-900 border-2 border-blue-200 focus:border-blue-600 rounded-lg py-1 text-xs outline-none bg-white shadow-2xs" title="លេខរៀងក្នុង POS">' +
-          '</div>' +
-          '<div class="text-center">' +
-            '<span class="text-[9px] text-emerald-700 font-black block">Web</span>' +
-            '<input type="number" value="' + sortWebNum + '" onchange="quickUpdateSortWeb(\'' + p.id + '\', this.value)" class="w-11 text-center font-black text-emerald-800 border-2 border-emerald-300 focus:border-emerald-600 rounded-lg py-1 text-xs outline-none bg-white shadow-2xs" title="លេខរៀងលើ Web ភ្ញៀវ">' +
-          '</div>' +
+          posBoxHtml +
+          webBoxHtml +
         '</div>' +
       '</td>' +
       '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
@@ -305,7 +324,6 @@ function renderStockTableRows() {
 
   tbody.innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
 }
-
 // ⚡ ១. មុខងារ Update លេខរៀងក្នុង POS ភ្លាមៗ
 async function quickUpdateSortPos(prodId, val) {
   var s = parseInt(val) || 1;
