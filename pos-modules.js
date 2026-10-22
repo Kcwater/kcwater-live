@@ -252,7 +252,7 @@ function previewProductImageFile(input) {
   }
 }
 
-// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (ដែលខ្វះកាលពីមិញ)
+// 📋 មុខងារទាញទំនិញមកបង្ហាញក្នុងតារាងស្តុក (លេខរៀង & រូបភាពត្រឹមត្រូវ មិនស្ទួន)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
@@ -270,12 +270,10 @@ function renderStockTableRows() {
     var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs">-</span>' : 
       ('<span class="font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
 
-   var sortNum = (p.sort_order !== null && p.sort_order !== undefined) ? p.sort_order : 99;
+    var sortNum = (p.sort_order !== null && p.sort_order !== undefined) ? p.sort_order : 99;
 
     html += '<tr class="border-b hover:bg-gray-50">' +
-      '<td class="p-2.5 text-center font-black text-blue-900 bg-blue-50/50 text-sm">#' + sortNum + '</td>' +
-      '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
-      '<td class="p-2.5 text-center font-black text-blue-900 bg-blue-50/40 text-xs sm:text-sm">#' + sortNum + '</td>' +
+      '<td class="p-2.5 text-center font-black text-blue-900 bg-blue-50/50 text-xs sm:text-sm">#' + sortNum + '</td>' +
       '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
       '<td class="p-2.5 font-bold text-gray-800">' + p.name + '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + '</span></td>' +
       '<td class="p-2.5 text-center">' + chBadge + '</td>' +
@@ -288,9 +286,8 @@ function renderStockTableRows() {
     '</tr>';
   });
 
-  tbody.innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
+  tbody.innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
 }
-
 // 🧹 មុខងារជម្រះប្រអប់បញ្ចូលទិន្នន័យទំនិញឱ្យនៅទទេស្អាត ១០០% ត្រៀមបញ្ចូលទំនិញថ្មី
 function cancelEditProduct() {
   editingProductId = null;
@@ -390,7 +387,7 @@ async function prepareEditProduct(id) {
   toggleChannelPrices();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-// 💾 រក្សាទុកទំនិញ (រក្សាទុក Category, Description & Badge ដោយស្វ័យប្រវត្តិ)
+// 💾 រក្សាទុកទំនិញ (មានប្រព័ន្ធរំកិលលេខរៀងអូតូ ការពារកុំឱ្យស្ទួនលេខ ១)
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
   if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
@@ -400,6 +397,7 @@ async function saveProductToSupabase() {
   var descVal = document.getElementById('pDesc') ? document.getElementById('pDesc').value.trim() : '';
   var badgeVal = document.getElementById('pBadge') ? document.getElementById('pBadge').value : 'គុណភាពខ្ពស់';
   var catVal = document.getElementById('pCategory') ? document.getElementById('pCategory').value : 'GROCERY';
+  var chosenSort = parseInt(document.getElementById('pSort') ? document.getElementById('pSort').value || 1 : 1);
 
   var payload = {
     id: prodId,
@@ -411,7 +409,7 @@ async function saveProductToSupabase() {
     online_price: parseFloat(document.getElementById('pOnlinePr').value || 0),
     min_stock: parseFloat(document.getElementById('pMin').value || 5),
     channel: document.getElementById('pChannel').value,
-    sort_order: parseInt(document.getElementById('pSort') ? document.getElementById('pSort').value || 1 : 1),
+    sort_order: chosenSort,
     img: imgData
   };
 
@@ -419,6 +417,20 @@ async function saveProductToSupabase() {
   btn.disabled = true;
 
   try {
+    // 🔄 ការពារកុំឱ្យស្ទួនលេខរៀង៖ បើមានទំនិញចាស់ផ្សេងទៀតជាប់លេខរៀងនេះដែរ រំកិលវាចុះក្រោមអូតូ
+    var targetId = editingProductId || prodId;
+    var conflictingItems = allProducts.filter(function(item) {
+      return item.id !== targetId && parseInt(item.sort_order) === chosenSort;
+    });
+
+    if (conflictingItems.length > 0) {
+      for (var c = 0; c < conflictingItems.length; c++) {
+        var shiftedSort = chosenSort + c + 1;
+        await supabaseClient.from('products').update({ sort_order: shiftedSort }).eq('id', conflictingItems[c].id);
+        conflictingItems[c].sort_order = shiftedSort;
+      }
+    }
+
     if (editingProductId) {
       await supabaseClient.from('products').update(payload).eq('id', editingProductId);
     } else {
@@ -426,7 +438,6 @@ async function saveProductToSupabase() {
       await supabaseClient.from('products').insert([payload]);
     }
 
-    // 🛡️ រក្សាទុក Category, Description និង Badge ចូលតារាង Settings ដោយសុវត្ថិភាពខ្ពស់
     var settingRows = [
       { key: 'DESC_' + prodId, value: descVal },
       { key: 'BADGE_' + prodId, value: badgeVal },
