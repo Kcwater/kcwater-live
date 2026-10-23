@@ -163,6 +163,9 @@ async function fetchCompanySummaryFromSupabase() {
     console.error("Company summary error:", e);
   }
 }
+// ==========================================
+// 👤 ទាញទិន្នន័យកាតគ្រីអតិថិជន (ប្រើម៉ោងកម្ពុជា UTC+7 ត្រឹមត្រូវ ១០០%)
+// ==========================================
 async function fetchFullStatementFromSupabase() {
   var name = document.getElementById('custSearchInp').value.trim();
   var sd = document.getElementById('custStartDate').value;
@@ -173,30 +176,34 @@ async function fetchFullStatementFromSupabase() {
   container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin text-green-600 text-base"></i> កំពុងទាញទិន្នន័យកាតគ្រី...</div>';
 
   try {
-    // ១. ស្វែងរកជើងទឹកដកក្នុងចន្លោះថ្ងៃ
+    // 🇰🇭 កំណត់ម៉ោងកម្ពុជា UTC+7 ច្បាស់លាស់
+    var startIso = sd + 'T00:00:00+07:00';
+    var endIso = ed + 'T23:59:59.999+07:00';
+
+    // ១. ស្វែងរកជើងទឹកដកក្នុងចន្លោះថ្ងៃតាមម៉ោងកម្ពុជា
     const { data: items } = await supabaseClient
       .from('transactions')
       .select('*')
       .eq('customer_name', name)
-      .gte('created_at', sd + 'T00:00:00Z')
-      .lte('created_at', ed + 'T23:59:59Z')
+      .gte('created_at', startIso)
+      .lte('created_at', endIso)
       .order('created_at', { ascending: true });
 
-    // ២. ស្វែងរកការទូទាត់សងក្នុងចន្លោះថ្ងៃ
+    // ២. ស្វែងរកការទូទាត់សងក្នុងចន្លោះថ្ងៃតាមម៉ោងកម្ពុជា
     const { data: payments } = await supabaseClient
       .from('settlements')
       .select('*')
       .eq('customer_name', name)
-      .gte('settled_at', sd + 'T00:00:00Z')
-      .lte('settled_at', ed + 'T23:59:59Z')
+      .gte('settled_at', startIso)
+      .lte('settled_at', endIso)
       .order('settled_at', { ascending: true });
 
-    // ៣. ស្វែងរកបំណុលចាស់មុនថ្ងៃ Start (Settlement Balance)
+    // ៣. ស្វែងរកបំណុលចាស់មុនថ្ងៃ Start Date តាមម៉ោងកម្ពុជា
     const { data: oldSet } = await supabaseClient
       .from('settlements')
       .select('balance_khr, settled_at')
       .eq('customer_name', name)
-      .lt('settled_at', sd + 'T00:00:00Z')
+      .lt('settled_at', startIso)
       .order('id', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -210,7 +217,7 @@ async function fetchFullStatementFromSupabase() {
       .select('total')
       .eq('customer_name', name)
       .eq('status', 'Unpaid')
-      .lt('created_at', sd + 'T00:00:00Z');
+      .lt('created_at', startIso);
 
     if (lastSetTime) {
       oldUnpaidQuery = oldUnpaidQuery.gt('created_at', lastSetTime);
