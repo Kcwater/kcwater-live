@@ -873,7 +873,7 @@ function setPosCategoryFilter(cat) {
   rPG();
 }
 
-// 📦 មុខងារទាញទំនិញមកបង្ហាញក្នុងក្រឡាចត្រង្គ POS (មាន Filter ប្រភេទ & Search)
+// 📦 មុខងារទាញទំនិញមកបង្ហាញក្នុងក្រឡាចត្រង្គ POS (តម្លៃ ៣ ជាន់៖ ៛ លើ, ฿ កណ្តាល, $ ក្រោម គ្មានវង់ក្រចក ())
 function rPG() {
   var grid = document.getElementById('pGrid');
   if (!grid) return;
@@ -919,22 +919,42 @@ function rPG() {
     return;
   }
 
+  var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
   var html = '';
   filtered.forEach(function(p) {
     var sp = specialPrices.find(s => s.customer_name === custName && s.product_name === p.name);
-   var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
+    var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
+    var rawCurr = (p.currency || 'KHR').toUpperCase();
 
-    // 💵 គណនាតម្លៃបង្ហាញ (បើជាដុល្លារ បង្ហាញ $ ផង និងរៀលអូតូផង)
-    var priceDisplay = '';
-    if (p.currency === 'USD') {
-      var khrEquiv = Math.round(unitPrice * (typeof exchangeRateUSD !== 'undefined' ? exchangeRateUSD : 4100));
-      priceDisplay = '$ ' + Number(unitPrice).toFixed(2) + ' <span class="text-[10px] text-gray-400 font-bold block leading-none mt-0.5">(៛ ' + khrEquiv.toLocaleString() + ')</span>';
-    } else if (p.currency === 'THB') {
-      var khrEquivThb = Math.round(unitPrice * (typeof exchangeRateTHB !== 'undefined' ? exchangeRateTHB : 115));
-      priceDisplay = '฿ ' + Number(unitPrice).toLocaleString() + ' <span class="text-[10px] text-gray-400 font-bold block leading-none mt-0.5">(៛ ' + khrEquivThb.toLocaleString() + ')</span>';
+    // 🪙 គណនា ៣ រូបិយប័ណ្ណស្មើៗគ្នា (៛, ฿, $) តាមអត្រាប្តូរប្រាក់ជាក់ស្តែង
+    var khrVal = 0, thbVal = 0, usdVal = 0;
+
+    if (rawCurr === 'USD') {
+      khrVal = Math.round(unitPrice * rateUSD);
+      usdVal = unitPrice;
+      thbVal = Math.round(khrVal / rateTHB);
+    } else if (rawCurr === 'THB') {
+      khrVal = Math.round(unitPrice * rateTHB);
+      thbVal = unitPrice;
+      usdVal = parseFloat((khrVal / rateUSD).toFixed(2));
     } else {
-      priceDisplay = Number(unitPrice).toLocaleString() + ' ៛';
+      khrVal = Math.round(unitPrice);
+      thbVal = Math.round(unitPrice / rateTHB);
+      usdVal = parseFloat((unitPrice / rateUSD).toFixed(2));
     }
+
+    // 💵 ទម្រង់តម្លៃ ៣ ជាន់ (៛ លើ, ฿ កណ្តាល, $ ក្រោម ដោយគ្មានសញ្ញាវង់ក្រចក () ឡើយ)
+    var khrText = '៛ ' + Number(khrVal).toLocaleString();
+    var thbText = '฿ ' + Number(thbVal).toLocaleString();
+    var usdText = '$ ' + Number(usdVal).toFixed(2);
+
+    var priceDisplay = '<div class="space-y-0.5 text-center mt-1 leading-tight">' +
+      '<div class="text-xs sm:text-sm font-black text-green-700">' + khrText + '</div>' +
+      '<div class="text-[10px] sm:text-[11px] font-black text-amber-600">' + thbText + '</div>' +
+      '<div class="text-[10px] sm:text-[11px] font-black text-blue-700">' + usdText + '</div>' +
+    '</div>';
 
     var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
     var spBadge = sp ? '<span class="absolute top-2 left-2 bg-yellow-100 text-yellow-800 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-yellow-300">តម្លៃពិសេស</span>' : '';
@@ -944,14 +964,13 @@ function rPG() {
       '<span class="absolute top-2 right-2 bg-green-100 text-green-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">' + (p.type === 'ផលិតឯង' ? 'ផលិតឯង' : ('សល់ ' + p.stock)) + '</span>' +
       '<div class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mb-1"><img src="' + imgUrl + '" class="max-w-full max-h-full object-contain drop-shadow-sm"></div>' +
       '<h4 class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 h-8 flex items-center justify-center">' + p.name + '</h4>' +
-      '<div class="text-xs sm:text-sm font-extrabold text-green-600 mt-1 leading-tight">' + priceDisplay + '</div>' +
+      priceDisplay +
       '<div class="mt-2 w-full py-1.5 bg-green-50 group-hover:bg-green-600 text-green-700 group-hover:text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1"><i class="fas fa-plus text-[10px]"></i> រើសទិញ</div>' +
     '</div>';
   });
 
   grid.innerHTML = html || '<p class="col-span-full py-8 text-center text-gray-400 text-xs italic">រកមិនឃើញទំនិញត្រូវនឹងការស្វែងរកឡើយ</p>';
 }
-
 
 // ==========================================
 // 💵 ប្រព័ន្ធគ្រប់គ្រង ៣ រូបិយប័ណ្ណ, ប្តូរពណ៌ & ថែម 00 (MODAL LOGIC)
