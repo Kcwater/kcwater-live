@@ -837,7 +837,7 @@ function openDriverDirectQr(amount, custName) {
   }
 }
 
-// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver Cockpit + សង្ខេបលុយប្រចាំថ្ងៃ)
+// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (ប្រើម៉ោងកម្ពុជា UTC+7 ត្រឹមត្រូវ ១០០%)
 async function renderCompanyDeliveriesModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -872,7 +872,9 @@ async function renderCompanyDeliveriesModule() {
   var summaryBox = document.getElementById('driverDailySummaryBox');
 
   try {
-    var todayStr = new Date().toISOString().split('T')[0];
+    // 🇰🇭 ប្រើប្រព័ន្ធម៉ោងកម្ពុជា UTC+7
+    var todayStr = getCambodiaToday();
+    var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
     // ១. ទាញការងារកំពុងដឹក (Assigned) របស់អ្នកដឹកនេះ
     const { data: list, error } = await supabaseClient
@@ -884,25 +886,28 @@ async function renderCompanyDeliveriesModule() {
 
     if (error) throw error;
 
-    // ២. ទាញការងារដែលបានដឹកជោគជ័យថ្ងៃនេះ (Delivered Today) ដើម្បីបូកសរុបលុយផ្ទៀងផ្ទាត់
+    // ២. ទាញការងារដែលបានដឹកជោគជ័យថ្ងៃនេះ (Delivered Today) គិតតាមម៉ោងកម្ពុជា
     const { data: deliveredToday } = await supabaseClient
       .from('orders')
       .select('*')
       .eq('status', 'Delivered')
       .eq('driver_name', driverName)
-      .gte('created_at', todayStr + 'T00:00:00Z');
+      .gte('created_at', todayQueryStart);
 
-    var deliveredCount = (deliveredToday || []).length;
+    var deliveredCount = 0;
     var cashToHandover = 0;
     var abaCollected = 0;
 
     (deliveredToday || []).forEach(function(o) {
-      var amt = parseFloat(o.total || 0);
-      var isABA = String(o.payment_method || '').indexOf('ABA') !== -1;
-      if (isABA) {
-        abaCollected += amt;
-      } else {
-        cashToHandover += amt;
+      if (isTodayInCambodia(o.created_at)) {
+        deliveredCount++;
+        var amt = parseFloat(o.total || 0);
+        var isABA = String(o.payment_method || '').indexOf('ABA') !== -1;
+        if (isABA) {
+          abaCollected += amt;
+        } else {
+          cashToHandover += amt;
+        }
       }
     });
 
@@ -938,20 +943,22 @@ async function renderCompanyDeliveriesModule() {
       var cleanPhone = String(task.phone || '').replace(/[^0-9]/g, '');
       var safeName = String(task.customer_name || '').replace(/'/g, "\\'");
       var mapTarget = task.location_url || task.address || '';
-      var timeStr = new Date(task.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      // 🇰🇭 ម៉ោងកម្ពុជា
+      var timeStr = new Date(task.created_at).toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
 
-      // 💾 រក្សាទុករូបថតមុខផ្ទះចូលក្នុង Memory សុវត្ថិភាពដើម្បីកុំឱ្យបាក់ប៊ូតុង
       if (task.photo_url) {
         storeOrderPhoto(task.order_id, task.photo_url, task.customer_name);
       }
 
-      // បង្កើតតំណភ្ជាប់ Telegram និង WhatsApp ទៅកាន់លេខទូរស័ព្ទភ្ញៀវ (+855)
       var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
       var tgChatLink = "https://t.me/+" + intlPhone;
       var waChatLink = "https://wa.me/" + intlPhone;
 
       html += '<div class="bg-white p-4 rounded-3xl border-2 border-emerald-400 shadow-md space-y-3 animate-in zoom-in duration-200">' +
-        // ក្បាលកាត
         '<div class="flex justify-between items-start border-b border-slate-100 pb-2.5">' +
           '<div>' +
             '<div class="flex items-center gap-1.5">' +
@@ -966,7 +973,6 @@ async function renderCompanyDeliveriesModule() {
           '</div>' +
         '</div>' +
 
-        // ព័ត៌មានទឹក និងទីតាំង
         '<div class="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200/80 space-y-1.5 text-xs text-slate-700">' +
           '<div class="flex items-start gap-1.5">' +
             '<span class="text-slate-400 font-bold whitespace-nowrap">📦 ទឹកត្រូវដឹក៖</span>' +
@@ -983,7 +989,6 @@ async function renderCompanyDeliveriesModule() {
           '</div>' : '') +
         '</div>' +
 
-        // ជួរប៊ូតុងជំនួយរហ័ស (ខល, Telegram, WhatsApp, ផែនទី, រូបផ្ទះ, ABA QR)
         '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-xs">' +
           (cleanPhone ? 
           '<a href="tel:' + cleanPhone + '" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
@@ -1005,7 +1010,6 @@ async function renderCompanyDeliveriesModule() {
             '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
 
-          // 📷 ប៊ូតុងមើលរូបមុខផ្ទះដែលដំណើរការ ១០០% លែងបាត់ទៀតហើយ
           (task.photo_url ? 
           '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')" class="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-camera text-amber-600"></i> រូបមុខផ្ទះ' +
@@ -1016,7 +1020,6 @@ async function renderCompanyDeliveriesModule() {
           '</button>' +
         '</div>' +
 
-        // ប៊ូតុងបញ្ចប់ការដឹក
         '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeName + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
           '<i class="fas fa-check-circle text-base"></i> ដឹកដល់ហើយ & ប្រមូលលុយរួច' +
         '</button>' +
@@ -1028,6 +1031,7 @@ async function renderCompanyDeliveriesModule() {
     container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + e.message + '</div>';
   }
 }
+
 // ==========================================
 // 🌐 ផ្ទាំងមជ្ឈមណ្ឌលលក់ ONLINE ពេញលេញ (ONLINE HUB - 3 IN 1)
 // ==========================================
