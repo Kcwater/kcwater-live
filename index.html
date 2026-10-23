@@ -1598,187 +1598,245 @@ function getLocalizedProductName(p, lang) {
         if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">Error: ' + err.message + '</div>';
       }
     }
-    // 🎨 បង្ហាញកាតទំនិញទំនើប (តម្លៃ ៣ ជាន់៖ ៛ លើ, ฿ កណ្តាល, $ ក្រោម ដោយគ្មានវង់ក្រចក () ឡើយ)
-    function renderCatalogGrid(filterCat) {
-      filterCat = filterCat || 'ALL';
-      var grid = document.getElementById('catalogGrid');
-      if (!grid) return;
-      var d = DICT[currentLang] || DICT.km;
-      var html = '';
+    
+    // 🎨 បង្ហាញកាតទំនិញ (គាំទ្រតម្រង ❤️ ចូលចិត្ត & ប៊ូតុងបេះដូងលើកាត)
+function renderCatalogGrid(filterCat) {
+  filterCat = filterCat || activeCatalogCategoryFilter || 'ALL';
+  var grid = document.getElementById('catalogGrid');
+  if (!grid) return;
+  var d = DICT[currentLang] || DICT.km;
+  var favList = getCustomerFavoritesList();
+  var html = '';
 
-      STORE_CATALOG.forEach(function(item) {
-        // 🔍 តម្រង Category
-        if (filterCat !== 'ALL') {
-          var isMatch = (item.cat === filterCat);
-          if (filterCat === 'GENERAL' && (item.cat === 'GROCERY' || item.cat === 'HOUSEHOLD' || item.cat === 'GENERAL')) {
-            isMatch = true;
-          }
-          if (!isMatch) return;
-        }
+  STORE_CATALOG.forEach(function(item) {
+    var isFavorited = (favList.indexOf(String(item.id)) !== -1);
 
-        var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
-        var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
-        
-        var inCartBadge = inCart > 0 ? 
-          '<span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs animate-bounce shrink-0">' + inCart + '</span>' : '<span></span>';
-
-        var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
-
-        // 🏷️ បកប្រែផ្លាក Badge ស្វ័យប្រវត្តិ
-        var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
-        var badgeText = rawBadge;
-        if (currentLang === 'en') {
-          if (rawBadge === 'ពេញនិយម') badgeText = 'Popular';
-          else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = 'Premium';
-          else if (rawBadge === 'លក់ដាច់') badgeText = 'Best Seller';
-          else if (rawBadge === 'ទំនិញថ្មី') badgeText = 'New Arrival';
-        } else if (currentLang === 'zh') {
-          if (rawBadge === 'ពេញនិយម') badgeText = '热销人气';
-          else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = '特级品质';
-          else if (rawBadge === 'លក់ដាច់') badgeText = '畅销爆款';
-          else if (rawBadge === 'ទំនិញថ្មី') badgeText = '新品上市';
-        }
-
-        var badgeLabel = isOutOfStock ? 
-          '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">' + (currentLang === 'en' ? 'Out of Stock' : (currentLang === 'zh' ? '缺货' : '❌ អស់ស្តុក')) + '</span>' : 
-          ((badgeText !== 'NONE') ? 
-            '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[95px]">' + badgeText + '</span>' : '<span></span>');
-
-        var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
-        var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
-
-        var actionBtn = isOutOfStock ? 
-          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">' + (currentLang === 'en' ? 'Sold' : (currentLang === 'zh' ? '已售' : 'អស់ស្តុក')) + '</span>' : 
-          '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0" title="រើសទិញ">' +
-            (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
-          '</button>';
-
-        // 💵 បង្ហាញ ៣ រូបិយប័ណ្ណតាមលំដាប់៖ ៛ (លើ), ฿ (កណ្តាល), $ (ក្រោម) ដោយគ្មានសញ្ញាវង់ក្រចក ()
-        var khrStr = '៛ ' + Number(item.priceKhr || 0).toLocaleString();
-        var thbStr = '฿ ' + Number(item.priceThb || 0).toLocaleString();
-        var usdStr = '$ ' + Number(item.priceUsd || 0).toFixed(2);
-
-        var priceDisplay = '<div class="space-y-0.5 text-left">' +
-          '<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">' + khrStr + '</div>' +
-          '<div class="text-[10px] sm:text-[11px] font-black text-amber-700 leading-none">' + thbStr + '</div>' +
-          '<div class="text-[10px] sm:text-[11px] font-black text-blue-700 leading-none">' + usdStr + '</div>' +
-        '</div>';
-
-        var priceLabelText = (currentLang === 'en' ? 'Price' : (currentLang === 'zh' ? '价格' : 'តម្លៃ'));
-
-        // 🌟 រចនាបថកាតទំនើប
-        html += '<div ' + clickAction + ' class="kc-glass-card p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
-          // ជួរទី ១៖ ផ្លាក Badge & ចំនួនក្នុងកន្ត្រក
-          '<div class="flex justify-between items-center w-full mb-1 min-h-[20px]">' +
-            badgeLabel +
-            inCartBadge +
-          '</div>' +
-
-          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ
-          '<div class="w-full h-24 sm:h-28 flex items-center justify-center p-1 my-1 bg-slate-50/80 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/50 transition">' + 
-            item.svg + 
-          '</div>' +
-
-          // ជួរទី ៣៖ ឈ្មោះទំនិញ
-          '<div class="text-left px-0.5 mt-1 mb-1.5">' +
-            '<h4 data-trans-key="' + item.raw_name + '" class="text-[11px] sm:text-xs font-bold text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
-          '</div>' +
-
-          // ជួរទី ៤៖ តម្លៃ ៣ ជាន់ & ប៊ូតុងរើសទិញ
-          '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
-            '<div class="min-w-0 flex-1">' +
-              '<span class="text-[8.5px] sm:text-[9px] text-slate-400 font-bold block leading-none mb-0.5">' + priceLabelText + '</span>' +
-              priceDisplay +
-            '</div>' +
-            actionBtn +
-          '</div>' +
-        '</div>';
-      });
-
-      if (!html) {
-        var emptyText = (currentLang === 'en' ? 'No products available in this category' : (currentLang === 'zh' ? '当前分类暂无商品' : 'មិនទាន់មានទំនិញក្នុងផ្នែកនេះនៅឡើយទេ'));
-        html = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs space-y-2">' +
-          '<div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg"><i class="fas fa-box-open"></i></div>' +
-          '<span>' + emptyText + '</span>' +
-        '</div>';
+    // 🔍 ១. តម្រងតាម ❤️ ចូលចិត្ត (Favorites)
+    if (filterCat === 'FAVORITES') {
+      if (!isFavorited) return; // បើភ្ញៀវមិនបានចុចបេះដូង មិនបង្ហាញឡើយ
+    } 
+    // 🔍 ២. តម្រងតាម Category ធម្មតា
+    else if (filterCat !== 'ALL') {
+      var isMatch = (item.cat === filterCat);
+      if (filterCat === 'GENERAL' && (item.cat === 'GROCERY' || item.cat === 'HOUSEHOLD' || item.cat === 'GENERAL')) {
+        isMatch = true;
       }
-
-      grid.innerHTML = html;
+      if (!isMatch) return;
     }
 
-    // ==========================================
-    // 📂 មុខងារបង្កើតប្រអប់ប្រភេទស្វ័យប្រវត្តិ (បង្ហាញតែប្រអប់ណាដែលមានទំនិញ + ប៊ូតុង ❤️ ចូលចិត្ត)
-    // ==========================================
-    var activeCatalogCategoryFilter = 'ALL';
+    var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
+    var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
+    var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-    function renderCategoryChips() {
-      var container = document.getElementById('categoryChipsContainer');
-      if (!container) return;
+    // 🏷️ Badge ទំនិញ
+    var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
+    var badgeText = rawBadge;
+    if (currentLang === 'en') {
+      if (rawBadge === 'ពេញនិយម') badgeText = 'Popular';
+      else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = 'Premium';
+      else if (rawBadge === 'លក់ដាច់') badgeText = 'Best Seller';
+      else if (rawBadge === 'ទំនិញថ្មី') badgeText = 'New';
+    } else if (currentLang === 'zh') {
+      if (rawBadge === 'ពេញនិយម') badgeText = '热销';
+      else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = '品质';
+      else if (rawBadge === 'លក់ដាច់') badgeText = '爆款';
+      else if (rawBadge === 'ទំនិញថ្មី') badgeText = '新品';
+    }
 
-      // ១. រាប់ចំនួនទំនិញតាមប្រភេទនីមួយៗ
-      var counts = { GROCERY: 0, HOUSEHOLD: 0, BARREL: 0, PACK: 0, EQUIP: 0, GENERAL: 0 };
-      STORE_CATALOG.forEach(function(item) {
-        var c = (item.cat || 'GENERAL').toUpperCase();
-        if (counts[c] !== undefined) counts[c]++;
-        else counts.GENERAL++;
-      });
+    var badgeLabel = isOutOfStock ? 
+      '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">' + (currentLang === 'en' ? 'Out of Stock' : (currentLang === 'zh' ? '缺货' : '❌ អស់ស្តុក')) + '</span>' : 
+      ((badgeText !== 'NONE') ? 
+        '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[85px]">' + badgeText + '</span>' : '<span></span>');
 
-      // ២. រាប់ចំនួនទំនិញដែលភ្ញៀវបានចុចបេះដូងចូលចិត្ត (Favorites)
-      var favCount = 0;
-      if (typeof getCustomerFavoritesList === 'function') {
-        favCount = getCustomerFavoritesList().length;
-      }
+    // ❤️ ប៊ូតុងបេះដូង Favorite លើកាតទំនិញ
+    var favBtn = '<button type="button" onclick="toggleFavoriteProduct(\'' + item.id + '\', event)" class="w-7 h-7 rounded-full bg-white/90 hover:bg-rose-50 border border-slate-200 text-xs flex items-center justify-center shadow-2xs active:scale-90 transition shrink-0 ' + 
+      (isFavorited ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400') + '" title="ចូលចិត្ត">' +
+      '<i class="' + (isFavorited ? 'fas fa-heart' : 'far fa-heart') + '"></i>' +
+    '</button>';
 
-      // ៣. វចនានុក្រមឈ្មោះប៊ូតុងតាម ៣ ភាសា (ខ្មែរ / EN / 中文)
-      var labels = {
-        ALL: (currentLang === 'en' ? 'All' : (currentLang === 'zh' ? '全部' : 'ទាំងអស់')),
-        FAVORITES: (currentLang === 'en' ? '❤️ Favorites' : (currentLang === 'zh' ? '❤️ 我的收藏' : '❤️ ចូលចិត្ត')) + (favCount > 0 ? ' (' + favCount + ')' : ''),
-        GROCERY: (currentLang === 'en' ? '🍚 Food & Groceries' : (currentLang === 'zh' ? '🍚 粮油副食' : '🍚 ស្បៀង & គ្រឿងទេស')),
-        HOUSEHOLD: (currentLang === 'en' ? '🧻 Daily Essentials' : (currentLang === 'zh' ? '🧻 日常百货' : '🧻 របស់ប្រើប្រាស់')),
-        BARREL: (currentLang === 'en' ? '💧 20L Barrels' : (currentLang === 'zh' ? '💧 20L 大桶水' : '💧 ទឹកធុង ២០L')),
-        PACK: (currentLang === 'en' ? '📦 Bottled Packs' : (currentLang === 'zh' ? '📦 瓶装/提装' : '📦 ទឹកយួរ / ដប')),
-        EQUIP: (currentLang === 'en' ? '🛢️ Equipment & Stands' : (currentLang === 'zh' ? '🛢️ 支架配件' : '🛢️ ជើងទម្រ / បរិក្ខារ'))
-      };
+    var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
+    var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
 
-      var html = '';
-
-      // ក. ប៊ូតុង "ទាំងអស់" (បង្ហាញជានិច្ច)
-      var isAllActive = (activeCatalogCategoryFilter === 'ALL');
-      html += '<button type="button" onclick="filterCatalog(\'ALL\', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
-        (isAllActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200') + '">' + 
-        labels.ALL + 
+    var actionBtn = isOutOfStock ? 
+      '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">' + (currentLang === 'en' ? 'Sold' : (currentLang === 'zh' ? '已售' : 'អស់ស្តុក')) + '</span>' : 
+      '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0">' +
+        (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
       '</button>';
 
-      // ខ. ប៊ូតុង "❤️ ចូលចិត្ត" (បង្ហាញជានិច្ច ងាយស្រួលភ្ញៀវចុចមើលទំនិញដែលខ្លួនពេញចិត្ត)
-      var isFavActive = (activeCatalogCategoryFilter === 'FAVORITES');
-      html += '<button type="button" onclick="filterCatalog(\'FAVORITES\', this)" id="catBtn_FAVORITES" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition flex items-center gap-1.5 ' + 
-        (isFavActive ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100') + '">' + 
-        labels.FAVORITES + 
+    var khrStr = '៛ ' + Number(item.priceKhr || 0).toLocaleString();
+    var thbStr = '฿ ' + Number(item.priceThb || 0).toLocaleString();
+    var usdStr = '$ ' + Number(item.priceUsd || 0).toFixed(2);
+
+    var priceDisplay = '<div class="space-y-0.5 text-left">' +
+      '<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">' + khrStr + '</div>' +
+      '<div class="text-[10px] sm:text-[11px] font-black text-amber-700 leading-none">' + thbStr + '</div>' +
+      '<div class="text-[10px] sm:text-[11px] font-black text-blue-700 leading-none">' + usdStr + '</div>' +
+    '</div>';
+
+    var priceLabelText = (currentLang === 'en' ? 'Price' : (currentLang === 'zh' ? '价格' : 'តម្លៃ'));
+
+    html += '<div ' + clickAction + ' class="kc-glass-card p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
+      '<div class="flex justify-between items-center w-full mb-1 min-h-[24px]">' +
+        badgeLabel +
+        favBtn +
+      '</div>' +
+      '<div class="w-full h-24 sm:h-28 flex items-center justify-center p-1 my-1 bg-slate-50/80 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/50 transition">' + 
+        item.svg + 
+      '</div>' +
+      '<div class="text-left px-0.5 mt-1 mb-1.5">' +
+        '<h4 data-trans-key="' + item.raw_name + '" class="text-[11px] sm:text-xs font-bold text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
+      '</div>' +
+      '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
+        '<div class="min-w-0 flex-1">' +
+          '<span class="text-[8.5px] sm:text-[9px] text-slate-400 font-bold block leading-none mb-0.5">' + priceLabelText + '</span>' +
+          priceDisplay +
+        '</div>' +
+        actionBtn +
+      '</div>' +
+    '</div>';
+  });
+
+  if (!html) {
+    var emptyText = (filterCat === 'FAVORITES') ? 
+      (currentLang === 'en' ? 'You have no favorite products yet. Tap the heart ❤️ icon to save items!' : (currentLang === 'zh' ? '您还没有收藏任何商品，点击商品上的 ❤️ 即可收藏！' : 'លោកអ្នកមិនទាន់មានទំនិញចូលចិត្តនៅឡើយទេ។ ចុចរូបបេះដូង ❤️ លើទំនិញដើម្បីចំណាំទុក!')) :
+      (currentLang === 'en' ? 'No products available in this category' : (currentLang === 'zh' ? '当前分类暂无商品' : 'មិនទាន់មានទំនិញក្នុងផ្នែកនេះនៅឡើយទេ'));
+
+    html = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs space-y-2">' +
+      '<div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg">' + 
+        (filterCat === 'FAVORITES' ? '<i class="fas fa-heart-crack text-rose-300"></i>' : '<i class="fas fa-box-open"></i>') + 
+      '</div>' +
+      '<span class="block px-4">' + emptyText + '</span>' +
+    '</div>';
+  }
+
+  grid.innerHTML = html;
+}
+    
+    // ==========================================
+// ❤️ ប្រព័ន្ធគ្រប់គ្រងទំនិញចូលចិត្ត (CUSTOMER FAVORITES ENGINE)
+// ==========================================
+function getCustomerFavoritesList() {
+  try {
+    var raw = localStorage.getItem('kc_customer_favorites');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) {
+    return [];
+  }
+}
+
+function isProductFavorited(prodId) {
+  var favs = getCustomerFavoritesList();
+  return favs.indexOf(String(prodId)) !== -1;
+}
+
+function toggleFavoriteProduct(prodId, event) {
+  if (event) event.stopPropagation(); // ការពារកុំឱ្យលោតបើកផ្ទាំង Modal ទំនិញ
+  var favs = getCustomerFavoritesList();
+  var idStr = String(prodId);
+  var idx = favs.indexOf(idStr);
+
+  if (idx !== -1) {
+    favs.splice(idx, 1); // ដកចេញពី Favorites
+  } else {
+    favs.push(idStr); // បន្ថែមចូល Favorites
+  }
+
+  try {
+    localStorage.setItem('kc_customer_favorites', JSON.stringify(favs));
+  } catch(e) {}
+
+  // 🔢 តម្រៀបលេខរៀងឱ្យម៉ត់ចត់
+          STORE_CATALOG.sort(function(a, b) {
+            var orderA = (a.sort_order !== null && a.sort_order !== undefined && a.sort_order !== '') ? parseInt(a.sort_order) : 999;
+            var orderB = (b.sort_order !== null && b.sort_order !== undefined && b.sort_order !== '') ? parseInt(b.sort_order) : 999;
+            return orderA - orderB;
+          });
+
+  // បង្ហាញ UI ឡើងវិញភ្លាមៗ
+  renderCategoryChips();
+  renderCatalogGrid(activeCatalogCategoryFilter);
+}
+
+// ==========================================
+// 📂 មុខងារបង្កើតប្រអប់ប្រភេទស្វ័យប្រវត្តិ (បង្ហាញតែប្រអប់ដែលមានទំនិញ + ❤️ ចូលចិត្ត)
+// ==========================================
+var activeCatalogCategoryFilter = 'ALL';
+
+function renderCategoryChips() {
+  var container = document.getElementById('categoryChipsContainer');
+  if (!container) return;
+
+  // ១. រាប់ចំនួនទំនិញជាក់ស្តែងតាមប្រភេទនីមួយៗ
+  var counts = { GROCERY: 0, HOUSEHOLD: 0, BARREL: 0, PACK: 0, EQUIP: 0, GENERAL: 0 };
+  STORE_CATALOG.forEach(function(item) {
+    var c = (item.cat || 'GENERAL').toUpperCase();
+    if (counts[c] !== undefined) counts[c]++;
+    else counts.GENERAL++;
+  });
+
+  // ២. រាប់ចំនួនទំនិញដែលភ្ញៀវបានចុចបេះដូង ❤️
+  var favList = getCustomerFavoritesList();
+  var favCount = 0;
+  STORE_CATALOG.forEach(function(item) {
+    if (favList.indexOf(String(item.id)) !== -1) {
+      favCount++;
+    }
+  });
+
+  // ៣. វចនានុក្រមឈ្មោះតាម ៣ ភាសា
+  var labels = {
+    ALL: (currentLang === 'en' ? 'All' : (currentLang === 'zh' ? '全部' : 'ទាំងអស់')),
+    FAVORITES: (currentLang === 'en' ? '❤️ Favorites' : (currentLang === 'zh' ? '❤️ 收藏' : '❤️ ចូលចិត្ត')) + (favCount > 0 ? ' (' + favCount + ')' : ''),
+    GROCERY: (currentLang === 'en' ? '🍚 Food & Groceries' : (currentLang === 'zh' ? '🍚 粮油副食' : '🍚 ស្បៀង & គ្រឿងទេស')),
+    HOUSEHOLD: (currentLang === 'en' ? '🧻 Daily Essentials' : (currentLang === 'zh' ? '🧻 日常百货' : '🧻 របស់ប្រើប្រាស់')),
+    BARREL: (currentLang === 'en' ? '💧 20L Barrels' : (currentLang === 'zh' ? '💧 20L 大桶水' : '💧 ទឹកធុង ២០L')),
+    PACK: (currentLang === 'en' ? '📦 Bottled Packs' : (currentLang === 'zh' ? '📦 瓶装/提装' : '📦 ទឹកយួរ / ដប')),
+    EQUIP: (currentLang === 'en' ? '🛢️ Stands & Equipment' : (currentLang === 'zh' ? '🛢️ 支架配件' : '🛢️ ជើងទម្រ / បរិក្ខារ'))
+  };
+
+  var html = '';
+
+  // ក. ប៊ូតុង "ទាំងអស់" (បង្ហាញជានិច្ច)
+  var isAllActive = (activeCatalogCategoryFilter === 'ALL');
+  html += '<button type="button" onclick="filterCatalog(\'ALL\', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
+    (isAllActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200') + '">' + 
+    labels.ALL + 
+  '</button>';
+
+  // ខ. ប៊ូតុង "❤️ ចូលចិត្ត" (បង្ហាញជានិច្ច ងាយស្រួលភ្ញៀវចុចទិញម្តងទៀត)
+  var isFavActive = (activeCatalogCategoryFilter === 'FAVORITES');
+  html += '<button type="button" onclick="filterCatalog(\'FAVORITES\', this)" id="catBtn_FAVORITES" class="cat-chip px-3.5 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition flex items-center gap-1 ' + 
+    (isFavActive ? 'bg-rose-600 text-white shadow-xs font-black' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100') + '">' + 
+    labels.FAVORITES + 
+  '</button>';
+
+  // គ. ត្រួតពិនិត្យ និងបង្ហាញតែប្រអប់ណាដែលមានចំនួនទំនិញ > 0 ប៉ុណ្ណោះ!
+  var categoriesToCheck = [
+    { key: 'GROCERY', label: labels.GROCERY, count: counts.GROCERY },
+    { key: 'HOUSEHOLD', label: labels.HOUSEHOLD, count: counts.HOUSEHOLD },
+    { key: 'BARREL', label: labels.BARREL, count: counts.BARREL },
+    { key: 'PACK', label: labels.PACK, count: counts.PACK },
+    { key: 'EQUIP', label: labels.EQUIP, count: counts.EQUIP }
+  ];
+
+  categoriesToCheck.forEach(function(cat) {
+    if (cat.count > 0) { // ✅ បើគ្មានទំនិញ វាមិនបង្កើតប៊ូតុងឡើយ
+      var isActive = (activeCatalogCategoryFilter === cat.key);
+      html += '<button type="button" onclick="filterCatalog(\'' + cat.key + '\', this)" id="catBtn_' + cat.key + '" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
+        (isActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50') + '">' + 
+        cat.label + 
       '</button>';
-
-      // គ. បង្ហាញតែប្រអប់ណាដែលមានទំនិញ > 0 ប៉ុណ្ណោះ
-      var categoryList = ['GROCERY', 'HOUSEHOLD', 'BARREL', 'PACK', 'EQUIP'];
-      categoryList.forEach(function(catKey) {
-        if (counts[catKey] > 0) {
-          var isActive = (activeCatalogCategoryFilter === catKey);
-          html += '<button type="button" onclick="filterCatalog(\'' + catKey + '\', this)" id="catBtn_' + catKey + '" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
-            (isActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50') + '">' + 
-            labels[catKey] + 
-          '</button>';
-        }
-      });
-
-      container.innerHTML = html;
     }
+  });
 
+  container.innerHTML = html;
+}
 
-    function filterCatalog(cat, btn) {
-      document.querySelectorAll('.cat-chip').forEach(function(b) {
-        b.className = 'cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition';
-      });
-      btn.className = 'cat-chip px-4 py-2 rounded-2xl bg-emerald-700 text-white shadow-xs whitespace-nowrap active:scale-95 transition';
-      renderCatalogGrid(cat);
-    }
+function filterCatalog(cat, btn) {
+  activeCatalogCategoryFilter = cat;
+  renderCategoryChips();
+  renderCatalogGrid(cat);
+}
 
     // 📋 បង្ហាញផ្ទាំងព័ត៌មានទំនិញ Pop-up (បង្ហាញតម្លៃ ៣ ជាន់ ៛, ฿, $ គ្មានវង់ក្រចក & បកប្រែអូតូ)
     function openProductDetailModal(id) {
