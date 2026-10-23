@@ -24,16 +24,47 @@ var SUPABASE_URL = activeEnv.url;
 var SUPABASE_KEY = activeEnv.key;
 var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🇰🇭 មុខងារជំនួយគណនាថ្ងៃខែតាមម៉ោងកម្ពុជា (UTC+7)
+// ==========================================
+// 🇰🇭 ប្រព័ន្ធគ្រប់គ្រងម៉ោងកម្ពុជាស្តង់ដារ (CAMBODIA TIMEZONE UTC+7 ENGINE)
+// ដោះស្រាយដាច់ស្រឡះ ១០០% មិនឱ្យច្រឡំថ្ងៃ ឬបាត់ទិន្នន័យពេលព្រឹកព្រលឹមឡើយ
+// ==========================================
+
+// ១. ទាញយកថ្ងៃនេះនៅកម្ពុជា (YYYY-MM-DD)
 function getCambodiaToday() {
-  var d = new Date();
-  var formatter = new Intl.DateTimeFormat('en-CA', { 
+  return new Intl.DateTimeFormat('en-CA', { 
     timeZone: 'Asia/Phnom_Penh', 
     year: 'numeric', 
     month: '2-digit', 
     day: '2-digit' 
-  });
-  return formatter.format(d);
+  }).format(new Date());
+}
+
+// ២. បំប្លែងរាល់ Timestamp ពី Supabase ឱ្យចេញជាថ្ងៃខែកម្ពុជាពិតប្រាកដ (YYYY-MM-DD)
+function toCambodiaDateStr(timestamp) {
+  if (!timestamp) return '';
+  var d = new Date(timestamp);
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-CA', { 
+    timeZone: 'Asia/Phnom_Penh', 
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit' 
+  }).format(d);
+}
+
+// ៣. មុខងារពិនិត្យថាទិន្នន័យនោះជា «ថ្ងៃនេះនៅកម្ពុជា» មែនឬទេ (លែងប្រើ startsWith ទៀតហើយ)
+function isTodayInCambodia(timestamp) {
+  if (!timestamp) return false;
+  return toCambodiaDateStr(timestamp) === getCambodiaToday();
+}
+
+// ៤. បង្កើត Range ម៉ោង 00:00 ដល់ 23:59 នៃម៉ោងកម្ពុជាសម្រាប់ Query ចូល Supabase (+07:00)
+function getCambodiaQueryRange(dateStr) {
+  var d = dateStr || getCambodiaToday();
+  return {
+    start: d + 'T00:00:00+07:00',
+    end: d + 'T23:59:59.999+07:00'
+  };
 }
 
 // 🏷️ មុខងារបង្ហាញផ្លាកព្រមានពេលកំពុងនៅ Mode សាកល្បង (Test Mode Banner)
