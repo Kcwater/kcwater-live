@@ -58,31 +58,53 @@ function switchAppEnvironment(targetEnv) {
   }
 }
 
-// 🏷️ មុខងារបង្ហាញផ្លាកព្រមានពេលកំពុងនៅ Mode សាកល្បង
+// 🏷️ មុខងារបង្ហាញផ្លាកព្រមានពេលកំពុងនៅ Mode សាកល្បង (ធានាឃើញ ១០០% មិនឱ្យបាំងឡើយ)
 function renderEnvironmentBanner() {
   var oldBanner = document.getElementById('kcTestModeBanner');
   if (oldBanner) oldBanner.remove();
 
+  var oldBadge = document.getElementById('navTestBadge');
+  if (oldBadge) oldBadge.remove();
+
   if (CURRENT_ENV !== 'TEST') return;
 
-  var bannerHtml = '<div id="kcTestModeBanner" class="sticky top-0 z-[9999] bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white px-4 py-2 text-center text-xs font-black shadow-lg flex items-center justify-between border-b-2 border-amber-300 animate-in slide-in-from-top duration-300">' +
-    '<div class="flex items-center gap-2 mx-auto">' +
-      '<span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>' +
-      '<span>🧪 កំពុងស្ថិតក្នុងប្រព័ន្ធសាកល្បង (TEST MODE) — រាល់ទិន្នន័យនៅទីនេះមិនប៉ះពាល់ដល់បញ្ជីពិតឡើយ!</span>' +
+  // ១. បង្កើតរបារពណ៌ទឹកក្រូចធំខាងលើបង្អស់
+  var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 8px 14px; text-align: center; font-size: 11px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">' +
+    '<div style="display: flex; align-items: center; gap: 8px; margin: 0 auto;">' +
+      '<span style="display: inline-block; width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 0 8px white;"></span>' +
+      '<span>🧪 នេះជាប្រព័ន្ធសាកល្បង (TEST MODE) — ភ្ជាប់ Database សាកល្បង (ntftdylk...)</span>' +
     '</div>' +
-    '<button type="button" onclick="switchAppEnvironment(\'PROD\')" class="px-2.5 py-1 bg-white hover:bg-amber-50 text-amber-950 rounded-lg text-[10px] font-black shadow-xs active:scale-95 transition whitespace-nowrap">' +
+    '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 10px; padding: 4px 10px; border-radius: 8px; border: none; cursor: pointer; white-space: nowrap;">' +
       'ប្តូរទៅប្រព័ន្ធពិត (PROD) ➔' +
     '</button>' +
   '</div>';
 
-  document.body.insertAdjacentHTML('afterbegin', bannerHtml);
+  // ដាក់នៅពីលើរបារ Navbar ផ្ទាល់តែម្តង ធានាមិនឱ្យបាំង
+  var mainApp = document.getElementById('mainApp');
+  var loginPage = document.getElementById('loginPage');
+
+  if (mainApp) {
+    mainApp.insertAdjacentHTML('afterbegin', bannerHtml);
+  } else if (loginPage) {
+    loginPage.insertAdjacentHTML('beforebegin', bannerHtml);
+  } else {
+    document.body.insertAdjacentHTML('afterbegin', bannerHtml);
+  }
+
+  // ២. ដាក់ផ្លាកតូច [ 🧪 TEST ] នៅជាប់ឈ្មោះ Admin លើរបារបៃតង
+  var userInfo = document.getElementById('userInfo');
+  if (userInfo && !document.getElementById('navTestBadge')) {
+    userInfo.insertAdjacentHTML('beforebegin', '<span id="navTestBadge" style="background: #fbbf24; color: #78350f; font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 9999px; border: 1px solid #f59e0b; margin-right: 6px; display: inline-flex; align-items: center; gap: 4px;">🧪 TEST</span>');
+  }
 }
 
+// ហៅឱ្យដំណើរការទាំងពេលបើកដំបូង និងពេលទំព័រដើរចប់
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', renderEnvironmentBanner);
 } else {
   renderEnvironmentBanner();
 }
+window.addEventListener('load', renderEnvironmentBanner);
 
 // ==========================================
 // 🇰🇭 ប្រព័ន្ធគ្រប់គ្រងម៉ោងកម្ពុជាស្តង់ដារ (CAMBODIA TIMEZONE UTC+7 ENGINE)
