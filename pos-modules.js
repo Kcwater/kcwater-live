@@ -606,7 +606,7 @@ async function prepareEditProduct(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 💾 រក្សាទុកទំនិញ (មានប្រព័ន្ធរំកិលលេខរៀងអូតូ ការពារកុំឱ្យស្ទួនលេខ ១)
+// 💾 រក្សាទុកទំនិញ (ដោះស្រាយបញ្ហាលេខរៀង POS & Web ឱ្យត្រឹមត្រូវ ១០០%)
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
   if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
@@ -616,7 +616,10 @@ async function saveProductToSupabase() {
   var descVal = document.getElementById('pDesc') ? document.getElementById('pDesc').value.trim() : '';
   var badgeVal = document.getElementById('pBadge') ? document.getElementById('pBadge').value : 'គុណភាពខ្ពស់';
   var catVal = document.getElementById('pCategory') ? document.getElementById('pCategory').value : 'GROCERY';
-  var chosenSort = parseInt(document.getElementById('pSort') ? document.getElementById('pSort').value || 1 : 1);
+  
+  // 🔢 ទាញយកលេខរៀងពិតប្រាកដពីប្រអប់លើអេក្រង់
+  var sortPosNum = parseInt(document.getElementById('pSortPos') ? document.getElementById('pSortPos').value || 1 : 1);
+  var sortOnlineNum = parseInt(document.getElementById('pSortOnline') ? document.getElementById('pSortOnline').value || sortPosNum : sortPosNum);
 
   var payload = {
     id: prodId,
@@ -628,7 +631,7 @@ async function saveProductToSupabase() {
     online_price: parseFloat(document.getElementById('pOnlinePr').value || 0),
     min_stock: parseFloat(document.getElementById('pMin').value || 5),
     channel: document.getElementById('pChannel').value,
-    sort_order: chosenSort,
+    sort_order: sortPosNum, // 🚚 លេខរៀងសម្រាប់ POS
     img: imgData
   };
 
@@ -636,15 +639,15 @@ async function saveProductToSupabase() {
   btn.disabled = true;
 
   try {
-    // 🔄 ការពារកុំឱ្យស្ទួនលេខរៀង៖ បើមានទំនិញចាស់ផ្សេងទៀតជាប់លេខរៀងនេះដែរ រំកិលវាចុះក្រោមអូតូ
+    // 🔄 ការពារកុំឱ្យស្ទួនលេខរៀង POS៖ បើមានទំនិញចាស់ផ្សេងទៀតជាប់លេខរៀងនេះ រំកិលវាចុះក្រោមអូតូ
     var targetId = editingProductId || prodId;
     var conflictingItems = allProducts.filter(function(item) {
-      return item.id !== targetId && parseInt(item.sort_order) === chosenSort;
+      return item.id !== targetId && parseInt(item.sort_order) === sortPosNum;
     });
 
     if (conflictingItems.length > 0) {
       for (var c = 0; c < conflictingItems.length; c++) {
-        var shiftedSort = chosenSort + c + 1;
+        var shiftedSort = sortPosNum + c + 1;
         await supabaseClient.from('products').update({ sort_order: shiftedSort }).eq('id', conflictingItems[c].id);
         conflictingItems[c].sort_order = shiftedSort;
       }
@@ -657,22 +660,21 @@ async function saveProductToSupabase() {
       await supabaseClient.from('products').insert([payload]);
     }
 
-    var sortPosNum = parseInt(document.getElementById('pSortPos') ? document.getElementById('pSortPos').value || 1 : 1);
-    var sortOnlineNum = document.getElementById('pSortOnline') ? document.getElementById('pSortOnline').value.trim() : String(sortPosNum);
-
-    payload.sort_order = sortPosNum;
-
+    // 🌐 រក្សាទុក Description, Badge, Category និងលេខរៀង Web ចូលតារាង Settings
     var settingRows = [
       { key: 'DESC_' + prodId, value: descVal },
       { key: 'BADGE_' + prodId, value: badgeVal },
       { key: 'CAT_' + prodId, value: catVal },
-      { key: 'ONLINE_SORT_' + prodId, value: sortOnlineNum } // 👈 រក្សាទុកលេខលើ Web ដោយឡែក
+      { key: 'ONLINE_SORT_' + prodId, value: String(sortOnlineNum) }
     ];
     await supabaseClient.from('settings').upsert(settingRows);
 
     showToast(editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
     cancelEditProduct();
     await fetchInitialPOSData();
+    if (typeof syncOnlineSortsFromDatabase === 'function') {
+      await syncOnlineSortsFromDatabase();
+    }
     renderStockTableRows();
     initStockModuleDropdowns();
   } catch(err) {
@@ -681,7 +683,6 @@ async function saveProductToSupabase() {
     btn.disabled = false;
   }
 }
-
 async function saveStockInToSupabase() {
   var id = document.getElementById('si_prod').value;
   var qty = parseFloat(document.getElementById('si_qty').value || 0);
