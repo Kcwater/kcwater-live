@@ -541,7 +541,7 @@ function cancelEditProduct() {
   if (nameInp) setTimeout(function() { nameInp.focus(); }, 150);
 }
 
-// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, Description & Badge ចាស់មកបង្ហាញអូតូ)
+// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, Description, Badge & លេខរៀង POS/Web មកបង្ហាញអូតូ)
 async function prepareEditProduct(id) {
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
@@ -562,10 +562,16 @@ async function prepareEditProduct(id) {
   document.getElementById('pPr').value = p.price || 0;
   document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
   document.getElementById('pMin').value = p.min_stock || 5;
-  if (document.getElementById('pSort')) document.getElementById('pSort').value = (p.sort_order !== undefined && p.sort_order !== null) ? p.sort_order : 1;
   document.getElementById('pChannel').value = p.channel || 'ALL';
 
-  // ទាញយក Category, Badge និង Description មកបង្ហាញលើប្រអប់
+  // 🔢 កំណត់លេខរៀង POS និង Web
+  var sortPosVal = (p.sort_order !== undefined && p.sort_order !== null && p.sort_order !== '') ? parseInt(p.sort_order) : 1;
+  var sortOnlineVal = (p.online_sort_order !== undefined && p.online_sort_order !== null && p.online_sort_order !== '') ? parseInt(p.online_sort_order) : sortPosVal;
+  
+  if (document.getElementById('pSortPos')) document.getElementById('pSortPos').value = sortPosVal;
+  if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = sortOnlineVal;
+
+  // 📂 ទាញយក Category, Badge និង Description មកបង្ហាញលើប្រអប់
   var catInp = document.getElementById('pCategory');
   var badgeInp = document.getElementById('pBadge');
   var descInp = document.getElementById('pDesc');
@@ -582,6 +588,13 @@ async function prepareEditProduct(id) {
 
     const { data: setCat } = await supabaseClient.from('settings').select('value').eq('key', 'CAT_' + p.id).maybeSingle();
     if (setCat && setCat.value && catInp) catInp.value = setCat.value;
+
+    // 🌐 ទាញលេខរៀង Web ពិតប្រាកដពី Settings
+    const { data: setWebSort } = await supabaseClient.from('settings').select('value').eq('key', 'ONLINE_SORT_' + p.id).maybeSingle();
+    if (setWebSort && setWebSort.value && document.getElementById('pSortOnline')) {
+      document.getElementById('pSortOnline').value = setWebSort.value;
+      p.online_sort_order = parseInt(setWebSort.value);
+    }
   } catch(e) {}
 
   var preview = document.getElementById('pImgPreview');
@@ -592,6 +605,7 @@ async function prepareEditProduct(id) {
   toggleChannelPrices();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 // 💾 រក្សាទុកទំនិញ (មានប្រព័ន្ធរំកិលលេខរៀងអូតូ ការពារកុំឱ្យស្ទួនលេខ ១)
 async function saveProductToSupabase() {
   var name = document.getElementById('pN').value.trim();
