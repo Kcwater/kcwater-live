@@ -1,28 +1,90 @@
-/** ==========================================================================
- *  KC WATER POS SYSTEM - CONFIGURATION & UTILITIES (pos-config.js)
- *  (Supabase Client, Global App State & Telegram Alerts)
- *  ========================================================================== */
+// ==========================================
+// 🌐 ១. ប្រព័ន្ធកំណត់បរិយាកាសឆ្លាតវៃ (SMART DUAL ENVIRONMENT: PROD & TEST)
+// គាំទ្រ POS ទាំង ២ (១ ប្រព័ន្ធពិត និង ១ សាកល្បង) ដាច់ដោយឡែកពីគ្នា ១០០%
+// ==========================================
 
-// 🌐 ១. ការកំណត់បរិយាកាស (ENVIRONMENT SWITCH: 'PROD' = ប្រព័ន្ធពិត | 'TEST' = សាកល្បង)
-var CURRENT_ENV = 'PROD'; // 👈 ប្តូរទៅ 'TEST' ពេលចង់សាកល្បង ឬ 'PROD' សម្រាប់ដំណើរការជាក់ស្តែង
-
+// 🔑 កំណត់គណនី Supabase ទាំង ២
 var SUPABASE_CONFIGS = {
-  // 🏢 ១. ប្រព័ន្ធពិត (Production Live)
+  // 🏢 ១. ប្រព័ន្ធពិត (Production Live Database)
   PROD: {
     url: "https://hocndqkoumgjijtzpzby.supabase.co",
     key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
   },
-  // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Environment)
+  // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Database - អាចប្តូរ URL/Key ទី២ បានប្រសិនបើមាន)
   TEST: {
-    url: "https://hocndqkoumgjijtzpzby.supabase.co",
-    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
+    url: "https://ntftdylkcnkxsytptket.supabase.co", // 👈 អាចដាក់ URL គម្រោង Test ទី២ នៅទីនេះ
+    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v" // 👈 អាចដាក់ Key គម្រោង Test ទី២ នៅទីនេះ
   }
 };
 
+// 🧠 មុខងារស្គាល់ប្រព័ន្ធស្វ័យប្រវត្តិ (តាម URL, Link ឬ LocalStorage)
+function detectCurrentEnvironment() {
+  // ក. ឆែកតាម URL query (ឧ៖ pos.html?env=test ឬ ?env=prod)
+  var urlParams = new URLSearchParams(window.location.search);
+  var envParam = urlParams.get('env');
+  if (envParam) {
+    var p = envParam.toUpperCase();
+    if (p === 'TEST' || p === 'PROD') {
+      localStorage.setItem('kc_current_env', p);
+      return p;
+    }
+  }
+
+  // ខ. ឆែកតាមការចងចាំក្នុង Browser (localStorage)
+  var savedEnv = localStorage.getItem('kc_current_env');
+  if (savedEnv === 'TEST' || savedEnv === 'PROD') {
+    return savedEnv;
+  }
+
+  // គ. ឆែកតាមឈ្មោះ Domain ស្វ័យប្រវត្តិ (បើ Domain មានពាក្យ test, dev, ឬ localhost)
+  var host = window.location.hostname.toLowerCase();
+  if (host.includes('test') || host.includes('dev') || host === 'localhost' || host === '127.0.0.1') {
+    return 'TEST';
+  }
+
+  // ឃ. លំនាំដើមគឺប្រព័ន្ធលក់ពិត (PROD)
+  return 'PROD';
+}
+
+var CURRENT_ENV = detectCurrentEnvironment();
 var activeEnv = SUPABASE_CONFIGS[CURRENT_ENV] || SUPABASE_CONFIGS.PROD;
 var SUPABASE_URL = activeEnv.url;
 var SUPABASE_KEY = activeEnv.key;
 var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 🔄 មុខងារចុចប្តូររវាង PROD និង TEST ភ្លាមៗ
+function switchAppEnvironment(targetEnv) {
+  if (targetEnv === 'TEST' || targetEnv === 'PROD') {
+    localStorage.setItem('kc_current_env', targetEnv);
+    window.location.reload();
+  }
+}
+
+// 🏷️ មុខងារបង្ហាញផ្លាកព្រមាន និងប៊ូតុងប្តូរពេលកំពុងនៅ Mode សាកល្បង
+function renderEnvironmentBanner() {
+  var oldBanner = document.getElementById('kcTestModeBanner');
+  if (oldBanner) oldBanner.remove();
+
+  if (CURRENT_ENV !== 'TEST') return;
+
+  var bannerHtml = '<div id="kcTestModeBanner" class="sticky top-0 z-[9999] bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white px-4 py-2 text-center text-xs font-black shadow-lg flex items-center justify-between border-b-2 border-amber-300 animate-in slide-in-from-top duration-300">' +
+    '<div class="flex items-center gap-2 mx-auto">' +
+      '<span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>' +
+      '<span>🧪 កំពុងស្ថិតក្នុងប្រព័ន្ធសាកល្បង (TEST MODE) — រាល់ទិន្នន័យនៅទីនេះមិនប៉ះពាល់ដល់បញ្ជីពិតឡើយ!</span>' +
+    '</div>' +
+    '<button type="button" onclick="switchAppEnvironment(\'PROD\')" class="px-2.5 py-1 bg-white hover:bg-amber-50 text-amber-950 rounded-lg text-[10px] font-black shadow-xs active:scale-95 transition whitespace-nowrap">' +
+      'ប្តូរទៅប្រព័ន្ធពិត (PROD) ➔' +
+    '</button>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('afterbegin', bannerHtml);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderEnvironmentBanner);
+} else {
+  renderEnvironmentBanner();
+}
 
 // ==========================================
 // 🇰🇭 ប្រព័ន្ធគ្រប់គ្រងម៉ោងកម្ពុជាស្តង់ដារ (CAMBODIA TIMEZONE UTC+7 ENGINE)
