@@ -309,17 +309,19 @@ function openSplitAbaQrModal() {
 }
 
 // ==========================================
-// 📊 ៣. គណនាទិន្នន័យសង្ខេប & តារាងអ្នកដកថ្ងៃនេះ (ប្រើ Timezone កម្ពុជាត្រឹមត្រូវ)
+// 📊 ៣. គណនាទិន្នន័យសង្ខេប & តារាងអ្នកដកថ្ងៃនេះ (ប្រើប្រព័ន្ធម៉ោងកម្ពុជា UTC+7 ត្រឹមត្រូវ ១០០%)
 // ==========================================
 async function fetchSettlementOverviewData() {
   try {
-    var todayStr = getCambodiaToday(); // 👈 ប្រើមុខងារកម្ពុជាពី pos-config.js ផ្ទាល់
+    var todayStr = getCambodiaToday();
+    // 🇰🇭 កំណត់ម៉ោងចាប់ផ្តើម 00:00 នៃប្រទេសកម្ពុជា (+07:00) មិនឱ្យកាត់ជើងទឹកព្រឹកព្រលឹមឡើយ
+    var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
     const { data: todayUnpaids } = await supabaseClient
       .from('transactions')
       .select('*')
       .eq('status', 'Unpaid')
-      .gte('created_at', todayStr + 'T00:00:00Z')
+      .gte('created_at', todayQueryStart)
       .order('created_at', { ascending: false });
 
     var countEl = document.getElementById('todayUnpaidCount');
@@ -328,24 +330,34 @@ async function fetchSettlementOverviewData() {
 
     var custSet = new Set();
     var todayTotalSum = 0;
+    var filteredTodayList = [];
 
     (todayUnpaids || []).forEach(function(u) {
-      if (u.customer_name && u.customer_name !== "Walk-in") {
-        custSet.add(u.customer_name);
+      // 🛡️ ផ្ទៀងផ្ទាត់បន្ថែមដោយប្រើកូនសោរម៉ោងកម្ពុជា
+      if (isTodayInCambodia(u.created_at)) {
+        if (u.customer_name && u.customer_name !== "Walk-in") {
+          custSet.add(u.customer_name);
+        }
+        todayTotalSum += parseFloat(u.total || 0);
+        filteredTodayList.push(u);
       }
-      todayTotalSum += parseFloat(u.total || 0);
     });
 
     if (countEl) countEl.innerText = custSet.size + ' នាក់';
     if (totEl) totEl.innerText = '៛ ' + todayTotalSum.toLocaleString();
 
     if (tbody) {
-      if (!todayUnpaids || todayUnpaids.length === 0) {
+      if (filteredTodayList.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> គ្មានអ្នកដកទំនិញជំពាក់ថ្ងៃនេះទេ</td></tr>';
       } else {
         var html = '';
-        todayUnpaids.forEach(function(item) {
-          var timeStr = new Date(item.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+        filteredTodayList.forEach(function(item) {
+          // 🇰🇭 បង្ហាញម៉ោងតាមម៉ោងកម្ពុជាពិតប្រាកដ
+          var timeStr = new Date(item.created_at).toLocaleTimeString('km-KH', { 
+            timeZone: 'Asia/Phnom_Penh', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
           var safeName = String(item.customer_name || '').replace(/'/g, "\\'");
 
           var isWithdrawnByOther = (item.recorded_by && item.recorded_by !== item.customer_name && item.recorded_by !== 'Admin');
@@ -369,9 +381,10 @@ async function fetchSettlementOverviewData() {
         tbody.innerHTML = html;
       }
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error("Settlement overview error:", e);
+  }
 }
-
 // ==========================================
 // 🔔 ៤. ឆែកមើលសំណើទូទាត់រង់ចាំពីម៉ូយ (PENDING APPROVAL)
 // ==========================================
