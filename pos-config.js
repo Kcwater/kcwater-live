@@ -122,28 +122,6 @@ function getCambodiaQueryRange(dateStr) {
   };
 }
 
-// 🏷️ មុខងារបង្ហាញផ្លាកព្រមានពេលកំពុងនៅ Mode សាកល្បង (Test Mode Banner)
-function renderEnvironmentBanner() {
-  var oldBanner = document.getElementById('kcTestModeBanner');
-  if (oldBanner) oldBanner.remove();
-
-  // បើកំពុងនៅប្រព័ន្ធពិត (PROD) មិនបាច់បង្ហាញអ្វីឡើយ
-  if (CURRENT_ENV !== 'TEST') return;
-
-  var bannerHtml = '<div id="kcTestModeBanner" class="sticky top-0 z-[9999] bg-gradient-to-r from-amber-500 via-orange-600 to-amber-600 text-white px-4 py-2 text-center text-xs font-black shadow-lg flex items-center justify-center gap-2 border-b-2 border-amber-300 animate-in slide-in-from-top duration-300">' +
-    '<span class="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>' +
-    '<span>🧪 កំពុងស្ថិតក្នុងប្រព័ន្ធសាកល្បង (TEST MODE) — រាល់ការលក់ និងទិន្នន័យនៅទីនេះ មិនប៉ះពាល់ដល់បញ្ជីពិតឡើយ!</span>' +
-  '</div>';
-
-  document.body.insertAdjacentHTML('afterbegin', bannerHtml);
-}
-
-// ដំណើរការបង្ហាញផ្លាកព្រមានភ្លាមៗពេលបើកទំព័រ
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', renderEnvironmentBanner);
-} else {
-  renderEnvironmentBanner();
-}
 
 // 🌐 ២. GLOBAL APP STATE (អថេររួមទូទាំងកម្មវិធី POS)
 var currentUser = {};
