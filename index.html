@@ -1477,7 +1477,7 @@ function getLocalizedProductName(p, lang) {
       if (typeof checkQuickReorderAvailability === 'function') checkQuickReorderAvailability();
     }
     
-   // 📦 ១. ទាញយកទំនិញ + គណនា ២ រូបិយប័ណ្ណ ($ និង ៛) ទន្ទឹមគ្នាស្វ័យប្រវត្តិ
+   // 📦 ១. ទាញយកទំនិញ + គណនា ៣ រូបិយប័ណ្ណ (៛, ฿, $) ស្វ័យប្រវត្តិ
     async function loadStoreOnlineProducts() {
       var grid = document.getElementById('catalogGrid');
       if (grid) {
@@ -1493,7 +1493,7 @@ function getLocalizedProductName(p, lang) {
 
         if (error) throw error;
 
-        // ទាញយកការពិពណ៌នា, Badge, Category និងអត្រាប្តូរប្រាក់ពី Settings
+        // ទាញយកការពិពណ៌នា, Badge, Category និងអត្រាប្តូរប្រាក់ទាំង ២ ពី Settings
         var setMap = {};
         try {
           const { data: setList } = await supabaseClient.from('settings').select('key, value');
@@ -1502,8 +1502,9 @@ function getLocalizedProductName(p, lang) {
           }
         } catch(se) {}
 
-        // អត្រាប្តូរប្រាក់ស្តង់ដារ $1 = 4,100៛ (អាចកំណត់ក្នុង Settings បាន)
-        var exchangeRate = parseFloat(setMap['Exchange_Rate_USD'] || 4100);
+        // 💵 អត្រាប្តូរប្រាក់ស្តង់ដារ ($1 = 4,100៛ | 1฿ = 115៛)
+        var exchangeRateUSD = parseFloat(setMap['Exchange_Rate_USD'] || 4100);
+        var exchangeRateTHB = parseFloat(setMap['Exchange_Rate_THB'] || 115);
 
         if (list && list.length > 0) {
           STORE_CATALOG = list.map(function(p) {
@@ -1539,18 +1540,23 @@ function getLocalizedProductName(p, lang) {
               imgDisplay = '<img src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-h-20 max-w-[100px] object-contain opacity-80 mx-auto drop-shadow-sm group-hover:scale-105 transition-transform duration-200">';
             }
 
-            // 💵 គណនា ២ រូបិយប័ណ្ណទន្ទឹមគ្នា ($ និង ៛)
+            // 🪙 គណនា ៣ រូបិយប័ណ្ណ (៛, ฿, $) ឱ្យត្រូវតាមរូបមន្តច្បាស់លាស់
             var rawCurrency = (p.currency || 'KHR').toUpperCase();
             var onlinePrice = parseFloat(p.online_price || p.price || 0);
-            var priceKhr = 0;
-            var priceUsd = 0;
+            var priceKhr = 0, priceThb = 0, priceUsd = 0;
 
             if (rawCurrency === 'USD') {
+              priceKhr = Math.round(onlinePrice * exchangeRateUSD);
               priceUsd = onlinePrice;
-              priceKhr = Math.round(onlinePrice * exchangeRate);
+              priceThb = Math.round(priceKhr / exchangeRateTHB);
+            } else if (rawCurrency === 'THB') {
+              priceKhr = Math.round(onlinePrice * exchangeRateTHB);
+              priceThb = onlinePrice;
+              priceUsd = parseFloat((priceKhr / exchangeRateUSD).toFixed(2));
             } else {
-              priceKhr = onlinePrice;
-              priceUsd = parseFloat((onlinePrice / exchangeRate).toFixed(2));
+              priceKhr = Math.round(onlinePrice);
+              priceThb = Math.round(onlinePrice / exchangeRateTHB);
+              priceUsd = parseFloat((onlinePrice / exchangeRateUSD).toFixed(2));
             }
 
             var customDesc = (setMap['DESC_' + p.id] || p.description || p.desc || '').trim();
@@ -1565,8 +1571,9 @@ function getLocalizedProductName(p, lang) {
               isBarrel20L: isBarrel,
               price: priceKhr,        // តម្លៃរៀលស្តង់ដារសម្រាប់គណនាកន្ត្រក
               priceKhr: priceKhr,    // តម្លៃរៀល (៛)
+              priceThb: priceThb,    // តម្លៃបាត (฿)
               priceUsd: priceUsd,    // តម្លៃដុល្លារ ($)
-              currency: rawCurrency, // រូបិយប័ណ្ណដើម (USD ឬ KHR)
+              currency: rawCurrency,
               svg: imgDisplay,
               desc: customDesc,
               badge: customBadge,
@@ -1574,7 +1581,7 @@ function getLocalizedProductName(p, lang) {
             };
           });
           
-         // 🔢 តម្រៀបលេខរៀងឱ្យម៉ត់ចត់ (លេខ ១ ឡើងមុនគេដាច់ខាត)
+          // 🔢 តម្រៀបលេខរៀងឱ្យម៉ត់ចត់
           STORE_CATALOG.sort(function(a, b) {
             var orderA = (a.sort_order !== null && a.sort_order !== undefined && a.sort_order !== '') ? parseInt(a.sort_order) : 999;
             var orderB = (b.sort_order !== null && b.sort_order !== undefined && b.sort_order !== '') ? parseInt(b.sort_order) : 999;
@@ -1591,8 +1598,7 @@ function getLocalizedProductName(p, lang) {
         if (grid) grid.innerHTML = '<div class="col-span-full py-8 text-center text-red-500 font-bold text-xs">Error: ' + err.message + '</div>';
       }
     }
-    
-// 🎨 បង្ហាញកាតទំនិញទំនើប (ភ្ជាប់ជាមួយស្លាកបកប្រែស្វ័យប្រវត្តិ data-trans-key & ២ រូបិយប័ណ្ណ)
+    // 🎨 បង្ហាញកាតទំនិញទំនើប (តម្លៃ ៣ ជាន់៖ ៛ លើ, ฿ កណ្តាល, $ ក្រោម ដោយគ្មានវង់ក្រចក () ឡើយ)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -1618,7 +1624,7 @@ function getLocalizedProductName(p, lang) {
 
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-        // 🏷️ បកប្រែផ្លាក Badge ស្វ័យប្រវត្តិ (Popular, Premium, Best Seller, New)
+        // 🏷️ បកប្រែផ្លាក Badge ស្វ័យប្រវត្តិ
         var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
         var badgeText = rawBadge;
         if (currentLang === 'en') {
@@ -1647,14 +1653,20 @@ function getLocalizedProductName(p, lang) {
             (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
           '</button>';
 
-        // 💵 បង្ហាញ ២ រូបិយប័ណ្ណទន្ទឹមគ្នា ($ និង ៛)
-        var priceDisplay = (item.currency === 'USD') ?
-          ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">$' + Number(item.priceUsd || 0).toFixed(2) + ' <span class="text-[10px] text-slate-500 font-bold block leading-none mt-0.5">(៛ ' + Number(item.priceKhr || 0).toLocaleString() + ')</span></div>') :
-          ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">៛ ' + Number(item.priceKhr || 0).toLocaleString() + ' <span class="text-[10px] text-blue-700 font-bold block leading-none mt-0.5">($' + Number(item.priceUsd || 0).toFixed(2) + ')</span></div>');
+        // 💵 បង្ហាញ ៣ រូបិយប័ណ្ណតាមលំដាប់៖ ៛ (លើ), ฿ (កណ្តាល), $ (ក្រោម) ដោយគ្មានសញ្ញាវង់ក្រចក ()
+        var khrStr = '៛ ' + Number(item.priceKhr || 0).toLocaleString();
+        var thbStr = '฿ ' + Number(item.priceThb || 0).toLocaleString();
+        var usdStr = '$ ' + Number(item.priceUsd || 0).toFixed(2);
+
+        var priceDisplay = '<div class="space-y-0.5 text-left">' +
+          '<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">' + khrStr + '</div>' +
+          '<div class="text-[10px] sm:text-[11px] font-black text-amber-700 leading-none">' + thbStr + '</div>' +
+          '<div class="text-[10px] sm:text-[11px] font-black text-blue-700 leading-none">' + usdStr + '</div>' +
+        '</div>';
 
         var priceLabelText = (currentLang === 'en' ? 'Price' : (currentLang === 'zh' ? '价格' : 'តម្លៃ'));
 
-        // 🌟 រចនាបថកាតទំនើប (ភ្ជាប់ស្លាក data-trans-key សម្រាប់បកប្រែទំនិញថ្មីៗអូតូ)
+        // 🌟 រចនាបថកាតទំនើប
         html += '<div ' + clickAction + ' class="kc-glass-card p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
           // ជួរទី ១៖ ផ្លាក Badge & ចំនួនក្នុងកន្ត្រក
           '<div class="flex justify-between items-center w-full mb-1 min-h-[20px]">' +
@@ -1667,112 +1679,12 @@ function getLocalizedProductName(p, lang) {
             item.svg + 
           '</div>' +
 
-          // ជួរទី ៣៖ ឈ្មោះទំនិញ (ភ្ជាប់ data-trans-key សម្រាប់ទទួលពាក្យបកប្រែអូតូ)
+          // ជួរទី ៣៖ ឈ្មោះទំនិញ
           '<div class="text-left px-0.5 mt-1 mb-1.5">' +
             '<h4 data-trans-key="' + item.raw_name + '" class="text-[11px] sm:text-xs font-bold text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
           '</div>' +
 
-          // ជួរទី ៤៖ តម្លៃ & ប៊ូតុងរើសទិញ
-          '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
-            '<div class="min-w-0 flex-1">' +
-              '<span class="text-[8.5px] sm:text-[9px] text-slate-400 font-bold block leading-none mb-0.5">' + priceLabelText + '</span>' +
-              priceDisplay +
-            '</div>' +
-            actionBtn +
-          '</div>' +
-        '</div>';
-      });
-
-      if (!html) {
-        var emptyText = (currentLang === 'en' ? 'No products available in this category' : (currentLang === 'zh' ? '当前分类暂无商品' : 'មិនទាន់មានទំនិញក្នុងផ្នែកនេះនៅឡើយទេ'));
-        html = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs space-y-2">' +
-          '<div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg"><i class="fas fa-box-open"></i></div>' +
-          '<span>' + emptyText + '</span>' +
-        '</div>';
-      }
-
-      grid.innerHTML = html;
-    }// 🎨 បង្ហាញកាតទំនិញទំនើប (ភ្ជាប់ជាមួយស្លាកបកប្រែស្វ័យប្រវត្តិ data-trans-key & ២ រូបិយប័ណ្ណ)
-    function renderCatalogGrid(filterCat) {
-      filterCat = filterCat || 'ALL';
-      var grid = document.getElementById('catalogGrid');
-      if (!grid) return;
-      var d = DICT[currentLang] || DICT.km;
-      var html = '';
-
-      STORE_CATALOG.forEach(function(item) {
-        // 🔍 តម្រង Category
-        if (filterCat !== 'ALL') {
-          var isMatch = (item.cat === filterCat);
-          if (filterCat === 'GENERAL' && (item.cat === 'GROCERY' || item.cat === 'HOUSEHOLD' || item.cat === 'GENERAL')) {
-            isMatch = true;
-          }
-          if (!isMatch) return;
-        }
-
-        var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
-        var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
-        
-        var inCartBadge = inCart > 0 ? 
-          '<span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs animate-bounce shrink-0">' + inCart + '</span>' : '<span></span>';
-
-        var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
-
-        // 🏷️ បកប្រែផ្លាក Badge ស្វ័យប្រវត្តិ (Popular, Premium, Best Seller, New)
-        var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
-        var badgeText = rawBadge;
-        if (currentLang === 'en') {
-          if (rawBadge === 'ពេញនិយម') badgeText = 'Popular';
-          else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = 'Premium';
-          else if (rawBadge === 'លក់ដាច់') badgeText = 'Best Seller';
-          else if (rawBadge === 'ទំនិញថ្មី') badgeText = 'New Arrival';
-        } else if (currentLang === 'zh') {
-          if (rawBadge === 'ពេញនិយម') badgeText = '热销人气';
-          else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = '特级品质';
-          else if (rawBadge === 'លក់ដាច់') badgeText = '畅销爆款';
-          else if (rawBadge === 'ទំនិញថ្មី') badgeText = '新品上市';
-        }
-
-        var badgeLabel = isOutOfStock ? 
-          '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">' + (currentLang === 'en' ? 'Out of Stock' : (currentLang === 'zh' ? '缺货' : '❌ អស់ស្តុក')) + '</span>' : 
-          ((badgeText !== 'NONE') ? 
-            '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[95px]">' + badgeText + '</span>' : '<span></span>');
-
-        var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
-        var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
-
-        var actionBtn = isOutOfStock ? 
-          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">' + (currentLang === 'en' ? 'Sold' : (currentLang === 'zh' ? '已售' : 'អស់ស្តុក')) + '</span>' : 
-          '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0" title="រើសទិញ">' +
-            (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
-          '</button>';
-
-        // 💵 បង្ហាញ ២ រូបិយប័ណ្ណទន្ទឹមគ្នា ($ និង ៛)
-        var priceDisplay = (item.currency === 'USD') ?
-          ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">$' + Number(item.priceUsd || 0).toFixed(2) + ' <span class="text-[10px] text-slate-500 font-bold block leading-none mt-0.5">(៛ ' + Number(item.priceKhr || 0).toLocaleString() + ')</span></div>') :
-          ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">៛ ' + Number(item.priceKhr || 0).toLocaleString() + ' <span class="text-[10px] text-blue-700 font-bold block leading-none mt-0.5">($' + Number(item.priceUsd || 0).toFixed(2) + ')</span></div>');
-
-        var priceLabelText = (currentLang === 'en' ? 'Price' : (currentLang === 'zh' ? '价格' : 'តម្លៃ'));
-
-        // 🌟 រចនាបថកាតទំនើប (ភ្ជាប់ស្លាក data-trans-key សម្រាប់បកប្រែទំនិញថ្មីៗអូតូ)
-        html += '<div ' + clickAction + ' class="kc-glass-card p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
-          // ជួរទី ១៖ ផ្លាក Badge & ចំនួនក្នុងកន្ត្រក
-          '<div class="flex justify-between items-center w-full mb-1 min-h-[20px]">' +
-            badgeLabel +
-            inCartBadge +
-          '</div>' +
-
-          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ
-          '<div class="w-full h-24 sm:h-28 flex items-center justify-center p-1 my-1 bg-slate-50/80 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/50 transition">' + 
-            item.svg + 
-          '</div>' +
-
-          // ជួរទី ៣៖ ឈ្មោះទំនិញ (ភ្ជាប់ data-trans-key សម្រាប់ទទួលពាក្យបកប្រែអូតូ)
-          '<div class="text-left px-0.5 mt-1 mb-1.5">' +
-            '<h4 data-trans-key="' + item.raw_name + '" class="text-[11px] sm:text-xs font-bold text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
-          '</div>' +
-
-          // ជួរទី ៤៖ តម្លៃ & ប៊ូតុងរើសទិញ
+          // ជួរទី ៤៖ តម្លៃ ៣ ជាន់ & ប៊ូតុងរើសទិញ
           '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
             '<div class="min-w-0 flex-1">' +
               '<span class="text-[8.5px] sm:text-[9px] text-slate-400 font-bold block leading-none mb-0.5">' + priceLabelText + '</span>' +
@@ -1793,8 +1705,8 @@ function getLocalizedProductName(p, lang) {
 
       grid.innerHTML = html;
     }
-    
-  
+
+
     function filterCatalog(cat, btn) {
       document.querySelectorAll('.cat-chip').forEach(function(b) {
         b.className = 'cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition';
@@ -1803,7 +1715,7 @@ function getLocalizedProductName(p, lang) {
       renderCatalogGrid(cat);
     }
 
-    // 📋 បង្ហាញផ្ទាំងព័ត៌មានទំនិញ Pop-up (បកប្រែទាំងឈ្មោះ ទាំងការពិពណ៌នា Description ស្វ័យប្រវត្តិ)
+    // 📋 បង្ហាញផ្ទាំងព័ត៌មានទំនិញ Pop-up (បង្ហាញតម្លៃ ៣ ជាន់ ៛, ฿, $ គ្មានវង់ក្រចក & បកប្រែអូតូ)
     function openProductDetailModal(id) {
       var item = STORE_CATALOG.find(function(p){ return p.id === id; });
       if (!item) return;
@@ -1835,7 +1747,7 @@ function getLocalizedProductName(p, lang) {
         }
       }
 
-      // 🌐 បើការពិពណ៌នាផ្ទាល់ខ្លួននៅតែជាភាសាខ្មែរ ហើយភ្ញៀវរើស EN ឬ 中文 ➔ បញ្ជាម៉ាស៊ីន Auto-Translate បកប្រែអូតូ
+      // 🌐 បកប្រែការពិពណ៌នាស្វ័យប្រវត្តិតាមភាសាដែលភ្ញៀវរើស
       var displayDesc = descText;
       if (currentLang !== 'km') {
         if (KC_TRANSLATION_CACHE[currentLang] && KC_TRANSLATION_CACHE[currentLang][descText]) {
@@ -1866,12 +1778,16 @@ function getLocalizedProductName(p, lang) {
       var modalBadgeEl = document.getElementById('modalBadge');
       if (modalBadgeEl) modalBadgeEl.innerText = badgeText;
 
-      // 💵 បង្ហាញតម្លៃ ២ រូបិយប័ណ្ណទន្ទឹមគ្នាលើផ្ទាំង Pop-up
-      var khrText = '៛ ' + Number(item.priceKhr || item.price || 0).toLocaleString();
-      var usdText = '$' + Number(item.priceUsd || (item.price / 4100)).toFixed(2);
-      var priceHtml = (item.currency === 'USD') ?
-        (usdText + ' <span class="text-xs text-slate-500 font-bold font-mono">(' + khrText + ')</span>') :
-        (khrText + ' <span class="text-xs text-blue-700 font-bold font-mono">(' + usdText + ')</span>');
+      // 💵 បង្ហាញតម្លៃ ៣ ជាន់ (៛ លើ, ฿ កណ្តាល, $ ក្រោម) ដោយគ្មានសញ្ញាវង់ក្រចក () ឡើយ
+      var khrText = '៛ ' + Number(item.priceKhr || 0).toLocaleString();
+      var thbText = '฿ ' + Number(item.priceThb || 0).toLocaleString();
+      var usdText = '$ ' + Number(item.priceUsd || 0).toFixed(2);
+
+      var priceHtml = '<div class="space-y-0.5 text-center my-1.5">' +
+        '<div class="text-base sm:text-lg font-black text-emerald-700 leading-tight">' + khrText + '</div>' +
+        '<div class="text-xs sm:text-sm font-black text-amber-700 leading-tight">' + thbText + '</div>' +
+        '<div class="text-xs sm:text-sm font-black text-blue-700 leading-tight">' + usdText + '</div>' +
+      '</div>';
 
       document.getElementById('modalSvgArea').innerHTML = item.svg;
       var titleEl = document.getElementById('modalTitle');
