@@ -9,7 +9,7 @@ var custPortalDataCache = null;
 var currentCustPayMode = "ABA";
 
 // ==========================================
-// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានប្រអប់ «📂 ប្រភេទទំនិញ» ច្បាស់លាស់)
+// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (លុបប៊ូតុងស្ទួន & Sync លេខរៀងរួចរាល់)
 // ==========================================
 function renderStockModule() {
   var area = document.getElementById('contentArea');
@@ -157,20 +157,14 @@ function renderStockModule() {
       '<button onclick="saveStockInToSupabase()" id="btnSaveStockInAction" class="btn-green bg-blue-600 hover:bg-blue-700 mt-3 font-bold py-3 text-xs">យល់ព្រមបញ្ចូលស្តុក</button>' +
     '</div>' +
 
-    '<div class="flex justify-between items-center mb-2 px-1">' +
-      '<span class="text-xs font-bold text-gray-500">តារាងទំនិញក្នុងស្តុក</span>' +
-      '<button type="button" onclick="autoFixAllSortDuplicates()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
-        '<i class="fas fa-wand-magic-sparkles text-yellow-300"></i> ⚡ រៀបលេខរៀងឡើងវិញកុំឱ្យស្ទួន (Auto-Fix)' +
-      '</button>' +
-    '</div>' +
-
+    // ✅ កន្លែងតារាងទំនិញ៖ សម្អាតប៊ូតុងស្ទួនចេញ និងរៀបចំជួរ Tabs ឱ្យស្អាតទូលាយ
     '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2 px-1">' +
       '<div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs">' +
         '<button type="button" onclick="switchStockSortView(\'WEB\')" id="btnSortViewWEB" class="px-3 py-1.5 rounded-lg transition bg-white text-emerald-800 shadow-xs font-black">🌐 មើលតាមលំដាប់ Web</button>' +
         '<button type="button" onclick="switchStockSortView(\'POS\')" id="btnSortViewPOS" class="px-3 py-1.5 rounded-lg transition text-gray-500 hover:text-gray-800 font-bold">🚚 មើលតាមលំដាប់ POS</button>' +
       '</div>' +
       '<button type="button" onclick="autoFixAllSortDuplicates()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
-        '<i class="fas fa-wand-magic-sparkles text-yellow-300"></i> ⚡ រៀបលេខរៀងឡើងវិញកុំឱ្យស្ទួន' +
+        '<i class="fas fa-wand-magic-sparkles text-yellow-300"></i> ⚡ រៀបលេខរៀងឡើងវិញកុំឱ្យស្ទួន (Auto-Fix)' +
       '</button>' +
     '</div>' +
 
@@ -186,15 +180,25 @@ function renderStockModule() {
   toggleChannelPrices();
   initStockModuleDropdowns();
 
+  // 🔄 ធានាថាទិន្នន័យលេខរៀង Web ត្រូវបានទាញមក sync មុនបង្ហាញតារាង
   if (!allProducts || allProducts.length === 0) {
     fetchInitialPOSData().then(function() {
-      renderStockTableRows();
+      if (typeof syncOnlineSortsFromDatabase === 'function') {
+        syncOnlineSortsFromDatabase().then(renderStockTableRows);
+      } else {
+        renderStockTableRows();
+      }
       initStockModuleDropdowns();
     });
   } else {
-    renderStockTableRows();
+    if (typeof syncOnlineSortsFromDatabase === 'function') {
+      syncOnlineSortsFromDatabase().then(renderStockTableRows);
+    } else {
+      renderStockTableRows();
+    }
   }
 }
+
 function tCF() {
   var pTy = document.getElementById('pTy');
   var c = document.getElementById('cSec');
