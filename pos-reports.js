@@ -98,25 +98,32 @@ function populateCustSelectDropdown() {
   });
 }
 
+// ==========================================
+// 🏢 គណនារបាយការណ៍អាជីវកម្មសរុប (ប្រើម៉ោងកម្ពុជា UTC+7 ពេញលេញ ២៤ ម៉ោង)
+// ==========================================
 async function fetchCompanySummaryFromSupabase() {
   var sd = document.getElementById('compStartDate').value;
   var ed = document.getElementById('compEndDate').value;
   if (!sd || !ed) return;
 
   try {
-    // ១. ទាញទិន្នន័យប្រតិបត្តិការលក់ (Transactions) ក្នុងចន្លោះថ្ងៃ
+    // 🇰🇭 កំណត់ម៉ោងកម្ពុជា UTC+7 ចាប់ពី 00:00:00 ដល់ 23:59:59 នៃថ្ងៃដែលបានជ្រើសរើស
+    var startIso = sd + 'T00:00:00+07:00';
+    var endIso = ed + 'T23:59:59.999+07:00';
+
+    // ១. ទាញទិន្នន័យប្រតិបត្តិការលក់ (Transactions) ក្នុងចន្លោះម៉ោងកម្ពុជា
     const { data: trans } = await supabaseClient
       .from('transactions')
       .select('*')
-      .gte('created_at', sd + 'T00:00:00Z')
-      .lte('created_at', ed + 'T23:59:59Z');
+      .gte('created_at', startIso)
+      .lte('created_at', endIso);
 
-    // ២. ទាញទិន្នន័យសាច់ប្រាក់ដែលប្រមូលបានពីការទូទាត់បំណុល (Settlements) ក្នុងចន្លោះថ្ងៃ
+    // ២. ទាញទិន្នន័យសាច់ប្រាក់ដែលប្រមូលបានពីការទូទាត់បំណុល (Settlements) ក្នុងចន្លោះម៉ោងកម្ពុជា
     const { data: settles } = await supabaseClient
       .from('settlements')
       .select('*')
-      .gte('settled_at', sd + 'T00:00:00Z')
-      .lte('settled_at', ed + 'T23:59:59Z');
+      .gte('settled_at', startIso)
+      .lte('settled_at', endIso);
 
     var salesTotal = 0, cashTotal = 0, debtTotal = 0;
     var prodQty = {};
@@ -135,7 +142,7 @@ async function fetchCompanySummaryFromSupabase() {
       });
     }
 
-    // ✅ បូកបន្ថែមសាច់ប្រាក់ដែលប្រមូលបានពីការទូទាត់បំណុលរបស់ម៉ូយ (Settlements) ឱ្យត្រូវលេខ ១០០%
+    // បូកបន្ថែមសាច់ប្រាក់ពីការទូទាត់បំណុលរបស់ម៉ូយ (Settlements)
     if (settles) {
       settles.forEach(function(s) {
         cashTotal += parseFloat(s.paid_khr || 0);
@@ -156,7 +163,6 @@ async function fetchCompanySummaryFromSupabase() {
     console.error("Company summary error:", e);
   }
 }
-
 async function fetchFullStatementFromSupabase() {
   var name = document.getElementById('custSearchInp').value.trim();
   var sd = document.getElementById('custStartDate').value;
