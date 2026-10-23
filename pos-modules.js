@@ -1542,7 +1542,7 @@ async function delUserFromSupabase(id) {
   }
 }
 // ==========================================
-// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ (SETTINGS & អត្រាប្តូរប្រាក់)
+// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ (SETTINGS & គ្រប់គ្រងអត្រាប្តូរប្រាក់ពេញលេញ)
 // ==========================================
 var currentTelegramAlertStatus = "ON";
 
@@ -1553,26 +1553,57 @@ function renderSettingsModule() {
     prodOptions += '<option value="' + p.name + '">📦 ' + p.name + '</option>';
   });
 
+  var curUsd = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var curThb = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
-    // 💵 កាតកំណត់អត្រាប្តូរប្រាក់ (Exchange Rates)
-    '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3">' +
+    // 💵 កាតកំណត់អត្រាប្តូរប្រាក់កម្រិតខ្ពស់ (Smart Exchange Rates Card)
+    '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
       '<div class="flex justify-between items-center">' +
-        '<h3 class="font-extrabold text-emerald-950 text-base flex items-center gap-2">' +
-          '<i class="fas fa-money-bill-transfer text-emerald-600"></i>អត្រាប្តូរប្រាក់ (Exchange Rates)' +
-        '</h3>' +
-        '<span class="text-[10px] text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full font-bold">Auto-Sync លើ Web & POS</span>' +
+        '<div>' +
+          '<h3 class="font-extrabold text-emerald-950 text-base flex items-center gap-2">' +
+            '<i class="fas fa-money-bill-transfer text-emerald-600"></i>គ្រប់គ្រងអត្រាប្តូរប្រាក់ (Exchange Rates)' +
+          '</h3>' +
+          '<p class="text-[11px] text-gray-500 font-bold mt-0.5">*កំណត់អត្រាប្រាក់រៀល (៛), បាតថៃ (฿), និងដុល្លារ ($) សម្រាប់ POS & Store Web</p>' +
+        '</div>' +
+        '<span class="text-[10px] text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full font-black border border-emerald-300">Auto-Sync 3 Currencies</span>' +
       '</div>' +
-      '<p class="text-[11px] text-gray-500 font-bold">*កំណត់អត្រាប្តូរប្រាក់សម្រាប់គណនាក្នុង Dashboard, Settlement និងគណនាតម្លៃ $ លើ Web ភ្ញៀវ</p>' +
+
+      // ប្រអប់បញ្ចូលអត្រា
       '<div class="grid grid-cols-2 gap-3 text-xs">' +
-        '<div>' +
-          '<label class="font-black text-blue-900 uppercase block mb-1">💵 $1 ដុល្លារ = (... ៛)</label>' +
-          '<input type="number" id="set_rate_usd" placeholder="ឧ៖ 4100" value="4100" class="font-black border-2 border-blue-200 focus:border-blue-600 p-2.5 rounded-xl w-full text-center text-sm outline-none text-blue-950 bg-blue-50/40">' +
+        '<div class="p-3 bg-blue-50/60 rounded-2xl border-2 border-blue-200 space-y-1.5">' +
+          '<label class="font-black text-blue-900 uppercase block">💵 $1 ដុល្លារ = (... ៛)</label>' +
+          '<input type="number" id="set_rate_usd" oninput="updateRatePreviewLive()" placeholder="ឧ៖ 4100" value="' + curUsd + '" class="font-black border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-blue-950 bg-white shadow-2xs">' +
+          '<div class="flex gap-1 pt-0.5">' +
+            '<button type="button" onclick="setQuickRateValue(\'set_rate_usd\', 4080)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border text-[10px] font-bold">4080</button>' +
+            '<button type="button" onclick="setQuickRateValue(\'set_rate_usd\', 4100)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border text-[10px] font-bold">4100</button>' +
+            '<button type="button" onclick="setQuickRateValue(\'set_rate_usd\', 4120)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border text-[10px] font-bold">4120</button>' +
+            '<button type="button" onclick="setQuickRateValue(\'set_rate_usd\', 4150)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border text-[10px] font-bold">4150</button>' +
+          '</div>' +
         '</div>' +
-        '<div>' +
-          '<label class="font-black text-amber-900 uppercase block mb-1">🪙 1฿ បាត = (... ៛)</label>' +
-          '<input type="number" id="set_rate_thb" placeholder="ឧ៖ 115" value="115" class="font-black border-2 border-amber-200 focus:border-amber-600 p-2.5 rounded-xl w-full text-center text-sm outline-none text-amber-950 bg-amber-50/40">' +
+
+        '<div class="p-3 bg-amber-50/60 rounded-2xl border-2 border-amber-200 space-y-1.5">' +
+          '<label class="font-black text-amber-950 uppercase block">🪙 1฿ បាត = (... ៛)</label>' +
+          '<input type="number" id="set_rate_thb" oninput="updateRatePreviewLive()" placeholder="ឧ៖ 115" value="' + curThb + '" class="font-black border-2 border-amber-300 focus:border-amber-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-amber-950 bg-white shadow-2xs">' +
+          '<div class="flex gap-1 pt-0.5">' +
+            '<button type="button" onclick="setQuickRateValue(\'set_rate_thb\', 112)" class="flex-1 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border text-[10px] font-bold">112</button>' +
+            '<button type="button" onclick="setQuickRateValue(\'set_rate_thb\', 115)" class="flex-1 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border text-[10px] font-bold">115</button>' +
+            '<button type="button" onclick="setQuickRateValue(\'set_rate_thb\', 118)" class="flex-1 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border text-[10px] font-bold">118</button>' +
+            '<button type="button" onclick="setQuickRateValue(\'set_rate_thb\', 120)" class="flex-1 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border text-[10px] font-bold">120</button>' +
+          '</div>' +
         '</div>' +
       '</div>' +
+
+      // 🧮 ផ្ទាំងគណនាមើលលទ្ធផលជាក់ស្តែង (Live Conversion Calculator)
+      '<div id="exchangeLiveCalcBox" class="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1">' +
+        '<div class="font-black text-slate-700 text-[11px] mb-1"><i class="fas fa-calculator text-emerald-600 mr-1"></i> លទ្ធផលបំប្លែងលុយជាក់ស្តែងតាមអត្រានេះ៖</div>' +
+        '<div id="calcPreviewLines" class="grid grid-cols-1 sm:grid-cols-3 gap-2 font-bold text-center"></div>' +
+      '</div>' +
+
+      // ប៊ូតុង Save អត្រាប្តូរប្រាក់រហ័ស
+      '<button type="button" onclick="saveQuickExchangeRates()" id="btnSaveQuickRates" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md active:scale-95 transition flex items-center justify-center gap-2">' +
+        '<i class="fas fa-floppy-disk text-base"></i> រក្សាទុកអត្រាប្តូរប្រាក់ (Save Exchange Rates)' +
+      '</button>' +
     '</div>' +
 
     // ម៉ោងបើក/បិទ & សេវាដឹក
@@ -1623,7 +1654,98 @@ function renderSettingsModule() {
   '</div>';
 
   loadSettingsForm();
+  updateRatePreviewLive();
 }
+
+// 🧮 មុខងារជំនួយគណនា Live Preview ក្នុង Settings
+function updateRatePreviewLive() {
+  var u = parseFloat(document.getElementById('set_rate_usd') ? document.getElementById('set_rate_usd').value : 4100) || 4100;
+  var t = parseFloat(document.getElementById('set_rate_thb') ? document.getElementById('set_rate_thb').value : 115) || 115;
+  var box = document.getElementById('calcPreviewLines');
+  if (!box) return;
+
+  var thbFrom10k = Math.round(10000 / t);
+  var usdFrom10k = (10000 / u).toFixed(2);
+
+  var khrFrom100b = Math.round(100 * t);
+  var usdFrom100b = (khrFrom100b / u).toFixed(2);
+
+  var khrFrom10d = Math.round(10 * u);
+  var thbFrom10d = Math.round(khrFrom10d / t);
+
+  box.innerHTML = '<div class="p-2 bg-white rounded-xl border border-slate-200">' +
+      '<span class="text-[10px] text-slate-400 block">10,000 ៛ ស្មើនឹង</span>' +
+      '<span class="text-amber-700">฿ ' + thbText(thbFrom10k) + '</span> | <span class="text-blue-700">$' + usdFrom10k + '</span>' +
+    '</div>' +
+    '<div class="p-2 bg-white rounded-xl border border-slate-200">' +
+      '<span class="text-[10px] text-slate-400 block">100 ฿ ស្មើនឹង</span>' +
+      '<span class="text-emerald-700">៛ ' + khrFrom100b.toLocaleString() + '</span> | <span class="text-blue-700">$' + usdFrom100b + '</span>' +
+    '</div>' +
+    '<div class="p-2 bg-white rounded-xl border border-slate-200">' +
+      '<span class="text-[10px] text-slate-400 block">$ 10 ស្មើនឹង</span>' +
+      '<span class="text-emerald-700">៛ ' + khrFrom10d.toLocaleString() + '</span> | <span class="text-amber-700">฿ ' + thbText(thbFrom10d) + '</span>' +
+    '</div>';
+
+  function thbText(v) { return Number(v).toLocaleString(); }
+}
+
+function setQuickRateValue(inpId, val) {
+  var inp = document.getElementById(inpId);
+  if (inp) {
+    inp.value = val;
+    updateRatePreviewLive();
+  }
+}
+
+// 💾 មុខងាររក្សាទុកអត្រាប្តូរប្រាក់រហ័ស (ប្រើផ្ទាំង kcAlert របស់ POS)
+async function saveQuickExchangeRates() {
+  var usdRate = parseFloat(document.getElementById('set_rate_usd') ? document.getElementById('set_rate_usd').value : 4100) || 4100;
+  var thbRate = parseFloat(document.getElementById('set_rate_thb') ? document.getElementById('set_rate_thb').value : 115) || 115;
+
+  var btn = document.getElementById('btnSaveQuickRates');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Exchange_Rate_USD', value: String(usdRate) },
+      { key: 'Exchange_Rate_THB', value: String(thbRate) }
+    ]);
+
+    if (error) throw error;
+
+    exchangeRateUSD = usdRate;
+    exchangeRateTHB = thbRate;
+
+    // 🔔 បង្ហាញផ្ទាំងជូនដំណឹងស្តង់ដារ kcAlert របស់ POS យើង
+    await kcAlert({
+      title: "អត្រាប្តូរប្រាក់បានកែប្រែជោគជ័យ! 🎉",
+      message: "អត្រាថ្មី៖ $1 = " + usdRate.toLocaleString() + " ៛ | 1฿ = " + thbRate.toLocaleString() + " ៛ ត្រូវបាន Sync ទៅកាន់ប្រព័ន្ធ POS និង Web របស់ភ្ញៀវរួចរាល់!",
+      type: "success"
+    });
+
+    // បាញ់សារដំណឹងទៅកាន់ Telegram
+    try {
+      var tgMsg = "🪙 <b>[KC WATER - ប្តូរអត្រាប្តូរប្រាក់ថ្មី]</b>\n\n" +
+                  "💵 <b>ដុល្លារ ($)៖</b> $1 = <b>" + usdRate.toLocaleString() + " ៛</b>\n" +
+                  "🪙 <b>បាតថៃ (฿)៖</b> 1฿ = <b>" + thbRate.toLocaleString() + " ៛</b>\n" +
+                  "✍️ <b>អ្នកកែ៖</b> " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+      sendTelegramAlert(tgMsg);
+    } catch(tgE) {}
+
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-floppy-disk text-base"></i> រក្សាទុកអត្រាប្តូរប្រាក់ (Save Exchange Rates)';
+    }
+  }
+}
+
 function updateTelegramButtonUI(status) {
   currentTelegramAlertStatus = (String(status).trim().toUpperCase() === "OFF") ? "OFF" : "ON";
   telegramConfig.status = currentTelegramAlertStatus;
