@@ -765,6 +765,7 @@ async function submitSettlementPayment() {
     cashKhrRecorded = 0;
     scanKhrRecorded = actualSettledPaid;
   }
+
   var btn = document.getElementById('btnSubmitSettlement');
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងទូទាត់ប្រាក់...';
@@ -784,7 +785,7 @@ async function submitSettlementPayment() {
     const { error: setErr } = await supabaseClient.from('settlements').insert([{
       customer_name: currentSettlementCustomer,
       total_due_khr: totalDue,
-      paid_khr: Math.min(paid, totalDue),
+      paid_khr: actualSettledPaid,
       balance_khr: remainingBalance,
       admin_name: currentUser.fullName || "Admin",
       pay_method: currentSettlementPayMode,
@@ -820,8 +821,19 @@ async function submitSettlementPayment() {
     playPaymentSuccessAudio();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
 
-    // ៦. បង្កើតវិក្កយបត្ររូបភាព (Receipt PNG)
+    // ៦. 🧾 បង្កើតវិក្កយបត្ររូបភាព (Receipt PNG)
     var receiptItems = currentSettlementItems.filter(i => selectedIds.indexOf(i.id) !== -1);
+    
+    // ✅ បើបង់តែបំណុលចាស់ ឱ្យវិក្កយបត្របង្ហាញជួរ "ទូទាត់បំណុលចាស់" កុំឱ្យចេញតារាងទទេ
+    if (receiptItems.length === 0 && includeOldDebt && currentSettlementOldDebt > 0) {
+      receiptItems = [{
+        name: "ទូទាត់បំណុលចាស់ (Old Debt Settlement)",
+        qty: 1,
+        price: actualSettledPaid,
+        currency: "KHR"
+      }];
+    }
+
     generateReceiptImage("SET-" + new Date().getTime(), currentSettlementCustomer, totalDue, paid, receiptItems, "វិក្កយបត្រទូទាត់ប្រាក់ (SETTLEMENT)");
 
     showToast("បានទូទាត់ប្រាក់ និងជម្រះបញ្ជីជោគជ័យ!", "success");
