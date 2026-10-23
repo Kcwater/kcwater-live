@@ -1755,13 +1755,10 @@ async function renderCustomerPortalHome() {
 }
 
 // ==========================================
-// 🏠 ទាញទិន្នន័យគណនីម៉ូយប្រចាំ (បានកែសម្រួលម៉ោងកម្ពុជាត្រឹមត្រូវ)
+// 🏠 ទាញទិន្នន័យគណនីម៉ូយប្រចាំ (ប្រើម៉ោងកម្ពុជា UTC+7 មិនឱ្យច្រឡំជើងទឹកថ្ងៃនេះ និងបំណុលចាស់)
 // ==========================================
 async function fetchCustomerPortalData() {
   try {
-    // 🇰🇭 ប្រើម៉ោងកម្ពុជា UTC+7 មិនឱ្យច្រឡំជើងទឹកថ្ងៃនេះ និងបំណុលចាស់
-    var todayStr = (typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toLocaleDateString('en-CA');
-
     const { data: trans } = await supabaseClient
       .from('transactions')
       .select('*')
@@ -1784,7 +1781,8 @@ async function fetchCustomerPortalData() {
 
     (trans || []).forEach(function(t) {
       var tot = parseFloat(t.total || 0);
-      var isToday = String(t.created_at).startsWith(todayStr);
+      // 🇰🇭 ឆែកម៉ោងកម្ពុជាស្តង់ដារ UTC+7 មិនឱ្យច្រឡំជាបំណុលចាស់ឡើយ
+      var isToday = isTodayInCambodia(t.created_at);
       if (isToday) {
         todayTotal += tot;
         todayItems.push(t);
@@ -1827,7 +1825,12 @@ async function fetchCustomerPortalData() {
       } else {
         var html = '';
         todayItems.forEach(function(i) {
-          var timeStr = new Date(i.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+          // 🇰🇭 កំណត់ម៉ោងកម្ពុជា
+          var timeStr = new Date(i.created_at).toLocaleTimeString('km-KH', { 
+            timeZone: 'Asia/Phnom_Penh', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
           var recTag = (i.recorded_by && i.recorded_by !== currentUser.fullName && i.recorded_by !== 'Admin') ? 
             ('<br><span class="text-[9.5px] text-amber-950 font-black bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[9px] text-amber-600"></i>ដកដោយ៖ ' + i.recorded_by + '</span>') : '';
 
@@ -1845,6 +1848,7 @@ async function fetchCustomerPortalData() {
     console.error("Portal error:", e);
   }
 }
+
 // ==========================================
 // 💳 ៧. ផ្ទាំងស្នើទូទាត់លុយរបស់ម៉ូយ (CUSTOMER PAYMENT REQUEST MODAL)
 // ==========================================
