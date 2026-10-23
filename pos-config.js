@@ -1,7 +1,7 @@
-// ==========================================
-// 🌐 ១. ប្រព័ន្ធកំណត់បរិយាកាសឆ្លាតវៃ (SMART DUAL ENVIRONMENT: PROD & TEST)
-// គាំទ្រ POS ទាំង ២ (១ ប្រព័ន្ធពិត និង ១ សាកល្បង) ដាច់ដោយឡែកពីគ្នា ១០០%
-// ==========================================
+/** ==========================================================================
+ *  KC WATER POS SYSTEM - CONFIGURATION & UTILITIES (pos-config.js)
+ *  (Supabase Client, Global App State & Telegram Alerts)
+ *  ========================================================================== */
 
 // 🔑 កំណត់គណនី Supabase ទាំង ២
 var SUPABASE_CONFIGS = {
@@ -10,10 +10,10 @@ var SUPABASE_CONFIGS = {
     url: "https://hocndqkoumgjijtzpzby.supabase.co",
     key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
   },
-  // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Database - អាចប្តូរ URL/Key ទី២ បានប្រសិនបើមាន)
+  // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Database)
   TEST: {
-    url: "https://ntftdylkcnkxsytptket.supabase.co", // 👈 អាចដាក់ URL គម្រោង Test ទី២ នៅទីនេះ
-    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v" // 👈 អាចដាក់ Key គម្រោង Test ទី២ នៅទីនេះ
+    url: "https://ntftdylkcnkxsytptket.supabase.co",
+    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v"
   }
 };
 
@@ -21,12 +21,12 @@ var SUPABASE_CONFIGS = {
 function detectCurrentEnvironment() {
   var host = window.location.hostname.toLowerCase();
 
-  // 🧪 ១. បើបើកលើ Link សាកល្បង kcwater-store ➔ ចូល Database Test អូតូ ១០០%
+  // 🧪 ១. បើបើកលើ Link សាកល្បង kcwater-store ➔ ចូល Database Test អូតូ
   if (host.includes('kcwater-store') || host.includes('test') || host.includes('dev') || host === 'localhost' || host === '127.0.0.1') {
     return 'TEST';
   }
 
-  // 🏢 ២. បើបើកលើ Link ពិត kcwater-live ➔ ចូល Database ពិត (PROD) អូតូ ១០០%
+  // 🏢 ២. បើបើកលើ Link ពិត kcwater-live ➔ ចូល Database ពិត (PROD) អូតូ
   if (host.includes('kcwater-live')) {
     return 'PROD';
   }
@@ -36,25 +36,11 @@ function detectCurrentEnvironment() {
   var envParam = urlParams.get('env');
   if (envParam) {
     var p = envParam.toUpperCase();
-    if (p === 'TEST' || p === 'PROD') return p;
+    if (p === 'TEST' || p === 'PROD') {
+      return p;
+    }
   }
 
-  return 'PROD';
-}
-
-  // ខ. ឆែកតាមការចងចាំក្នុង Browser (localStorage)
-  var savedEnv = localStorage.getItem('kc_current_env');
-  if (savedEnv === 'TEST' || savedEnv === 'PROD') {
-    return savedEnv;
-  }
-
-  // គ. ឆែកតាមឈ្មោះ Domain ស្វ័យប្រវត្តិ (បើ Domain មានពាក្យ test, dev, ឬ localhost)
-  var host = window.location.hostname.toLowerCase();
-  if (host.includes('test') || host.includes('dev') || host === 'localhost' || host === '127.0.0.1') {
-    return 'TEST';
-  }
-
-  // ឃ. លំនាំដើមគឺប្រព័ន្ធលក់ពិត (PROD)
   return 'PROD';
 }
 
@@ -72,7 +58,7 @@ function switchAppEnvironment(targetEnv) {
   }
 }
 
-// 🏷️ មុខងារបង្ហាញផ្លាកព្រមាន និងប៊ូតុងប្តូរពេលកំពុងនៅ Mode សាកល្បង
+// 🏷️ មុខងារបង្ហាញផ្លាកព្រមានពេលកំពុងនៅ Mode សាកល្បង
 function renderEnvironmentBanner() {
   var oldBanner = document.getElementById('kcTestModeBanner');
   if (oldBanner) oldBanner.remove();
@@ -100,10 +86,8 @@ if (document.readyState === 'loading') {
 
 // ==========================================
 // 🇰🇭 ប្រព័ន្ធគ្រប់គ្រងម៉ោងកម្ពុជាស្តង់ដារ (CAMBODIA TIMEZONE UTC+7 ENGINE)
-// ដោះស្រាយដាច់ស្រឡះ ១០០% មិនឱ្យច្រឡំថ្ងៃ ឬបាត់ទិន្នន័យពេលព្រឹកព្រលឹមឡើយ
 // ==========================================
 
-// ១. ទាញយកថ្ងៃនេះនៅកម្ពុជា (YYYY-MM-DD)
 function getCambodiaToday() {
   return new Intl.DateTimeFormat('en-CA', { 
     timeZone: 'Asia/Phnom_Penh', 
@@ -113,7 +97,6 @@ function getCambodiaToday() {
   }).format(new Date());
 }
 
-// ២. បំប្លែងរាល់ Timestamp ពី Supabase ឱ្យចេញជាថ្ងៃខែកម្ពុជាពិតប្រាកដ (YYYY-MM-DD)
 function toCambodiaDateStr(timestamp) {
   if (!timestamp) return '';
   var d = new Date(timestamp);
@@ -126,13 +109,11 @@ function toCambodiaDateStr(timestamp) {
   }).format(d);
 }
 
-// ៣. មុខងារពិនិត្យថាទិន្នន័យនោះជា «ថ្ងៃនេះនៅកម្ពុជា» មែនឬទេ (លែងប្រើ startsWith ទៀតហើយ)
 function isTodayInCambodia(timestamp) {
   if (!timestamp) return false;
   return toCambodiaDateStr(timestamp) === getCambodiaToday();
 }
 
-// ៤. បង្កើត Range ម៉ោង 00:00 ដល់ 23:59 នៃម៉ោងកម្ពុជាសម្រាប់ Query ចូល Supabase (+07:00)
 function getCambodiaQueryRange(dateStr) {
   var d = dateStr || getCambodiaToday();
   return {
