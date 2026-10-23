@@ -487,7 +487,7 @@ async function syncOnlineSortsFromDatabase() {
     });
   } catch(e) {}
 }
-// 🧹 មុខងារជម្រះប្រអប់បញ្ចូលទិន្នន័យទំនិញឱ្យនៅទទេស្អាត ១០០% ត្រៀមបញ្ចូលទំនិញថ្មី
+// 🧹 មុខងារជម្រះប្រអប់បញ្ចូលទិន្នន័យទំនិញឱ្យនៅទទេស្អាត ១០០% ត្រៀមបញ្ចូលទំនិញថ្មី (ជួសជុល bug រួចរាល់)
 function cancelEditProduct() {
   editingProductId = null;
   
@@ -506,20 +506,23 @@ function cancelEditProduct() {
     btn.disabled = false;
   }
 
+  // 🔢 គណនាលេខរៀងបន្ទាប់សម្រាប់ទំនិញថ្មី
+  var nextSortNum = (allProducts && allProducts.length > 0) ? (allProducts.length + 1) : 1;
+
   // 🧼 ជម្រះគ្រប់ប្រអប់ឱ្យទទេស្អាតទាំងអស់
   if (document.getElementById('pI')) document.getElementById('pI').value = 'P-' + Math.floor(Math.random() * 9000 + 1000);
   if (document.getElementById('pN')) document.getElementById('pN').value = '';
-  if (document.getElementById('pTy')) document.getElementById('pTy').value = 'ផលិតឯង';
+  if (document.getElementById('pTy')) document.getElementById('pTy').value = 'ទិញគេ';
   if (document.getElementById('pCu')) document.getElementById('pCu').value = 'KHR';
   if (document.getElementById('pCo')) document.getElementById('pCo').value = '';
   if (document.getElementById('pChannel')) document.getElementById('pChannel').value = 'ALL';
+  if (document.getElementById('pCategory')) document.getElementById('pCategory').value = 'GROCERY';
   if (document.getElementById('pBadge')) document.getElementById('pBadge').value = 'គុណភាពខ្ពស់';
   if (document.getElementById('pPr')) document.getElementById('pPr').value = '';
   if (document.getElementById('pOnlinePr')) document.getElementById('pOnlinePr').value = '';
-  if (document.getElementById('pSortPos')) document.getElementById('pSortPos').value = p.sort_order || 1;
-  if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = p.online_sort_order || p.sort_order || 1;
+  if (document.getElementById('pSortPos')) document.getElementById('pSortPos').value = nextSortNum;
+  if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = nextSortNum;
   if (document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
-  if (document.getElementById('pSort')) document.getElementById('pSort').value = (allProducts ? allProducts.length + 1 : 1);
   if (document.getElementById('pMin')) document.getElementById('pMin').value = 5;
 
   // 🖼️ សម្អាតប្រអប់រូបភាព
@@ -537,6 +540,7 @@ function cancelEditProduct() {
   var nameInp = document.getElementById('pN');
   if (nameInp) setTimeout(function() { nameInp.focus(); }, 150);
 }
+
 // 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, Description & Badge ចាស់មកបង្ហាញអូតូ)
 async function prepareEditProduct(id) {
   var p = allProducts.find(item => item.id === id);
