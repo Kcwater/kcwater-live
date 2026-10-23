@@ -1288,7 +1288,7 @@ function getLocalizedProductName(p, lang) {
   return parsed;
 }
 
-    // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) ឆ្លាតវៃ និងស្វ័យប្រវត្តិ ១០០%
+    // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) ពេញលេញ ១០០% ទាំង Visual Chips & Buttons
     function changeAppLanguage(lang) {
       currentLang = lang;
       var d = DICT[lang] || DICT.km;
@@ -1306,6 +1306,10 @@ function getLocalizedProductName(p, lang) {
       function setSafePlaceholder(id, text) {
         var el = document.getElementById(id);
         if (el && text !== undefined) el.placeholder = text;
+      }
+      function setSafeHtml(id, html) {
+        var el = document.getElementById(id);
+        if (el && html !== undefined) el.innerHTML = html;
       }
 
       // កំណត់ពណ៌ប៊ូតុងភាសាដែលកំពុងរើស
@@ -1368,6 +1372,48 @@ function getLocalizedProductName(p, lang) {
       setSafeText('coSectionTime', d.coSecTime);
       setSafeText('coSectionBuilding', d.coSecBuilding);
 
+      // ⏰ បកប្រែប៊ូតុងរើសម៉ោង (Delivery Time Chips)
+      var timeChips = document.querySelectorAll('.time-chip');
+      if (timeChips && timeChips.length >= 6) {
+        timeChips[0].innerText = (lang === 'en' ? '⚡ ASAP' : (lang === 'zh' ? '⚡ 尽快送达' : '⚡ ដឹកភ្លាមៗ'));
+        timeChips[1].innerText = (lang === 'en' ? '🌅 Morning (8-11h)' : (lang === 'zh' ? '🌅 上午 (8-11h)' : '🌅 ព្រឹក (8-11h)'));
+        timeChips[2].innerText = (lang === 'en' ? '☀️ Noon (11-1h)' : (lang === 'zh' ? '☀️ 中午 (11-1h)' : '☀️ ថ្ងៃត្រង់'));
+        timeChips[3].innerText = (lang === 'en' ? '🌇 Afternoon (1-5h)' : (lang === 'zh' ? '🌇 下午 (1-5h)' : '🌇 រសៀល (1-5h)'));
+        timeChips[4].innerText = (lang === 'en' ? '🌙 Evening (5-7h)' : (lang === 'zh' ? '🌙 傍晚 (5-7h)' : '🌙 ល្ងាច (5-7h)'));
+        timeChips[5].innerText = (lang === 'en' ? '✍️ Custom' : (lang === 'zh' ? '✍️ 自定义时间' : '✍️ វាយម៉ោង'));
+      }
+
+      var timeBadge = document.getElementById('selectedTimeSlotBadge');
+      var hiddenSlot = document.getElementById('inp_selectedTimeSlotValue');
+      if (timeBadge) {
+        var curSlot = hiddenSlot ? hiddenSlot.value : 'ASAP';
+        if (curSlot === 'ASAP') {
+          timeBadge.innerText = (lang === 'en' ? '⚡ ASAP' : (lang === 'zh' ? '⚡ 尽快送达' : '⚡ ដឹកភ្លាមៗ'));
+        } else if (curSlot === 'CUSTOM') {
+          timeBadge.innerText = (lang === 'en' ? '✍️ Custom Time' : (lang === 'zh' ? '✍️ 自定义时间' : '✍️ វាយម៉ោង'));
+        }
+      }
+      setSafePlaceholder('inp_customTimeManual', (lang === 'en' ? 'e.g., 4:30 PM...' : (lang === 'zh' ? '例如：下午 4:30...' : 'ឧ៖ ម៉ោង ៤:៣០ រសៀល...')));
+
+      // 🏢 បកប្រែប៊ូតុងអគារ (Building Type Chips)
+      var bldHouseSpan = document.querySelector('#bldChip_HOUSE span');
+      var bldCondoSpan = document.querySelector('#bldChip_CONDO span');
+      if (bldHouseSpan) bldHouseSpan.innerText = (lang === 'en' ? '🏠 Ground Floor' : (lang === 'zh' ? '🏠 地面平房 / 排屋' : '🏠 ផ្ទះផ្ទាល់ដី'));
+      if (bldCondoSpan) bldCondoSpan.innerText = (lang === 'en' ? '🏢 Apartment / Building' : (lang === 'zh' ? '🏢 公寓 / 租房 / 大楼' : '🏢 បន្ទប់ជួល / អគារ'));
+
+      var elevYesSpan = document.querySelector('#elevChip_YES span');
+      var elevNoSpan = document.querySelector('#elevChip_NO span');
+      if (elevYesSpan) elevYesSpan.innerText = (lang === 'en' ? '🛗 Has Elevator' : (lang === 'zh' ? '🛗 有电梯' : '🛗 មានជណ្តើរយន្ត'));
+      if (elevNoSpan) elevNoSpan.innerText = (lang === 'en' ? '🪜 Stairs Only' : (lang === 'zh' ? '🪜 走楼梯' : '🪜 ឡើងជណ្តើរជើង'));
+
+      var handoverChips = document.querySelectorAll('.handover-chip');
+      if (handoverChips && handoverChips.length >= 3) {
+        handoverChips[0].innerText = (lang === 'en' ? '🚪 Leave at Door' : (lang === 'zh' ? '🚪 放房门口' : '🚪 ដាក់មុខបន្ទប់'));
+        handoverChips[1].innerText = (lang === 'en' ? '🤝 Meet in Person' : (lang === 'zh' ? '🤝 当面交接' : '🤝 ជួបផ្ទាល់'));
+        handoverChips[2].innerText = (lang === 'en' ? '🏢 Guard / Front Desk' : (lang === 'zh' ? '🏢 放保安室/前台' : '🏢 ទុកនៅមុខទ្វារ/សន្តិសុខ'));
+      }
+
+      // 📍 ទីតាំង & ផ្នែករូបថតមុខផ្ទះ
       setSafeText('coSectionLoc', d.coSecLoc);
       setSafeText('btnGpsLabel', d.btnGps);
       var gpsHint = document.getElementById('gpsStatusHint');
@@ -1377,6 +1423,23 @@ function getLocalizedProductName(p, lang) {
       }
       setSafePlaceholder('inp_custAddress', d.phAddress);
 
+      var photoTextEl = document.getElementById('housePhotoStatusText');
+      var photoHiddenInp = document.getElementById('inp_custPhotoUrl');
+      if (photoTextEl && (!photoHiddenInp || !photoHiddenInp.value)) {
+        photoTextEl.innerText = (lang === 'en' ? 'Attach home photo for driver note' : (lang === 'zh' ? '附上住处照片方便送货员辨识' : 'ភ្ជាប់រូបទុកឱ្យអ្នកដឹកចំណាំផ្ទះ'));
+      }
+
+      var liveCamBtn = document.querySelector('button[onclick="openLiveCamera()"]');
+      if (liveCamBtn) {
+        liveCamBtn.innerHTML = '<i class="fas fa-camera"></i> ' + (lang === 'en' ? 'Photo' : (lang === 'zh' ? '拍照' : 'ថតរូប'));
+      }
+
+      var galleryLabel = document.querySelector('label[for="inpHousePhotoGallery"]') || document.querySelector('label:has(#inpHousePhotoGallery)');
+      if (galleryLabel) {
+        galleryLabel.innerHTML = '<i class="fas fa-image"></i> ' + (lang === 'en' ? 'Gallery' : (lang === 'zh' ? '选图' : 'រើសរូប')) + '<input type="file" id="inpHousePhotoGallery" accept="image/*" onchange="previewGalleryPhoto(this)" class="hidden">';
+      }
+
+      // 🛢️ ការដោះដូរសំបកធុង & វិធីទូទាត់
       setSafeText('coSectionSwap', d.coSecSwap);
       setSafeText('optSwapYes', d.optSwapYes);
       setSafeText('optSwapNo', d.optSwapNo);
@@ -1388,6 +1451,16 @@ function getLocalizedProductName(p, lang) {
 
       setSafeText('coTotalLabel', d.coTotal);
       setSafeText('btnSubmitOrderText', d.btnOrderNow);
+
+      // 📱 របារម៉ឺនុយបាតក្រោម (Bottom Navigation Bar)
+      var bnavStore = document.querySelector('#bnav_STORE span');
+      var bnavTrack = document.querySelector('#bnav_TRACKING span');
+      var bnavHistory = document.querySelector('#bnav_HISTORY span');
+      var bnavProfile = document.querySelector('#bnav_PROFILE span');
+      if (bnavStore) bnavStore.innerText = (lang === 'en' ? 'Store' : (lang === 'zh' ? '商品' : 'ហាងទំនិញ'));
+      if (bnavTrack) bnavTrack.innerText = (lang === 'en' ? 'Tracking' : (lang === 'zh' ? '追踪' : 'តាមដានទឹក'));
+      if (bnavHistory) bnavHistory.innerText = (lang === 'en' ? 'History' : (lang === 'zh' ? '历史' : 'ប្រវត្តិទិញ'));
+      if (bnavProfile) bnavProfile.innerText = (lang === 'en' ? 'Profile' : (lang === 'zh' ? '我的' : 'គណនីខ្ញុំ'));
 
       var closedTitle = document.getElementById('storeClosedTitle');
       var closedHint = document.getElementById('storeClosedTimeHint');
@@ -1903,7 +1976,7 @@ function getLocalizedProductName(p, lang) {
       document.getElementById('checkoutModal').classList.add('hidden');
     }
 
-    // 🛒 មុខងារគណនាកន្ត្រកទំនិញ (គណនា ២ រូបិយប័ណ្ណ $ និង ៛ ទន្ទឹមគ្នាលើផ្ទាំង Checkout)
+    // 🛒 មុខងារគណនាកន្ត្រកទំនិញ (បកប្រែផ្លាកសំបកធុង & គណនា ២ រូបិយប័ណ្ណស្វ័យប្រវត្តិ)
     function updateCheckoutCalculation() {
       var listCont = document.getElementById('checkoutCartItemsList');
       var grandText = document.getElementById('coGrandTotalText');
@@ -1960,7 +2033,7 @@ function getLocalizedProductName(p, lang) {
 
           html += '<div class="flex items-center justify-between py-1.5 border-b border-slate-200 last:border-none gap-2">' +
             '<div class="flex-1 min-w-0 text-left">' +
-              '<b class="text-slate-800 block truncate text-xs">' + displayName + '</b>' +
+              '<b data-trans-key="' + cartItems[k].raw_name + '" class="text-slate-800 block truncate text-xs">' + displayName + '</b>' +
               '<span class="text-[10px] text-emerald-700 font-bold">៛ ' + Number(cartItems[k].price).toLocaleString() + ' <small class="text-slate-400 font-mono font-normal">($' + unitUsd + ')</small></span>' +
             '</div>' +
             '<div class="flex items-center gap-1.5 shrink-0">' +
@@ -1977,11 +2050,16 @@ function getLocalizedProductName(p, lang) {
         }
       }
 
+      // 🏷️ បកប្រែផ្លាកសង្ខេបចំនួនធុងទឹក (1 ធុងខៀវ ➔ 1 蓝桶 / 1 Blue)
       if (barrelHint) {
         var hintParts = [];
-        if (blueBarrelsQty > 0) hintParts.push(blueBarrelsQty + ' ធុងខៀវ');
-        if (whiteBarrelsQty > 0) hintParts.push(whiteBarrelsQty + ' ធុងស');
-        barrelHint.innerText = hintParts.length > 0 ? hintParts.join(' | ') : 'គ្មានទឹកធុង ២០L';
+        var blueLabel = (currentLang === 'en' ? ' Blue Barrel(s)' : (currentLang === 'zh' ? ' 蓝桶' : ' ធុងខៀវ'));
+        var whiteLabel = (currentLang === 'en' ? ' White Barrel(s)' : (currentLang === 'zh' ? ' 白桶' : ' ធុងស'));
+        var noBarrelLabel = (currentLang === 'en' ? 'No 20L Barrels' : (currentLang === 'zh' ? '无20L大桶水' : 'គ្មានទឹកធុង ២០L'));
+
+        if (blueBarrelsQty > 0) hintParts.push(blueBarrelsQty + blueLabel);
+        if (whiteBarrelsQty > 0) hintParts.push(whiteBarrelsQty + whiteLabel);
+        barrelHint.innerText = hintParts.length > 0 ? hintParts.join(' | ') : noBarrelLabel;
       }
 
       // ២. ស្វែងរកសំបកធុង
@@ -2016,7 +2094,8 @@ function getLocalizedProductName(p, lang) {
             qty: blueBarrelsQty
           });
 
-          var bLabel = blueBarrelProd ? getLocalizedProductName({ name: blueBarrelProd.raw_name }, currentLang) : "សំបកធុងខៀវថ្មី";
+          var bLabel = blueBarrelProd ? getLocalizedProductName({ name: blueBarrelProd.raw_name }, currentLang) : 
+            (currentLang === 'en' ? 'New Blue Barrel Deposit' : (currentLang === 'zh' ? '购买全新蓝桶押金' : "សំបកធុងខៀវថ្មី"));
           html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
             '<span><i class="fas fa-cart-shopping mr-1 text-blue-700"></i><b>' + bLabel + ' (' + blueBarrelsQty + ' x ' + Number(blueBarrelPrice).toLocaleString() + '៛)</b></span>' +
             '<b class="text-blue-900 font-black">+៛ ' + bTotal.toLocaleString() + '</b>' +
@@ -2089,7 +2168,8 @@ function getLocalizedProductName(p, lang) {
 
       // 💵 បង្ហាញ ២ រូបិយប័ណ្ណទន្ទឹមគ្នាលើផ្ទាំងគិតលុយ និង KHQR
       if (listCont) {
-        listCont.innerHTML = html || '<div class="text-center py-3 text-slate-400 italic text-xs">កន្ត្រកទទេ</div>';
+        var emptyCartText = (currentLang === 'en' ? 'Cart is empty' : (currentLang === 'zh' ? '购物车为空' : 'កន្ត្រកទទេ'));
+        listCont.innerHTML = html || '<div class="text-center py-3 text-slate-400 italic text-xs">' + emptyCartText + '</div>';
       }
       if (grandText) {
         grandText.innerHTML = '៛ ' + grandTotalKhr.toLocaleString() + ' <span class="text-xs sm:text-sm font-bold text-blue-700 font-mono">($' + grandTotalUsd + ')</span>';
