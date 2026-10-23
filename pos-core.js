@@ -1057,18 +1057,6 @@ function onModalPriceInput(val) {
   updateModalSubtotal();
 }
 
-  // 💡 សម្រាប់លុយខ្មែរ៖ បើវាយលេខ ១ ខ្ទង់ ឬ ២ ខ្ទង់ (ឧ៖ 1 ឡើង 100, 6 ឡើង 600, 15 ឡើង 1500)
-  if (currentModalCurrency === 'KHR') {
-    var clean = val.replace(/[^0-9]/g, '');
-    if (clean.length > 0 && clean.length <= 2 && clean !== '0') {
-      var autoVal = parseInt(clean) * 100;
-      inp.value = autoVal;
-    }
-  }
-
-  updateModalSubtotal();
-}
-
 // ប៊ូតុងជំនួយថែមសូន្យរហ័ស (+00, +000)
 function appendModalZeros(zeros) {
   var inp = document.getElementById('modalPriceInput');
