@@ -236,28 +236,32 @@ async function renderDashboardModule() {
 }
 
 // ==========================================
-// 📊 ទាញទិន្នន័យ DASHBOARD (បានកែសម្រួលម៉ោងកម្ពុជា & អត្រាប្តូរប្រាក់អូតូ)
+// 📊 ទាញទិន្នន័យ DASHBOARD (ប្រើប្រព័ន្ធម៉ោងកម្ពុជាស្ដង់ដារ UTC+7 ត្រឹមត្រូវ ១០០%)
 // ==========================================
 async function loadDashboardData() {
   try {
-    var todayStr = (typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toLocaleDateString('en-CA');
+    var todayStr = getCambodiaToday();
     var firstDayMonthStr = todayStr.substring(0, 7) + '-01';
+
+    // 🇰🇭 ប្រើម៉ោង +07:00 នៃប្រទេសកម្ពុជា (មិនឱ្យកាត់ជើងទឹកព្រឹកព្រលឹមឡើយ)
+    var monthQueryStart = firstDayMonthStr + 'T00:00:00+07:00';
+    var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
     const { data: monthTrans } = await supabaseClient
       .from('transactions')
       .select('*')
-      .gte('created_at', firstDayMonthStr + 'T00:00:00Z')
+      .gte('created_at', monthQueryStart)
       .order('created_at', { ascending: false });
 
     const { data: todaySettles } = await supabaseClient
       .from('settlements')
       .select('*')
-      .gte('settled_at', todayStr + 'T00:00:00Z');
+      .gte('settled_at', todayQueryStart);
 
     const { data: monthExpenses } = await supabaseClient
       .from('expenses')
       .select('*')
-      .gte('created_at', firstDayMonthStr + 'T00:00:00Z');
+      .gte('created_at', monthQueryStart);
 
     const { data: unpaids } = await supabaseClient
       .from('transactions')
@@ -268,15 +272,15 @@ async function loadDashboardData() {
     var todayProdQty = {}, todayRecentSales = [];
 
     (monthTrans || []).forEach(function(t) {
-      var isToday = String(t.created_at).startsWith(todayStr);
+      // 🛡️ ឆែកថ្ងៃនេះដោយប្រើកូនសោរ isTodayInCambodia (ត្រឹមត្រូវ ១០០%)
+      var isToday = isTodayInCambodia(t.created_at);
       var tot = parseFloat(t.total || 0);
       var qty = parseFloat(t.qty || 0);
       monthSalesKHR += tot;
 
-     var pObj = allProducts.find(p => p.name === t.product_name);
+      var pObj = allProducts.find(p => p.name === t.product_name);
       if (pObj && pObj.type === 'ទិញគេ' && pObj.cost > 0) {
         var itemCostKHR = parseFloat(pObj.cost);
-        // បើទំនិញនេះទិញចូលគិតជាដុល្លារ ត្រូវគុណនឹងអត្រាប្តូរប្រាក់ទៅជារៀល
         if (pObj.currency === 'USD') {
           itemCostKHR = itemCostKHR * (typeof exchangeRateUSD !== 'undefined' ? exchangeRateUSD : 4100);
         } else if (pObj.currency === 'THB') {
@@ -303,7 +307,7 @@ async function loadDashboardData() {
 
     var todayTotalCash = todayCashInHand + todayBankAba;
 
-    // 💵 យកអត្រាប្តូរប្រាក់មកគណនាអូតូ
+    // 💵 អត្រាប្តូរប្រាក់ស្វ័យប្រវត្តិ
     var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
     var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
@@ -424,7 +428,12 @@ async function loadDashboardData() {
         var isAdmin = (currentUser && currentUser.role === 'Admin');
 
         todayRecentSales.forEach(function(r) {
-          var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' });
+          // 🇰🇭 បង្ហាញម៉ោងកម្ពុជាត្រឹមត្រូវ ១០០%
+          var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { 
+            timeZone: 'Asia/Phnom_Penh', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
 
           var isWithdrawnByOther = (r.recorded_by && r.recorded_by !== r.customer_name && r.recorded_by !== 'Admin');
           var withdrawTag = isWithdrawnByOther ? 
@@ -453,7 +462,6 @@ async function loadDashboardData() {
     console.error("Dashboard error:", e);
   }
 }
-
 // 🗑️ មុខងារបោះបង់ការលក់ & បង្វិលស្តុកសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ (Void Sale)
 async function voidTransaction(rowId, tid, prodName, qty, total) {
   if (!rowId) return;
