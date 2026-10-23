@@ -135,11 +135,8 @@ function injectOnlineOrdersAdminModal() {
 }
 
 // ==========================================
-// 📦 ផ្ទាំង ADMIN ONLINE ORDERS (មាន FILTER TABS & ប្រវត្តិដឹកដល់ថ្ងៃនេះ)
+// 📦 ផ្ទាំង ADMIN ONLINE ORDERS (ប្រើម៉ោងកម្ពុជា UTC+7 មិនឱ្យបាត់ Order ដឹកដល់ថ្ងៃនេះឡើយ)
 // ==========================================
-var adminOnlineOrdersCache = [];
-var activeAdminOnlineTab = 'ACTIVE'; // 'ACTIVE', 'PENDING', 'ASSIGNED', 'DELIVERED'
-
 async function openOnlineOrdersModal() {
   injectOnlineOrdersAdminModal();
   var modal = document.getElementById('onlineOrdersAdminModal');
@@ -157,7 +154,9 @@ async function openOnlineOrdersModal() {
       if (custs) allCustomers = custs;
     }
 
-    var todayStr = new Date().toISOString().split('T')[0];
+    // 🇰🇭 ប្រើប្រព័ន្ធម៉ោងកម្ពុជា UTC+7
+    var todayStr = getCambodiaToday();
+    var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
     // ២. ទាញយកទាំង Order កំពុងដំណើរការ (Pending, Assigned) និង Order ដឹកដល់ថ្ងៃនេះ (Delivered Today)
     const { data: activeList, error: actErr } = await supabaseClient
@@ -172,7 +171,7 @@ async function openOnlineOrdersModal() {
       .from('orders')
       .select('*')
       .eq('status', 'Delivered')
-      .gte('created_at', todayStr + 'T00:00:00Z')
+      .gte('created_at', todayQueryStart)
       .order('created_at', { ascending: false });
 
     if (delErr) throw delErr;
