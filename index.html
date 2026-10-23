@@ -1117,103 +1117,188 @@
       }
     }
 
-    // 🌐 មុខងារបកប្រែឈ្មោះទំនិញស្តង់ដារផ្សារទំនើប (Smart Retail Lexicon - ត្រឹមត្រូវ រស់រវើក មិនផ្គុំពាក្យ)
-    function getLocalizedProductName(p, lang) {
-      if (!p || !p.name) return '';
-      if (lang === 'km') return p.name;
-      var n = p.name.trim();
+    // ==========================================================================
+// 🌐 ម៉ាស៊ីនបកប្រែស្វ័យប្រវត្តិឆ្លាតវៃ (SMART AUTO-TRANSLATE & CACHE ENGINE)
+// ជួយបកប្រែទំនិញថ្មីៗ និងការពិពណ៌នាស្វ័យប្រវត្តិ ១០០% មិនបាច់ពឹង AI កែរាល់ពេលឡើយ
+// ==========================================================================
+var KC_TRANSLATION_CACHE = {};
 
-      // ១. វចនានុក្រមទំនិញពេញលេញ (Full Retail & Mart Dictionary)
-      var directMap = {
-        // --- ផ្នែកទឹកពិសាបរិសុទ្ធ ---
-        'ទឹកធុង ២០L ពណ៌ស': { en: '20L Pure Drinking Water (White Barrel)', zh: '20L 优质纯净饮用水 (白桶)' },
-        'ទឹកធុង ២០L ពណ៌ខៀវ': { en: '20L Pure Drinking Water (Blue Barrel)', zh: '20L 优质纯净饮用水 (蓝桶)' },
-        'ទឹកធុង ២០L': { en: '20L Pure Drinking Water (Barrel)', zh: '20L 大桶装纯净水' },
-        'ទឹកបរិសុទ្ធ 350ml (យួរ)': { en: '350ml Bottled Water (Pack of 24)', zh: '350ml 瓶装纯净水 (24瓶/提)' },
-        'ទឹកបរិសុទ្ធ 500ml (យួរ)': { en: '500ml Bottled Water (Pack of 24)', zh: '500ml 瓶装纯净水 (24瓶/提)' },
-        'ទឹកបរិសុទ្ធ 1500ml (យួរ)': { en: '1500ml Bottled Water (Pack of 12)', zh: '1500ml 大瓶纯净水 (12瓶/提)' },
-        'សំបកធុង ២០L ពណ៌ស': { en: '20L Empty White Barrel (Deposit)', zh: '20L 空白桶 (押金/买断)' },
-        'សំបកធុង ២០L ពណ៌ខៀវ': { en: '20L Empty Blue Barrel (Deposit)', zh: '20L 空蓝桶 (押金/买断)' },
-        'ជើងទម្រធុងទឹក': { en: 'Heavy-Duty Water Barrel Stand', zh: '加厚多功能水桶放置支架' },
-        'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve Faucet', zh: '食品级专用出水嘴龙头' },
-        'ម៉ាស៊ីនទឹកក្តៅ-ត្រជាក់': { en: 'Hot & Cold Water Dispenser', zh: '立式冷热温饮水机' },
+// ១. ទាញយកទិន្នន័យបកប្រែដែលធ្លាប់ចងចាំទុកក្នុងទូរស័ព្ទ (LocalStorage)
+try {
+  var savedCache = localStorage.getItem('kc_auto_trans_cache');
+  if (savedCache) {
+    KC_TRANSLATION_CACHE = JSON.parse(savedCache);
+  }
+} catch(e) {}
 
-        // --- ផ្នែកស្បៀង & គ្រឿងទេស (Food & Groceries) ---
-        'អង្ករផ្កាម្លិះ': { en: 'Premium Jasmine Fragrant Rice', zh: '特级精选茉莉香米' },
-        'អង្ករនាងមិញ': { en: 'Neang Minh White Rice', zh: '优质柬埔寨白大米' },
-        'អង្ករ': { en: 'Premium Fragrant Rice', zh: '优质精选大米' },
-        'មីម៉ាម៉ា': { en: 'Mama Instant Noodles', zh: '妈妈牌经典方便面' },
-        'មីកំប៉ុង': { en: 'Cup Instant Noodles', zh: '桶装速食方便面' },
-        'មីយីងហ៊ីង': { en: 'Ying-Hing Instant Noodles', zh: '速食方便面' },
-        'ប្រេងឆា': { en: 'Pure Vegetable Cooking Oil', zh: '精炼食用植物调和油' },
-        'ទឹកត្រី': { en: 'Premium Anchovy Fish Sauce', zh: '特级精酿鲜鱼露' },
-        'ទឹកស៊ីអ៊ីវ': { en: 'Premium Soy Sauce', zh: '特级鲜味生抽酱油' },
-        'ត្រីខ': { en: 'Canned Mackerel in Tomato Sauce', zh: '茄汁多汁鲭鱼罐头' },
-        'ស្ករស': { en: 'Pure Refined White Sugar', zh: '优质精制纯白砂糖' },
-        'អំបិល': { en: 'Iodized Cooking Salt', zh: '高品质加碘精制食用盐' },
-        'ប៊ីចេង': { en: 'Monosodium Glutamate (MSG)', zh: '味精调味品' },
-
-        // --- ផ្នែករបស់របរប្រើប្រាស់ & អនាម័យ (Household & Essentials) ---
-        'ក្រដាសអនាម័យ': { en: 'Premium Toilet Tissue Rolls', zh: '高级柔韧加厚卫生卷纸' },
-        'ក្រដាសជូតមាត់': { en: 'Soft Facial Tissue Paper', zh: '抽取式亲肤面巾纸' },
-        'សាប៊ូកក់សក់': { en: 'Hair Care Shampoo', zh: '柔顺去屑洗发露' },
-        'សាប៊ូដុសខ្លួន': { en: 'Body Wash / Shower Gel', zh: '滋润清香沐浴露' },
-        'សាប៊ូបោកខោអាវ': { en: 'Laundry Detergent Powder', zh: '强力去渍洗衣粉' },
-        'ទឹកលាងចាន': { en: 'Dishwashing Liquid', zh: '强效去油洗洁精' },
-        'ថង់សំរាម': { en: 'Heavy-Duty Trash Bags', zh: '加厚加固垃圾环保袋' }
-      };
-
-      if (directMap[n] && directMap[n][lang]) return directMap[n][lang];
-
-      // ២. បើមានពាក្យលាយខ្នាតវេចខ្ចប់ (Smart Unit & Packaging Parser)
-      var result = n;
-      if (lang === 'en') {
-        result = result
-          .replace(/ទឹកធុង\s*២០L/g, '20L Barrel Water')
-          .replace(/ទឹកបរិសុទ្ធ/g, 'Purified Water')
-          .replace(/អង្ករផ្កាម្លិះ/g, 'Jasmine Rice')
-          .replace(/អង្ករ/g, 'Rice')
-          .replace(/ក្រដាសអនាម័យ/g, 'Toilet Tissue')
-          .replace(/ក្រដាស/g, 'Tissue')
-          .replace(/ប្រេងឆា/g, 'Cooking Oil')
-          .replace(/ទឹកត្រី/g, 'Fish Sauce')
-          .replace(/ទឹកស៊ីអ៊ីវ/g, 'Soy Sauce')
-          .replace(/មី/g, 'Noodles')
-          .replace(/\(យួរ\)/g, '(Pack)')
-          .replace(/\(កេស\)/g, '(Box)')
-          .replace(/\(បាវ\)/g, '(Bag)')
-          .replace(/\(កំប៉ុង\)/g, '(Can)')
-          .replace(/\(ដប\)/g, '(Bottle)')
-          .replace(/គីឡូ|គក/g, 'kg');
-      } else if (lang === 'zh') {
-        result = result
-          .replace(/ទឹកធុង\s*២០L/g, '20L 大桶纯净水')
-          .replace(/ទឹកបរិសុទ្ធ/g, '优质纯净水')
-          .replace(/អង្ករផ្កាម្លិះ/g, '特级香米')
-          .replace(/អង្ករ/g, '优质大米')
-          .replace(/ក្រដាសអនាម័យ/g, '高级卷纸')
-          .replace(/ក្រដាស/g, '纸巾')
-          .replace(/ប្រេងឆា/g, '食用油')
-          .replace(/ទឹកត្រី/g, '特级鱼露')
-          .replace(/ទឹកស៊ីអ៊ីវ/g, '生抽酱油')
-          .replace(/មី/g, '方便面')
-          .replace(/\(យួរ\)/g, '(提)')
-          .replace(/\(កេស\)/g, '(箱)')
-          .replace(/\(បាវ\)/g, '(袋)')
-          .replace(/\(កំប៉ុង\)/g, '(罐)')
-          .replace(/\(ដប\)/g, '(瓶)')
-          .replace(/គីឡូ|គក/g, '公斤');
-      }
-
-      return result;
+// ២. មុខងាររក្សាទុកការបកប្រែចូលក្នុង Cache ដើម្បីកុំឱ្យបកប្រែដដែលៗ
+function saveTranslationToCache(key, targetLang, translatedText) {
+  try {
+    if (!KC_TRANSLATION_CACHE[targetLang]) {
+      KC_TRANSLATION_CACHE[targetLang] = {};
     }
+    KC_TRANSLATION_CACHE[targetLang][key] = translatedText;
+    localStorage.setItem('kc_auto_trans_cache', JSON.stringify(KC_TRANSLATION_CACHE));
+  } catch(e) {}
+}
 
-    // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) សុវត្ថិភាព ១០០% គាំទ្រគ្រប់ Category ថ្មីនៃ KC MART
+// ៣. មុខងារស្នូលទាញយកការបកប្រែស្វ័យប្រវត្តិ (ពី Google Translate Client Service)
+async function fetchAutoTranslate(text, targetLang) {
+  if (!text || !text.trim() || targetLang === 'km') return text;
+  var cleanText = text.trim();
+
+  // បើមានក្នុង Cache រួចហើយ ទាញយកមកប្រើភ្លាម (0.01 វិនាទី)
+  if (KC_TRANSLATION_CACHE[targetLang] && KC_TRANSLATION_CACHE[targetLang][cleanText]) {
+    return KC_TRANSLATION_CACHE[targetLang][cleanText];
+  }
+
+  try {
+    // បាញ់ទៅកាន់ Translation Service ដោយឥតគិតថ្លៃ (Free API Endpoint)
+    var url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=km&tl=" + targetLang + "&dt=t&q=" + encodeURIComponent(cleanText);
+    var response = await fetch(url);
+    if (!response.ok) throw new Error("Network error");
+    
+    var data = await response.json();
+    if (data && data[0] && data[0].length > 0) {
+      var result = data[0].map(function(item) { return item[0]; }).join('');
+      if (result) {
+        // រក្សាទុកក្នុង Cache ភ្លាមៗ
+        saveTranslationToCache(cleanText, targetLang, result);
+        return result;
+      }
+    }
+  } catch(err) {
+    console.warn("Auto-translate fallback warning:", err);
+  }
+  
+  return cleanText; // បើមានបញ្ហាអ៊ីនធឺណិត នឹងបង្ហាញអត្ថបទដើមធម្មតា
+}
+
+// 🌐 មុខងារបកប្រែឈ្មោះទំនិញស្វ័យប្រវត្តិ (SMART AUTO-TRANSLATING PRODUCT NAME)
+function getLocalizedProductName(p, lang) {
+  if (!p) return '';
+  var rawName = (typeof p === 'string') ? p : (p.name || p.raw_name || '');
+  if (!rawName) return '';
+  if (lang === 'km') return rawName;
+  var n = rawName.trim();
+
+  // ១. ឆែកមើលក្នុង Cache ជាមុនសិន (បើធ្លាប់បកប្រែរួច បញ្ចេញភ្លាមៗត្រឹម 0.01 វិនាទី)
+  if (KC_TRANSLATION_CACHE[lang] && KC_TRANSLATION_CACHE[lang][n]) {
+    return KC_TRANSLATION_CACHE[lang][n];
+  }
+
+  // ២. វចនានុក្រមទំនិញស្តង់ដារគុណភាពខ្ពស់ (Offline High-Quality Dictionary)
+  var directMap = {
+    // --- ផ្នែកទឹកពិសាបរិសុទ្ធ ---
+    'ទឹកធុង ២០L ពណ៌ស': { en: '20L Pure Drinking Water (White Barrel)', zh: '20L 优质纯净饮用水 (白桶)' },
+    'ទឹកធុង ២០L ពណ៌ខៀវ': { en: '20L Pure Drinking Water (Blue Barrel)', zh: '20L 优质纯净饮用水 (蓝桶)' },
+    'ទឹកធុង ២០L': { en: '20L Pure Drinking Water (Barrel)', zh: '20L 大桶装纯净水' },
+    'ទឹកបរិសុទ្ធ 350ml (យួរ)': { en: '350ml Bottled Water (Pack of 24)', zh: '350ml 瓶装纯净水 (24瓶/提)' },
+    'ទឹកបរិសុទ្ធ 500ml (យួរ)': { en: '500ml Bottled Water (Pack of 24)', zh: '500ml 瓶装纯净水 (24瓶/提)' },
+    'ទឹកបរិសុទ្ធ 1500ml (យួរ)': { en: '1500ml Bottled Water (Pack of 12)', zh: '1500ml 大瓶纯净水 (12瓶/提)' },
+    'សំបកធុង ២០L ពណ៌ស': { en: '20L Empty White Barrel (Deposit)', zh: '20L 空白桶 (押金/买断)' },
+    'សំបកធុង ២០L ពណ៌ខៀវ': { en: '20L Empty Blue Barrel (Deposit)', zh: '20L 空蓝桶 (押金/买断)' },
+    'ជើងទម្រធុងទឹក': { en: 'Heavy-Duty Water Barrel Stand', zh: '加厚多功能水桶放置支架' },
+    'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve Faucet', zh: '食品级专用出水嘴龙头' },
+    'ម៉ាស៊ីនទឹកក្តៅ-ត្រជាក់': { en: 'Hot & Cold Water Dispenser', zh: '立式冷热温饮水机' },
+
+    // --- ផ្នែកស្បៀង & គ្រឿងទេស (Food & Groceries) ---
+    'អង្ករផ្កាម្លិះ': { en: 'Premium Jasmine Fragrant Rice', zh: '特级精选茉莉香米' },
+    'អង្ករនាងមិញ': { en: 'Neang Minh White Rice', zh: '优质柬埔寨白大米' },
+    'អង្ករ': { en: 'Premium Fragrant Rice', zh: '优质精选大米' },
+    'មីម៉ាម៉ា': { en: 'Mama Instant Noodles', zh: '妈妈牌经典方便面' },
+    'មីកំប៉ុង': { en: 'Cup Instant Noodles', zh: '桶装速食方便面' },
+    'មីយីងហ៊ីង': { en: 'Ying-Hing Instant Noodles', zh: '速食方便面' },
+    'ប្រេងឆា': { en: 'Pure Vegetable Cooking Oil', zh: '精炼食用植物调和油' },
+    'ទឹកត្រី': { en: 'Premium Anchovy Fish Sauce', zh: '特级精酿鲜鱼露' },
+    'ទឹកស៊ីអ៊ីវ': { en: 'Premium Soy Sauce', zh: '特级鲜味生抽酱油' },
+    'ត្រីខ': { en: 'Canned Mackerel in Tomato Sauce', zh: '茄汁多汁鲭鱼罐头' },
+    'ស្ករស': { en: 'Pure Refined White Sugar', zh: '优质精制纯白砂糖' },
+    'អំបិល': { en: 'Iodized Cooking Salt', zh: '高品质加碘精制食用盐' },
+    'ប៊ីចេង': { en: 'Monosodium Glutamate (MSG)', zh: '味精调味品' },
+
+    // --- ផ្នែករបស់របរប្រើប្រាស់ & អនាម័យ (Household & Essentials) ---
+    'ក្រដាសអនាម័យ': { en: 'Premium Toilet Tissue Rolls', zh: '高级柔韧加厚卫生卷纸' },
+    'ក្រដាសជូតមាត់': { en: 'Soft Facial Tissue Paper', zh: '抽取式亲肤面巾纸' },
+    'សាប៊ូកក់សក់': { en: 'Hair Care Shampoo', zh: '柔顺去屑洗发露' },
+    'សាប៊ូដុសខ្លួន': { en: 'Body Wash / Shower Gel', zh: '滋润清香沐浴露' },
+    'សាប៊ូបោកខោអាវ': { en: 'Laundry Detergent Powder', zh: '强力去渍洗衣粉' },
+    'ទឹកលាងចាន': { en: 'Dishwashing Liquid', zh: '强效去油洗洁精' },
+    'ថង់សំរាម': { en: 'Heavy-Duty Trash Bags', zh: '加厚加固垃圾环保袋' }
+  };
+
+  if (directMap[n] && directMap[n][lang]) {
+    saveTranslationToCache(n, lang, directMap[n][lang]);
+    return directMap[n][lang];
+  }
+
+  // ៣. បំប្លែងតាមខ្នាតវេចខ្ចប់ទូទៅ (Regex Unit Replacer)
+  var parsed = n;
+  if (lang === 'en') {
+    parsed = parsed
+      .replace(/ទឹកធុង\s*២០L/g, '20L Barrel Water')
+      .replace(/ទឹកបរិសុទ្ធ/g, 'Purified Water')
+      .replace(/អង្ករផ្កាម្លិះ/g, 'Jasmine Rice')
+      .replace(/អង្ករ/g, 'Rice')
+      .replace(/ក្រដាសអនាម័យ/g, 'Toilet Tissue')
+      .replace(/ក្រដាស/g, 'Tissue')
+      .replace(/ប្រេងឆា/g, 'Cooking Oil')
+      .replace(/ទឹកត្រី/g, 'Fish Sauce')
+      .replace(/ទឹកស៊ីអ៊ីវ/g, 'Soy Sauce')
+      .replace(/មី/g, 'Noodles')
+      .replace(/\(យួរ\)/g, '(Pack)')
+      .replace(/\(កេស\)/g, '(Box)')
+      .replace(/\(បាវ\)/g, '(Bag)')
+      .replace(/\(កំប៉ុង\)/g, '(Can)')
+      .replace(/\(ដប\)/g, '(Bottle)')
+      .replace(/គីឡូ|គក/g, 'kg');
+  } else if (lang === 'zh') {
+    parsed = parsed
+      .replace(/ទឹកធុង\s*២០L/g, '20L 大桶纯净水')
+      .replace(/ទឹកបរិសុទ្ធ/g, '优质纯净水')
+      .replace(/អង្ករផ្កាម្លិះ/g, '特级香米')
+      .replace(/អង្ករ/g, '优质大米')
+      .replace(/ក្រដាសអនាម័យ/g, '高级卷纸')
+      .replace(/ក្រដាស/g, '纸巾')
+      .replace(/ប្រេងឆា/g, '食用油')
+      .replace(/ទឹកត្រី/g, '特级鱼露')
+      .replace(/ទឹកស៊ីអ៊ីវ/g, '生抽酱油')
+      .replace(/មី/g, '方便面')
+      .replace(/\(យួរ\)/g, '(提)')
+      .replace(/\(កេស\)/g, '(箱)')
+      .replace(/\(បាវ\)/g, '(袋)')
+      .replace(/\(កំប៉ុង\)/g, '(罐)')
+      .replace(/\(ដប\)/g, '(瓶)')
+      .replace(/គីឡូ|គក/g, '公斤');
+  }
+
+  // ៤. 🚀 ប្រសិនបើជាទំនិញថ្មីស្រឡាងដែលគ្មានក្នុងវចនានុក្រម ➔ បញ្ជាឱ្យម៉ាស៊ីន Auto-Translate បកប្រែផ្ទាល់ភ្លាមៗ
+  if (typeof fetchAutoTranslate === 'function') {
+    fetchAutoTranslate(n, lang).then(function(translatedResult) {
+      if (translatedResult && translatedResult !== n) {
+        document.querySelectorAll('[data-trans-key]').forEach(function(el) {
+          if (el.getAttribute('data-trans-key') === n) {
+            el.innerText = translatedResult;
+          }
+        });
+      }
+    });
+  }
+
+  return parsed;
+}
+
+    // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) ឆ្លាតវៃ និងស្វ័យប្រវត្តិ ១០០%
     function changeAppLanguage(lang) {
       currentLang = lang;
       var d = DICT[lang] || DICT.km;
 
-      // 🛡️ មុខងារជំនួយការពារកុំឱ្យគាំង (Safe Setter)
+      // 💾 ចងចាំភាសាដែលភ្ញៀវបានរើសទុកក្នុងទូរស័ព្ទ
+      try {
+        localStorage.setItem('kc_preferred_lang', lang);
+      } catch(e) {}
+
+      // 🛡️ មុខងារជំនួយការពារកុំឱ្យគាំង (Safe Setters)
       function setSafeText(id, text) {
         var el = document.getElementById(id);
         if (el && text !== undefined) el.innerText = text;
@@ -1223,6 +1308,7 @@
         if (el && text !== undefined) el.placeholder = text;
       }
 
+      // កំណត់ពណ៌ប៊ូតុងភាសាដែលកំពុងរើស
       ['km', 'en', 'zh'].forEach(function(l) {
         var btn = document.getElementById('langBtn_' + l);
         if (btn) {
@@ -1232,6 +1318,18 @@
         }
       });
 
+      // 🚀 ១. បកប្រែស្វ័យប្រវត្តិចំពោះរាល់ធាតុណាដែលមានស្លាក data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (d[key]) el.innerText = d[key];
+      });
+
+      document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-ph');
+        if (d[key]) el.placeholder = d[key];
+      });
+
+      // ២. បកប្រែផ្នែក Navbar, Banner & Trust Badges
       setSafeText('txtTopSubtitle', d.topSub);
       setSafeText('txtBannerTag', d.bannerTag);
       setSafeText('txtBannerTitle', d.bannerTitle);
@@ -1260,6 +1358,7 @@
       setSafeText('modalQtyLabel', d.modalQty);
       setSafeText('dockCheckoutLabel', d.dockCheckout);
 
+      // ៣. បកប្រែទម្រង់ Checkout
       setSafeText('coHeading', d.coHeading);
       setSafeText('coSub', d.coSub);
       setSafeText('coSectionUser', d.coSecUser);
@@ -1297,10 +1396,12 @@
         closedHint.innerText = d.closedHint.replace('{open}', storeOperatingConfig.openTime).replace('{close}', storeOperatingConfig.closeTime);
       }
 
+      // ៤. Refresh ទំនិញលើកាតាឡុក កន្ត្រក និងការគណនាប្រាក់ភ្លាមៗ
       if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
       if (typeof recalcCartDock === 'function') recalcCartDock();
       if (typeof updateCheckoutCalculation === 'function') updateCheckoutCalculation();
       if (typeof checkActiveOrderLiveStatus === 'function') checkActiveOrderLiveStatus();
+      if (typeof checkQuickReorderAvailability === 'function') checkQuickReorderAvailability();
     }
     
    // 📦 ១. ទាញយកទំនិញ + គណនា ២ រូបិយប័ណ្ណ ($ និង ៛) ទន្ទឹមគ្នាស្វ័យប្រវត្តិ
@@ -1418,7 +1519,7 @@
       }
     }
     
-    // 🎨 បង្ហាញកាតទំនិញទំនើប (គាំទ្រ ២ រូបិយប័ណ្ណ $ និង ៛ ទន្ទឹមគ្នាស្អាតៗ)
+// 🎨 បង្ហាញកាតទំនិញទំនើប (ភ្ជាប់ជាមួយស្លាកបកប្រែស្វ័យប្រវត្តិ data-trans-key & ២ រូបិយប័ណ្ណ)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -1444,18 +1545,31 @@
 
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-        var badgeText = item.badge || (item.cat === 'BARREL' ? (currentLang === 'km' ? 'ពេញនិយម' : 'Popular') : (currentLang === 'km' ? 'គុណភាពខ្ពស់' : 'Premium'));
+        // 🏷️ បកប្រែផ្លាក Badge ស្វ័យប្រវត្តិ (Popular, Premium, Best Seller, New)
+        var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
+        var badgeText = rawBadge;
+        if (currentLang === 'en') {
+          if (rawBadge === 'ពេញនិយម') badgeText = 'Popular';
+          else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = 'Premium';
+          else if (rawBadge === 'លក់ដាច់') badgeText = 'Best Seller';
+          else if (rawBadge === 'ទំនិញថ្មី') badgeText = 'New Arrival';
+        } else if (currentLang === 'zh') {
+          if (rawBadge === 'ពេញនិយម') badgeText = '热销人气';
+          else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = '特级品质';
+          else if (rawBadge === 'លក់ដាច់') badgeText = '畅销爆款';
+          else if (rawBadge === 'ទំនិញថ្មី') badgeText = '新品上市';
+        }
 
         var badgeLabel = isOutOfStock ? 
-          '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ស្តុក</span>' : 
+          '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">' + (currentLang === 'en' ? 'Out of Stock' : (currentLang === 'zh' ? '缺货' : '❌ អស់ស្តុក')) + '</span>' : 
           ((badgeText !== 'NONE') ? 
-            '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[90px]">' + badgeText + '</span>' : '<span></span>');
+            '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[95px]">' + badgeText + '</span>' : '<span></span>');
 
         var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
         var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
 
         var actionBtn = isOutOfStock ? 
-          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">អស់ស្តុក</span>' : 
+          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">' + (currentLang === 'en' ? 'Sold' : (currentLang === 'zh' ? '已售' : 'អស់ស្តុក')) + '</span>' : 
           '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0" title="រើសទិញ">' +
             (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
           '</button>';
@@ -1465,7 +1579,9 @@
           ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">$' + Number(item.priceUsd || 0).toFixed(2) + ' <span class="text-[10px] text-slate-500 font-bold block leading-none mt-0.5">(៛ ' + Number(item.priceKhr || 0).toLocaleString() + ')</span></div>') :
           ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">៛ ' + Number(item.priceKhr || 0).toLocaleString() + ' <span class="text-[10px] text-blue-700 font-bold block leading-none mt-0.5">($' + Number(item.priceUsd || 0).toFixed(2) + ')</span></div>');
 
-        // 🌟 រចនាបថកាតទំនើប បង្រួមស្អាតតាមទំហំទូរស័ព្ទ (Responsive Mobile-First)
+        var priceLabelText = (currentLang === 'en' ? 'Price' : (currentLang === 'zh' ? '价格' : 'តម្លៃ'));
+
+        // 🌟 រចនាបថកាតទំនើប (ភ្ជាប់ស្លាក data-trans-key សម្រាប់បកប្រែទំនិញថ្មីៗអូតូ)
         html += '<div ' + clickAction + ' class="kc-glass-card p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
           // ជួរទី ១៖ ផ្លាក Badge & ចំនួនក្នុងកន្ត្រក
           '<div class="flex justify-between items-center w-full mb-1 min-h-[20px]">' +
@@ -1473,20 +1589,20 @@
             inCartBadge +
           '</div>' +
 
-          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ (កំណត់កម្ពស់សមល្មម មិនឱ្យបាំង ឬទើស)
+          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ
           '<div class="w-full h-24 sm:h-28 flex items-center justify-center p-1 my-1 bg-slate-50/80 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/50 transition">' + 
             item.svg + 
           '</div>' +
 
-          // ជួរទី ៣៖ ឈ្មោះទំនិញ (កម្ពស់អក្សរសមរម្យមិនធ្លាក់ជួរខុសរាង)
+          // ជួរទី ៣៖ ឈ្មោះទំនិញ (ភ្ជាប់ data-trans-key សម្រាប់ទទួលពាក្យបកប្រែអូតូ)
           '<div class="text-left px-0.5 mt-1 mb-1.5">' +
-            '<h4 class="text-[11px] sm:text-xs font-bold text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
+            '<h4 data-trans-key="' + item.raw_name + '" class="text-[11px] sm:text-xs font-bold text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
           '</div>' +
 
           // ជួរទី ៤៖ តម្លៃ & ប៊ូតុងរើសទិញ
           '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
             '<div class="min-w-0 flex-1">' +
-              '<span class="text-[8.5px] sm:text-[9px] text-slate-400 font-bold block leading-none mb-0.5">តម្លៃ</span>' +
+              '<span class="text-[8.5px] sm:text-[9px] text-slate-400 font-bold block leading-none mb-0.5">' + priceLabelText + '</span>' +
               priceDisplay +
             '</div>' +
             actionBtn +
@@ -1495,9 +1611,110 @@
       });
 
       if (!html) {
+        var emptyText = (currentLang === 'en' ? 'No products available in this category' : (currentLang === 'zh' ? '当前分类暂无商品' : 'មិនទាន់មានទំនិញក្នុងផ្នែកនេះនៅឡើយទេ'));
         html = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs space-y-2">' +
           '<div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg"><i class="fas fa-box-open"></i></div>' +
-          '<span>មិនទាន់មានទំនិញក្នុងផ្នែកនេះនៅឡើយទេ</span>' +
+          '<span>' + emptyText + '</span>' +
+        '</div>';
+      }
+
+      grid.innerHTML = html;
+    }// 🎨 បង្ហាញកាតទំនិញទំនើប (ភ្ជាប់ជាមួយស្លាកបកប្រែស្វ័យប្រវត្តិ data-trans-key & ២ រូបិយប័ណ្ណ)
+    function renderCatalogGrid(filterCat) {
+      filterCat = filterCat || 'ALL';
+      var grid = document.getElementById('catalogGrid');
+      if (!grid) return;
+      var d = DICT[currentLang] || DICT.km;
+      var html = '';
+
+      STORE_CATALOG.forEach(function(item) {
+        // 🔍 តម្រង Category
+        if (filterCat !== 'ALL') {
+          var isMatch = (item.cat === filterCat);
+          if (filterCat === 'GENERAL' && (item.cat === 'GROCERY' || item.cat === 'HOUSEHOLD' || item.cat === 'GENERAL')) {
+            isMatch = true;
+          }
+          if (!isMatch) return;
+        }
+
+        var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
+        var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
+        
+        var inCartBadge = inCart > 0 ? 
+          '<span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shadow-xs animate-bounce shrink-0">' + inCart + '</span>' : '<span></span>';
+
+        var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
+
+        // 🏷️ បកប្រែផ្លាក Badge ស្វ័យប្រវត្តិ (Popular, Premium, Best Seller, New)
+        var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
+        var badgeText = rawBadge;
+        if (currentLang === 'en') {
+          if (rawBadge === 'ពេញនិយម') badgeText = 'Popular';
+          else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = 'Premium';
+          else if (rawBadge === 'លក់ដាច់') badgeText = 'Best Seller';
+          else if (rawBadge === 'ទំនិញថ្មី') badgeText = 'New Arrival';
+        } else if (currentLang === 'zh') {
+          if (rawBadge === 'ពេញនិយម') badgeText = '热销人气';
+          else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = '特级品质';
+          else if (rawBadge === 'លក់ដាច់') badgeText = '畅销爆款';
+          else if (rawBadge === 'ទំនិញថ្មី') badgeText = '新品上市';
+        }
+
+        var badgeLabel = isOutOfStock ? 
+          '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">' + (currentLang === 'en' ? 'Out of Stock' : (currentLang === 'zh' ? '缺货' : '❌ អស់ស្តុក')) + '</span>' : 
+          ((badgeText !== 'NONE') ? 
+            '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[95px]">' + badgeText + '</span>' : '<span></span>');
+
+        var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
+        var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
+
+        var actionBtn = isOutOfStock ? 
+          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">' + (currentLang === 'en' ? 'Sold' : (currentLang === 'zh' ? '已售' : 'អស់ស្តុក')) + '</span>' : 
+          '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0" title="រើសទិញ">' +
+            (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
+          '</button>';
+
+        // 💵 បង្ហាញ ២ រូបិយប័ណ្ណទន្ទឹមគ្នា ($ និង ៛)
+        var priceDisplay = (item.currency === 'USD') ?
+          ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">$' + Number(item.priceUsd || 0).toFixed(2) + ' <span class="text-[10px] text-slate-500 font-bold block leading-none mt-0.5">(៛ ' + Number(item.priceKhr || 0).toLocaleString() + ')</span></div>') :
+          ('<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">៛ ' + Number(item.priceKhr || 0).toLocaleString() + ' <span class="text-[10px] text-blue-700 font-bold block leading-none mt-0.5">($' + Number(item.priceUsd || 0).toFixed(2) + ')</span></div>');
+
+        var priceLabelText = (currentLang === 'en' ? 'Price' : (currentLang === 'zh' ? '价格' : 'តម្លៃ'));
+
+        // 🌟 រចនាបថកាតទំនើប (ភ្ជាប់ស្លាក data-trans-key សម្រាប់បកប្រែទំនិញថ្មីៗអូតូ)
+        html += '<div ' + clickAction + ' class="kc-glass-card p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
+          // ជួរទី ១៖ ផ្លាក Badge & ចំនួនក្នុងកន្ត្រក
+          '<div class="flex justify-between items-center w-full mb-1 min-h-[20px]">' +
+            badgeLabel +
+            inCartBadge +
+          '</div>' +
+
+          // ជួរទី ២៖ ប្រអប់រូបភាពទំនិញ
+          '<div class="w-full h-24 sm:h-28 flex items-center justify-center p-1 my-1 bg-slate-50/80 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/50 transition">' + 
+            item.svg + 
+          '</div>' +
+
+          // ជួរទី ៣៖ ឈ្មោះទំនិញ (ភ្ជាប់ data-trans-key សម្រាប់ទទួលពាក្យបកប្រែអូតូ)
+          '<div class="text-left px-0.5 mt-1 mb-1.5">' +
+            '<h4 data-trans-key="' + item.raw_name + '" class="text-[11px] sm:text-xs font-bold text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
+          '</div>' +
+
+          // ជួរទី ៤៖ តម្លៃ & ប៊ូតុងរើសទិញ
+          '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
+            '<div class="min-w-0 flex-1">' +
+              '<span class="text-[8.5px] sm:text-[9px] text-slate-400 font-bold block leading-none mb-0.5">' + priceLabelText + '</span>' +
+              priceDisplay +
+            '</div>' +
+            actionBtn +
+          '</div>' +
+        '</div>';
+      });
+
+      if (!html) {
+        var emptyText = (currentLang === 'en' ? 'No products available in this category' : (currentLang === 'zh' ? '当前分类暂无商品' : 'មិនទាន់មានទំនិញក្នុងផ្នែកនេះនៅឡើយទេ'));
+        html = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs space-y-2">' +
+          '<div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg"><i class="fas fa-box-open"></i></div>' +
+          '<span>' + emptyText + '</span>' +
         '</div>';
       }
 
@@ -1513,7 +1730,7 @@
       renderCatalogGrid(cat);
     }
 
-    // 📋 បង្ហាញផ្ទាំងព័ត៌មានទំនិញ Pop-up (បង្ហាញ ២ រូបិយប័ណ្ណ $ និង ៛ ទន្ទឹមគ្នា)
+    // 📋 បង្ហាញផ្ទាំងព័ត៌មានទំនិញ Pop-up (បកប្រែទាំងឈ្មោះ ទាំងការពិពណ៌នា Description ស្វ័យប្រវត្តិ)
     function openProductDetailModal(id) {
       var item = STORE_CATALOG.find(function(p){ return p.id === id; });
       if (!item) return;
@@ -1523,23 +1740,58 @@
       var curQty = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 1;
       var descText = (item.desc && item.desc.trim()) ? item.desc.trim() : '';
 
+      // 📝 គំរូពិពណ៌នាទូទៅតាម ៣ ភាសា (ខ្មែរ / EN / 中文)
       if (!descText) {
         var n = (item.raw_name || '').toLowerCase();
         if (n.indexOf('ក្រដាស') !== -1) {
-          descText = 'ក្រដាសគុណភាពខ្ពស់ ទន់ ស្វិត អនាម័យ និងសុវត្ថិភាព។ សេវាដឹកជូនដល់មុខផ្ទះដោយ KC MART។';
+          descText = (currentLang === 'en') ? 'High-quality soft and hygienic tissue paper. Fast home delivery by KC MART.' :
+                     (currentLang === 'zh') ? '优质柔韧卫生纸巾，亲肤洁净。KC超市快速配送到家。' :
+                     'ក្រដាសគុណភាពខ្ពស់ ទន់ ស្វិត អនាម័យ និងសុវត្ថិភាព។ សេវាដឹកជូនដល់មុខផ្ទះដោយ KC MART។';
         } else if (n.indexOf('អង្ករ') !== -1) {
-          descText = 'អង្ករគុណភាពខ្ពស់ ថ្មី ក្រអូបឆ្ងាញ់ ស្តង់ដារសុវត្ថិភាព។ ដឹកជូនដល់មុខផ្ទះដោយ KC MART។';
+          descText = (currentLang === 'en') ? 'Premium fragrant rice, fresh, soft, and delicious. Fast home delivery by KC MART.' :
+                     (currentLang === 'zh') ? '特级香米，新鲜软糯可口。KC超市快速送货到家。' :
+                     'អង្ករគុណភាពខ្ពស់ ថ្មី ក្រអូបឆ្ងាញ់ ស្តង់ដារសុវត្ថិភាព។ ដឹកជូនដល់មុខផ្ទះដោយ KC MART។';
         } else if (item.cat === 'EQUIP') {
-          descText = 'បរិក្ខារ និងជើងទម្រធុងទឹកគុណភាពរឹងមាំ ប្រើប្រាស់បានយូរអង្វែង។';
+          descText = (currentLang === 'en') ? 'Durable, heavy-duty water barrel stands and dispensing equipment.' :
+                     (currentLang === 'zh') ? '加厚耐用水桶专用支架与配水设备，结实牢固。' :
+                     'បរិក្ខារ និងជើងទម្រធុងទឹកគុណភាពរឹងមាំ ប្រើប្រាស់បានយូរអង្វែង។';
         } else {
-          descText = 'ទំនិញគុណភាពខ្ពស់ ស្តង់ដារសុវត្ថិភាព និងអនាម័យ។ ដឹកជញ្ជូនរហ័សដល់មុខផ្ទះដោយ KC MART (ប៉ោយប៉ែត)។';
+          descText = (currentLang === 'en') ? 'Premium quality, certified safe and hygienic. Fast direct delivery by KC MART (Poipet).' :
+                     (currentLang === 'zh') ? '高品质生活商品，安全卫生认证。波贝KC超市快速送达。' :
+                     'ទំនិញគុណភាពខ្ពស់ ស្តង់ដារសុវត្ថិភាព និងអនាម័យ។ ដឹកជញ្ជូនរហ័សដល់មុខផ្ទះដោយ KC MART (ប៉ោយប៉ែត)។';
         }
       }
 
-      var modalBadgeEl = document.getElementById('modalBadge');
-      if (modalBadgeEl) {
-        modalBadgeEl.innerText = item.badge || 'KC MART Standard';
+      // 🌐 បើការពិពណ៌នាផ្ទាល់ខ្លួននៅតែជាភាសាខ្មែរ ហើយភ្ញៀវរើស EN ឬ 中文 ➔ បញ្ជាម៉ាស៊ីន Auto-Translate បកប្រែអូតូ
+      var displayDesc = descText;
+      if (currentLang !== 'km') {
+        if (KC_TRANSLATION_CACHE[currentLang] && KC_TRANSLATION_CACHE[currentLang][descText]) {
+          displayDesc = KC_TRANSLATION_CACHE[currentLang][descText];
+        } else if (typeof fetchAutoTranslate === 'function') {
+          fetchAutoTranslate(descText, currentLang).then(function(resDesc) {
+            var descEl = document.getElementById('modalDesc');
+            if (descEl && resDesc) descEl.innerText = resDesc;
+          });
+        }
       }
+
+      // 🏷️ បកប្រែផ្លាក Badge
+      var rawBadge = item.badge || 'KC MART Standard';
+      var badgeText = rawBadge;
+      if (currentLang === 'en') {
+        if (rawBadge === 'គុណភាពខ្ពស់') badgeText = 'Premium';
+        else if (rawBadge === 'ពេញនិយម') badgeText = 'Popular';
+        else if (rawBadge === 'លក់ដាច់') badgeText = 'Best Seller';
+        else if (rawBadge === 'ទំនិញថ្មី') badgeText = 'New Arrival';
+      } else if (currentLang === 'zh') {
+        if (rawBadge === 'គុណភាពខ្ពស់') badgeText = '特级品质';
+        else if (rawBadge === 'ពេញនិយម') badgeText = '热销人气';
+        else if (rawBadge === 'លក់ដាច់') badgeText = '畅销爆款';
+        else if (rawBadge === 'ទំនិញថ្មី') badgeText = '新品上市';
+      }
+
+      var modalBadgeEl = document.getElementById('modalBadge');
+      if (modalBadgeEl) modalBadgeEl.innerText = badgeText;
 
       // 💵 បង្ហាញតម្លៃ ២ រូបិយប័ណ្ណទន្ទឹមគ្នាលើផ្ទាំង Pop-up
       var khrText = '៛ ' + Number(item.priceKhr || item.price || 0).toLocaleString();
@@ -1549,14 +1801,19 @@
         (khrText + ' <span class="text-xs text-blue-700 font-bold font-mono">(' + usdText + ')</span>');
 
       document.getElementById('modalSvgArea').innerHTML = item.svg;
-      document.getElementById('modalTitle').innerText = localizedName;
-      document.getElementById('modalDesc').innerText = descText;
+      var titleEl = document.getElementById('modalTitle');
+      if (titleEl) {
+        titleEl.innerText = localizedName;
+        titleEl.setAttribute('data-trans-key', item.raw_name);
+      }
+      document.getElementById('modalDesc').innerText = displayDesc;
       document.getElementById('modalPrice').innerHTML = priceHtml;
       document.getElementById('modalQtyDisplay').innerText = curQty;
 
       updateModalButtonText(curQty);
       document.getElementById('productDetailModal').classList.remove('hidden');
     }
+    
     function closeProductDetailModal() {
       document.getElementById('productDetailModal').classList.add('hidden');
       activeModalProduct = null;
