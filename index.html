@@ -263,7 +263,7 @@
 
     <!-- របាររើសប្រភេទទំនិញ KC MART (រំកិល Scroll បានរលូន) -->
     <!-- ✅ កូដថ្មី អូសទាញបានរលូន ១០០%៖ -->
-<div class="flex gap-2 overflow-x-auto pb-2 text-xs font-bold scroll-smooth" style="-webkit-overflow-scrolling: touch; touch-action: pan-x; cursor: grab;">
+<div id="categoryChipsContainer" class="flex gap-2 overflow-x-auto pb-2 text-xs font-bold scroll-smooth" style="-webkit-overflow-scrolling: touch; touch-action: pan-x; cursor: grab;">
       <button type="button" onclick="filterCatalog('ALL', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl bg-emerald-700 text-white shadow-xs whitespace-nowrap active:scale-95 transition">ទាំងអស់</button>
       <button type="button" onclick="filterCatalog('GROCERY', this)" id="catBtn_GROCERY" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">🍚 ស្បៀង & គ្រឿងទេស</button>
       <button type="button" onclick="filterCatalog('HOUSEHOLD', this)" id="catBtn_HOUSEHOLD" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">🧻 របស់ប្រើប្រាស់</button>
@@ -1704,6 +1704,71 @@ function getLocalizedProductName(p, lang) {
       }
 
       grid.innerHTML = html;
+    }
+
+    // ==========================================
+    // 📂 មុខងារបង្កើតប្រអប់ប្រភេទស្វ័យប្រវត្តិ (បង្ហាញតែប្រអប់ណាដែលមានទំនិញ + ប៊ូតុង ❤️ ចូលចិត្ត)
+    // ==========================================
+    var activeCatalogCategoryFilter = 'ALL';
+
+    function renderCategoryChips() {
+      var container = document.getElementById('categoryChipsContainer');
+      if (!container) return;
+
+      // ១. រាប់ចំនួនទំនិញតាមប្រភេទនីមួយៗ
+      var counts = { GROCERY: 0, HOUSEHOLD: 0, BARREL: 0, PACK: 0, EQUIP: 0, GENERAL: 0 };
+      STORE_CATALOG.forEach(function(item) {
+        var c = (item.cat || 'GENERAL').toUpperCase();
+        if (counts[c] !== undefined) counts[c]++;
+        else counts.GENERAL++;
+      });
+
+      // ២. រាប់ចំនួនទំនិញដែលភ្ញៀវបានចុចបេះដូងចូលចិត្ត (Favorites)
+      var favCount = 0;
+      if (typeof getCustomerFavoritesList === 'function') {
+        favCount = getCustomerFavoritesList().length;
+      }
+
+      // ៣. វចនានុក្រមឈ្មោះប៊ូតុងតាម ៣ ភាសា (ខ្មែរ / EN / 中文)
+      var labels = {
+        ALL: (currentLang === 'en' ? 'All' : (currentLang === 'zh' ? '全部' : 'ទាំងអស់')),
+        FAVORITES: (currentLang === 'en' ? '❤️ Favorites' : (currentLang === 'zh' ? '❤️ 我的收藏' : '❤️ ចូលចិត្ត')) + (favCount > 0 ? ' (' + favCount + ')' : ''),
+        GROCERY: (currentLang === 'en' ? '🍚 Food & Groceries' : (currentLang === 'zh' ? '🍚 粮油副食' : '🍚 ស្បៀង & គ្រឿងទេស')),
+        HOUSEHOLD: (currentLang === 'en' ? '🧻 Daily Essentials' : (currentLang === 'zh' ? '🧻 日常百货' : '🧻 របស់ប្រើប្រាស់')),
+        BARREL: (currentLang === 'en' ? '💧 20L Barrels' : (currentLang === 'zh' ? '💧 20L 大桶水' : '💧 ទឹកធុង ២០L')),
+        PACK: (currentLang === 'en' ? '📦 Bottled Packs' : (currentLang === 'zh' ? '📦 瓶装/提装' : '📦 ទឹកយួរ / ដប')),
+        EQUIP: (currentLang === 'en' ? '🛢️ Equipment & Stands' : (currentLang === 'zh' ? '🛢️ 支架配件' : '🛢️ ជើងទម្រ / បរិក្ខារ'))
+      };
+
+      var html = '';
+
+      // ក. ប៊ូតុង "ទាំងអស់" (បង្ហាញជានិច្ច)
+      var isAllActive = (activeCatalogCategoryFilter === 'ALL');
+      html += '<button type="button" onclick="filterCatalog(\'ALL\', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
+        (isAllActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200') + '">' + 
+        labels.ALL + 
+      '</button>';
+
+      // ខ. ប៊ូតុង "❤️ ចូលចិត្ត" (បង្ហាញជានិច្ច ងាយស្រួលភ្ញៀវចុចមើលទំនិញដែលខ្លួនពេញចិត្ត)
+      var isFavActive = (activeCatalogCategoryFilter === 'FAVORITES');
+      html += '<button type="button" onclick="filterCatalog(\'FAVORITES\', this)" id="catBtn_FAVORITES" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition flex items-center gap-1.5 ' + 
+        (isFavActive ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100') + '">' + 
+        labels.FAVORITES + 
+      '</button>';
+
+      // គ. បង្ហាញតែប្រអប់ណាដែលមានទំនិញ > 0 ប៉ុណ្ណោះ
+      var categoryList = ['GROCERY', 'HOUSEHOLD', 'BARREL', 'PACK', 'EQUIP'];
+      categoryList.forEach(function(catKey) {
+        if (counts[catKey] > 0) {
+          var isActive = (activeCatalogCategoryFilter === catKey);
+          html += '<button type="button" onclick="filterCatalog(\'' + catKey + '\', this)" id="catBtn_' + catKey + '" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
+            (isActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50') + '">' + 
+            labels[catKey] + 
+          '</button>';
+        }
+      });
+
+      container.innerHTML = html;
     }
 
 
