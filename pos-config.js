@@ -1,46 +1,50 @@
 /** ==========================================================================
  *  KC WATER POS SYSTEM - CONFIGURATION & UTILITIES (pos-config.js)
- *  (Supabase Client, Global App State & Telegram Alerts)
+ *  (Supabase Client, Global App State & Dual Environment Engine)
  *  ========================================================================== */
 
-// 🔑 កំណត់គណនី Supabase ទាំង ២
+// 🔑 ១. កំណត់គណនី Supabase ទាំង ២ (PROD & TEST)
 var SUPABASE_CONFIGS = {
-  // 🏢 ១. ប្រព័ន្ធពិត (Production Live Database)
+  // 🏢 ប្រព័ន្ធពិត (Production Live Database)
   PROD: {
     url: "https://hocndqkoumgjijtzpzby.supabase.co",
-    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
+    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI",
+    name: "ប្រព័ន្ធពិត (PROD)"
   },
-  // 🧪 ២. ប្រព័ន្ធសាកល្បង (Test Database)
+  // 🧪 ប្រព័ន្ធសាកល្បង (Test Database)
   TEST: {
     url: "https://ntftdylkcnkxsytptket.supabase.co",
-    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v"
+    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v",
+    name: "ប្រព័ន្ធសាកល្បង (TEST)"
   }
 };
 
-// 🧠 មុខងារស្គាល់ប្រព័ន្ធស្វ័យប្រវត្តិ (តាម Link ជាក់ស្តែងទាំង ២ របស់ហាង)
+// 🧠 ២. មុខងារស្គាល់ប្រព័ន្ធស្វ័យប្រវត្តិ (តាម Memory, URL ឬ Link វេបសាយ)
 function detectCurrentEnvironment() {
-  var host = window.location.hostname.toLowerCase();
-
-  // 🧪 ១. បើបើកលើ Link សាកល្បង kcwater-store ➔ ចូល Database Test អូតូ
-  if (host.includes('kcwater-store') || host.includes('test') || host.includes('dev') || host === 'localhost' || host === '127.0.0.1') {
-    return 'TEST';
-  }
-
-  // 🏢 ២. បើបើកលើ Link ពិត kcwater-live ➔ ចូល Database ពិត (PROD) អូតូ
-  if (host.includes('kcwater-live')) {
-    return 'PROD';
-  }
-
-  // ៣. ឆែកបន្ថែមតាម URL query (បើមាន)
+  // ក. ពិនិត្យមើលតាម URL Query ?env= (ឧទាហរណ៍៖ ?env=test ឬ ?env=prod)
   var urlParams = new URLSearchParams(window.location.search);
   var envParam = urlParams.get('env');
   if (envParam) {
     var p = envParam.toUpperCase();
     if (p === 'TEST' || p === 'PROD') {
+      localStorage.setItem('kc_current_env', p);
       return p;
     }
   }
 
+  // ខ. ពិនិត្យមើលតាម Memory ដែលអ្នកធ្លាប់ចុចប្តូរ (LocalStorage)
+  var savedEnv = localStorage.getItem('kc_current_env');
+  if (savedEnv === 'TEST' || savedEnv === 'PROD') {
+    return savedEnv;
+  }
+
+  // គ. ពិនិត្យមើលតាមឈ្មោះ Link វេបសាយ (Hostname)
+  var host = window.location.hostname.toLowerCase();
+  if (host.includes('kcwater-store') || host.includes('test') || host.includes('dev') || host === 'localhost' || host === '127.0.0.1') {
+    return 'TEST';
+  }
+
+  // ឃ. លំនាំដើមគឺប្រព័ន្ធពិត (PROD)
   return 'PROD';
 }
 
@@ -50,11 +54,71 @@ var SUPABASE_URL = activeEnv.url;
 var SUPABASE_KEY = activeEnv.key;
 var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🔄 មុខងារចុចប្តូររវាង PROD និង TEST ភ្លាមៗ
-function switchAppEnvironment(targetEnv) {
-  if (targetEnv === 'TEST' || targetEnv === 'PROD') {
+// 🔄 ៣. មុខងារចុចប្តូររវាង PROD និង TEST ភ្លាមៗ (មានសួរបញ្ជាក់តាម Popup POS)
+async function switchAppEnvironment(targetEnv) {
+  if (targetEnv !== 'TEST' && targetEnv !== 'PROD') return;
+  var targetName = (targetEnv === 'TEST') ? 'ប្រព័ន្ធសាកល្បង (TEST)' : 'ប្រព័ន្ធពិត (PROD)';
+  
+  var ok = true;
+  if (typeof kcConfirm === 'function') {
+    ok = await kcConfirm({
+      title: "ប្តូរប្រព័ន្ធទិន្នន័យ (Database)",
+      message: "តើអ្នកចង់ប្តូរទៅកាន់ [" + targetName + "] មែនទេ? ទំព័រនឹងដំណើរការឡើងវិញ។",
+      confirmText: "យល់ព្រមប្តូរ"
+    });
+  } else {
+    ok = confirm("តើអ្នកចង់ប្តូរទៅកាន់ [" + targetName + "] មែនទេ?");
+  }
+
+  if (ok) {
     localStorage.setItem('kc_current_env', targetEnv);
-    window.location.reload();
+    // សម្អាត Query ?env= ចេញកុំឱ្យទាក់
+    var url = new URL(window.location.href);
+    url.searchParams.delete('env');
+    window.location.href = url.pathname;
+  }
+}
+
+// 🏷️ ៤. មុខងារបង្ហាញផ្លាកសម្គាល់ប្រព័ន្ធ (ទាំង TEST និង PROD)
+function renderEnvironmentBanner() {
+  var oldBanner = document.getElementById('kcTestModeBanner');
+  if (oldBanner) oldBanner.remove();
+
+  var oldBadge = document.getElementById('navTestBadge');
+  if (oldBadge) oldBadge.remove();
+
+  // ក. បង្ហាញរបារពណ៌ទឹកក្រូចធំពេលកំពុងនៅ TEST Mode
+  if (CURRENT_ENV === 'TEST') {
+    var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 7px 14px; text-align: center; font-size: 11px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">' +
+      '<div style="display: flex; align-items: center; gap: 8px; margin: 0 auto;">' +
+        '<span style="display: inline-block; width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 0 8px white;"></span>' +
+        '<span>🧪 កំពុងប្រើប្រព័ន្ធសាកល្បង (TEST MODE) — មិនប៉ះពាល់ទិន្នន័យលក់ពិតឡើយ</span>' +
+      '</div>' +
+      '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 10px; padding: 3px 9px; border-radius: 8px; border: none; cursor: pointer; white-space: nowrap;">' +
+        'ប្តូរទៅប្រព័ន្ធពិត ➔' +
+      '</button>' +
+    '</div>';
+
+    var mainApp = document.getElementById('mainApp');
+    var loginPage = document.getElementById('loginPage');
+    if (mainApp) mainApp.insertAdjacentHTML('afterbegin', bannerHtml);
+    else if (loginPage) loginPage.insertAdjacentHTML('beforebegin', bannerHtml);
+    else document.body.insertAdjacentHTML('afterbegin', bannerHtml);
+  }
+
+  // ខ. ដាក់ផ្លាក [🧪 TEST] ឬ [🏢 PROD] នៅក្បែរឈ្មោះ Admin លើ Navbar
+  var userInfo = document.getElementById('userInfo');
+  if (userInfo) {
+    var badgeColor = (CURRENT_ENV === 'TEST') ? 'background: #fbbf24; color: #78350f; border: 1px solid #f59e0b;' : 'background: #047857; color: #a7f3d0; border: 1px solid #059669;';
+    var badgeText = (CURRENT_ENV === 'TEST') ? '🧪 TEST' : '🏢 PROD';
+    var switchTarget = (CURRENT_ENV === 'TEST') ? 'PROD' : 'TEST';
+    var switchTitle = (CURRENT_ENV === 'TEST') ? 'ចុចប្តូរទៅប្រព័ន្ធពិត' : 'ចុចប្តូរទៅសាកល្បង';
+
+    var badgeHtml = '<button type="button" onclick="switchAppEnvironment(\'' + switchTarget + '\')" title="' + switchTitle + '" id="navTestBadge" style="' + badgeColor + ' font-size: 10px; font-weight: 900; padding: 2.5px 8px; border-radius: 9999px; margin-right: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">' +
+      badgeText + ' 🔄' +
+    '</button>';
+
+    userInfo.insertAdjacentHTML('beforebegin', badgeHtml);
   }
 }
 
