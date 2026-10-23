@@ -1052,10 +1052,10 @@ function getModalParsedPrice() {
   }
 }
 
-// ⌨️ ៣. មុខងារពេលវាយតម្លៃ (ថែម 00 អូតូសម្រាប់តែលុយខ្មែរ)
+// ⌨️ ៣. មុខងារពេលវាយតម្លៃ (អនុញ្ញាតឱ្យវាយលេខដោយសេរី មិនកន្ត្រាក់)
 function onModalPriceInput(val) {
-  var inp = document.getElementById('modalPriceInput');
-  if (!inp) return;
+  updateModalSubtotal();
+}
 
   // 💡 សម្រាប់លុយខ្មែរ៖ បើវាយលេខ ១ ខ្ទង់ ឬ ២ ខ្ទង់ (ឧ៖ 1 ឡើង 100, 6 ឡើង 600, 15 ឡើង 1500)
   if (currentModalCurrency === 'KHR') {
@@ -1205,10 +1205,13 @@ function confirmAddToCart() {
   var prodId = selectedModalProduct.id;
   var curr = currentModalCurrency || "KHR";
 
-  // 💵 បំប្លែងតម្លៃទៅជារៀលអូតូ (Auto-convert to KHR based on exchange rate)
+  // 💵 បំប្លែងទៅជារៀលតាមអត្រាជាក់ស្តែង
+  var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
   var prKhr = pr;
-  if (curr === 'USD') prKhr = pr * exchangeRateUSD;
-  else if (curr === 'THB') prKhr = pr * exchangeRateTHB;
+
+  if (curr === 'USD') prKhr = Math.round(pr * rateU);
+  else if (curr === 'THB') prKhr = Math.round(pr * rateT);
 
   var existingItem = cart.find(function(item) {
     return item.id === prodId && item.price === prKhr;
@@ -1222,21 +1225,20 @@ function confirmAddToCart() {
       name: prodName,
       price: prKhr,
       qty: q,
-      currency: 'KHR' // បង្ខំឱ្យកន្ត្រកគិតជារៀលទាំងអស់ ការពារកុំឱ្យគាំង
+      currency: 'KHR'
     });
   }
 
   closeProductModal();
-  rC();
+  renderCart();
   showToast("បានបញ្ចូល [" + prodName + "] x " + q + " ក្នុងកន្ត្រក!", "success");
 }
 
 
 // ==========================================
-// ⚡ ៦. មុខងារទូទាត់រហ័ស (QUICK CHECKOUT) សម្រាប់លក់ ១ មុខភ្លាមៗ
+// ⚡ ៦. មុខងារទូទាត់រហ័ស (QUICK CHECKOUT) - កែសម្រួលគណនា ៣ រូបិយប័ណ្ណត្រឹមត្រូវ
 // ==========================================
 async function quickCheckoutSingleItem() {
-  // 🔒 ឆែកសិទ្ធិ៖ ក្រៅពី Admin និង Seller មិនអនុញ្ញាតឱ្យទូទាត់រហ័សឡើយ
   var canQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
   if (!canQuickPay) {
     showToast("អ្នកមិនមានសិទ្ធិប្រើប្រាស់មុខងារទូទាត់រហ័សនេះឡើយ!", "error");
@@ -1261,17 +1263,29 @@ async function quickCheckoutSingleItem() {
     }
   }
 
+  // 🪙 គុណបំប្លែងទៅជាប្រាក់រៀល (KHR) ជានិច្ច ការពារកុំឱ្យច្រឡំលេខដុល្លារជាលុយរៀល
+  var curr = currentModalCurrency || "KHR";
+  var prKhr = pr;
+  var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+  if (curr === 'USD') {
+    prKhr = Math.round(pr * rateU);
+  } else if (curr === 'THB') {
+    prKhr = Math.round(pr * rateT);
+  }
+
   cart = [{
     id: selectedModalProduct.id,
     name: selectedModalProduct.name,
-    price: pr,
+    price: prKhr, // ✅ តម្លៃគិតជារៀលត្រឹមត្រូវ ១០០%
     qty: q,
-    currency: currentModalCurrency || "KHR"
+    currency: "KHR"
   }];
 
   currentPosDiscount = { type: 'NONE', value: 0 };
   closeProductModal();
-  rC();
+  renderCart(); // ឬ rC()
 
   var calc = getCartCalculations();
   if (document.getElementById('pK')) {
@@ -1281,6 +1295,7 @@ async function quickCheckoutSingleItem() {
 
   await confirmSale();
 }
+
 function getCartCalculations() {
   var rawTotal = cart.reduce((sum, i) => sum + (i.qty * i.price), 0);
   var discountK = 0;
@@ -1654,3 +1669,6 @@ window.addEventListener('load', function() {
     login();
   }
 });
+// 🔄 បង្កើតឈ្មោះស្តង់ដារពេញលេញ
+var renderProductGrid = rPG;
+var renderCart = rC;
