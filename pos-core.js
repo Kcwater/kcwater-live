@@ -1205,7 +1205,6 @@ function confirmAddToCart() {
   var prodId = selectedModalProduct.id;
   var curr = currentModalCurrency || "KHR";
 
-  // 💵 បំប្លែងទៅជារៀលតាមអត្រាជាក់ស្តែង
   var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
   var prKhr = pr;
@@ -1234,9 +1233,8 @@ function confirmAddToCart() {
   showToast("បានបញ្ចូល [" + prodName + "] x " + q + " ក្នុងកន្ត្រក!", "success");
 }
 
-
 // ==========================================
-// ⚡ ៦. មុខងារទូទាត់រហ័ស (QUICK CHECKOUT) - កែសម្រួលគណនា ៣ រូបិយប័ណ្ណត្រឹមត្រូវ
+// ⚡ ៦. មុខងារទូទាត់រហ័ស (QUICK CHECKOUT)
 // ==========================================
 async function quickCheckoutSingleItem() {
   var canQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
@@ -1254,7 +1252,6 @@ async function quickCheckoutSingleItem() {
     return;
   }
 
-  // 🛡️ ឆែកស្តុកទំនិញប្រភេទ «ទិញគេ»
   if (selectedModalProduct.type === 'ទិញគេ') {
     var curStock = parseFloat(selectedModalProduct.stock || 0);
     if (q > curStock) {
@@ -1263,7 +1260,6 @@ async function quickCheckoutSingleItem() {
     }
   }
 
-  // 🪙 គុណបំប្លែងទៅជាប្រាក់រៀល (KHR) ជានិច្ច ការពារកុំឱ្យច្រឡំលេខដុល្លារជាលុយរៀល
   var curr = currentModalCurrency || "KHR";
   var prKhr = pr;
   var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
@@ -1278,14 +1274,14 @@ async function quickCheckoutSingleItem() {
   cart = [{
     id: selectedModalProduct.id,
     name: selectedModalProduct.name,
-    price: prKhr, // ✅ តម្លៃគិតជារៀលត្រឹមត្រូវ ១០០%
+    price: prKhr,
     qty: q,
     currency: "KHR"
   }];
 
   currentPosDiscount = { type: 'NONE', value: 0 };
   closeProductModal();
-  renderCart(); // ឬ rC()
+  renderCart();
 
   var calc = getCartCalculations();
   if (document.getElementById('pK')) {
@@ -1309,7 +1305,6 @@ function getCartCalculations() {
   var finalTotal = Math.max(0, rawTotal - discountK);
   return { rawTotal: rawTotal, discountK: discountK, finalTotal: finalTotal };
 }
-
 function rC() {
   var tbody = document.getElementById('cItemsTableBody');
   var totalValEl = document.getElementById('cTotalVal');
