@@ -5,6 +5,8 @@
 
 var lastKnownPendingOrderCount = 0;
 var ordersRealtimeChannel = null;
+var adminOnlineOrdersCache = [];
+var activeAdminOnlineTab = 'ACTIVE';
 
 // ==========================================
 // 🔔 ១. សំឡេងរោទ៍ & ឆែកមើលការកុម្ម៉ង់ ONLINE ថ្មី
@@ -70,9 +72,15 @@ async function checkPendingOnlineOrdersBadge() {
     lastKnownPendingOrderCount = c;
   } catch(e) {}
 }
-// ⚡ REALTIME LISTENER (ស្តាប់ការកុម្ម៉ង់ផ្ទាល់ពី SUPABASE ទាំង Admin និងអ្នកដឹក)
+// ⚡ REALTIME LISTENER (ស្តាប់ការកុម្ម៉ង់ផ្ទាល់ពី SUPABASE - ការពារកុំឱ្យរោទ៍ត្រួតគ្នា)
 function initOrdersRealtimeListener() {
   try {
+    // សម្អាត Channel ចាស់ចេញសិន ការពារកុំឱ្យបន្លឺសំឡេងរោទ៍ ២ ដង
+    if (ordersRealtimeChannel) {
+      supabaseClient.removeChannel(ordersRealtimeChannel);
+      ordersRealtimeChannel = null;
+    }
+
     ordersRealtimeChannel = supabaseClient
       .channel('public:orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, function(payload) {
@@ -101,7 +109,6 @@ function initOrdersRealtimeListener() {
       .subscribe();
   } catch(e) {}
 }
-
 // ==========================================
 // 📦 ២. ផ្ទាំង POPUP ពិនិត្យការកុម្ម៉ង់របស់ ADMIN
 // ==========================================
