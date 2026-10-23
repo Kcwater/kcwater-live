@@ -680,9 +680,41 @@
        ៨. JAVASCRIPT LOGIC (ADVANCED DELIVERY & 100% TRANSLATION)
        ============================================== -->
   <script>
-    const SUPABASE_URL = "https://hocndqkoumgjijtzpzby.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 🔑 ១. កំណត់គណនី Supabase ទាំង ២ សម្រាប់ Web ភ្ញៀវ (PROD & TEST)
+var SUPABASE_CONFIGS = {
+  PROD: {
+    url: "https://hocndqkoumgjijtzpzby.supabase.co",
+    key: "sb_publishable_1vUpi09UnohGxYQfTvobww_brkR4HUI"
+  },
+  TEST: {
+    url: "https://ntftdylkcnkxsytptket.supabase.co",
+    key: "sb_publishable_58qNd6IpyWqlvuI5BpuHRw__pTm7g7v"
+  }
+};
+
+function detectStoreEnvironment() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var envParam = urlParams.get('env');
+  if (envParam && (envParam.toUpperCase() === 'TEST' || envParam.toUpperCase() === 'PROD')) {
+    localStorage.setItem('kc_current_env', envParam.toUpperCase());
+    return envParam.toUpperCase();
+  }
+  var savedEnv = localStorage.getItem('kc_current_env');
+  if (savedEnv === 'TEST' || savedEnv === 'PROD') return savedEnv;
+  var host = window.location.hostname.toLowerCase();
+  if (host.includes('kcwater-store') || host.includes('test') || host.includes('dev') || host === 'localhost' || host === '127.0.0.1') {
+    return 'TEST';
+  }
+  return 'PROD';
+}
+
+var CURRENT_ENV = detectStoreEnvironment();
+var activeStoreEnv = SUPABASE_CONFIGS[CURRENT_ENV] || SUPABASE_CONFIGS.PROD;
+var supabaseClient = supabase.createClient(activeStoreEnv.url, activeStoreEnv.key);
+
+// 💵 អថេរប្តូរប្រាក់សកល (Dynamic Exchange Rates)
+var exchangeRateUSD = 4100;
+var exchangeRateTHB = 115;
 
     var currentLang = 'km';
     var cartItems = {};
@@ -1940,19 +1972,19 @@ function filterCatalog(cat, btn) {
       updateModalButtonText(val);
     }
 
-   // 🔘 មុខងារបូកសរុបតម្លៃលើប៊ូតុង "បញ្ចូលកន្ត្រក" ជា ២ រូបិយប័ណ្ណ ($ & ៛)
-    function updateModalButtonText(qty) {
-      if (!activeModalProduct) return;
-      var totKhr = qty * (activeModalProduct.priceKhr || activeModalProduct.price || 0);
-      var totUsd = (totKhr / 4100).toFixed(2);
-      var d = DICT[currentLang] || DICT.km;
-      
-      var btnLabel = document.getElementById('btnModalAddCartLabel');
-      if (btnLabel) {
-        btnLabel.innerText = (d.modalAdd || 'បញ្ចូលកន្ត្រក') + ' (៛ ' + totKhr.toLocaleString() + ' / $' + totUsd + ')';
-      }
-    }
-
+   // 🔘 មុខងារបូកសរុបតម្លៃលើប៊ូតុង "បញ្ចូលកន្ត្រក"
+function updateModalButtonText(qty) {
+  if (!activeModalProduct) return;
+  var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var totKhr = qty * (activeModalProduct.priceKhr || activeModalProduct.price || 0);
+  var totUsd = (totKhr / rateU).toFixed(2);
+  var d = DICT[currentLang] || DICT.km;
+  
+  var btnLabel = document.getElementById('btnModalAddCartLabel');
+  if (btnLabel) {
+    btnLabel.innerText = (d.modalAdd || 'បញ្ចូលកន្ត្រក') + ' (៛ ' + totKhr.toLocaleString() + ' / $' + totUsd + ')';
+  }
+}
     function confirmAddToCart() {
       if (!activeModalProduct) return;
       var q = parseInt(document.getElementById('modalQtyDisplay').innerText) || 1;
@@ -1969,41 +2001,41 @@ function filterCatalog(cat, btn) {
       recalcCartDock();
     }
 
-    // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត (បង្ហាញ ២ រូបិយប័ណ្ណ $ និង ៛ ទន្ទឹមគ្នា)
-    function recalcCartDock() {
-      var totalUnits = 0, totalPriceKhr = 0;
-      for (var k in cartItems) {
-        if (cartItems[k].qty > 0) {
-          totalUnits += cartItems[k].qty;
-          totalPriceKhr += (cartItems[k].qty * cartItems[k].price);
-        }
-      }
-
-      // 💾 រក្សាទុកកន្ត្រកក្នុង Memory ទូរស័ព្ទអូតូ
-      try {
-        localStorage.setItem('kc_auto_cart_backup', JSON.stringify(cartItems));
-      } catch(e) {}
-
-      var dock = document.getElementById('floatingCartDock');
-      var countEl = document.getElementById('dockItemCount');
-      var priceEl = document.getElementById('dockTotalPrice');
-      var d = DICT[currentLang] || DICT.km;
-
-      // 🛡️ ប្រព័ន្ធការពារកុំឱ្យ Crash
-      if (!dock) return;
-
-      if (totalUnits > 0) {
-        var totalUsd = (totalPriceKhr / 4100).toFixed(2);
-        if (countEl) countEl.innerText = totalUnits + ' ' + (d.dockItems || 'មុខទំនិញ');
-        if (priceEl) {
-          priceEl.innerHTML = '<span class="text-white text-sm font-black">៛ ' + totalPriceKhr.toLocaleString() + '</span>' +
-                              '<span class="text-emerald-300 font-bold text-xs ml-1.5 font-mono">($' + totalUsd + ')</span>';
-        }
-        dock.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
-      } else {
-        dock.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
-      }
+   // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត
+function recalcCartDock() {
+  var totalUnits = 0, totalPriceKhr = 0;
+  for (var k in cartItems) {
+    if (cartItems[k].qty > 0) {
+      totalUnits += cartItems[k].qty;
+      totalPriceKhr += (cartItems[k].qty * cartItems[k].price);
     }
+  }
+
+  try {
+    localStorage.setItem('kc_auto_cart_backup', JSON.stringify(cartItems));
+  } catch(e) {}
+
+  var dock = document.getElementById('floatingCartDock');
+  var countEl = document.getElementById('dockItemCount');
+  var priceEl = document.getElementById('dockTotalPrice');
+  var d = DICT[currentLang] || DICT.km;
+  var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+
+  if (!dock) return;
+
+  if (totalUnits > 0) {
+    var totalUsd = (totalPriceKhr / rateU).toFixed(2);
+    if (countEl) countEl.innerText = totalUnits + ' ' + (d.dockItems || 'មុខទំនិញ');
+    if (priceEl) {
+      priceEl.innerHTML = '<span class="text-white text-sm font-black">៛ ' + totalPriceKhr.toLocaleString() + '</span>' +
+                          '<span class="text-emerald-300 font-bold text-xs ml-1.5 font-mono">($' + totalUsd + ')</span>';
+    }
+    dock.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+  } else {
+    dock.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+  }
+}
+    
     function openCheckoutModal() {
   document.getElementById('checkoutErrorAlert').classList.add('hidden');
   updateCheckoutCalculation();
