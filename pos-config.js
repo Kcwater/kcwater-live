@@ -17,18 +17,30 @@ var SUPABASE_CONFIGS = {
   }
 };
 
-// 🧠 មុខងារស្គាល់ប្រព័ន្ធស្វ័យប្រវត្តិ (តាម URL, Link ឬ LocalStorage)
+// 🧠 មុខងារស្គាល់ប្រព័ន្ធស្វ័យប្រវត្តិ (តាម Link ជាក់ស្តែងទាំង ២ របស់ហាង)
 function detectCurrentEnvironment() {
-  // ក. ឆែកតាម URL query (ឧ៖ pos.html?env=test ឬ ?env=prod)
+  var host = window.location.hostname.toLowerCase();
+
+  // 🧪 ១. បើបើកលើ Link សាកល្បង kcwater-store ➔ ចូល Database Test អូតូ ១០០%
+  if (host.includes('kcwater-store') || host.includes('test') || host.includes('dev') || host === 'localhost' || host === '127.0.0.1') {
+    return 'TEST';
+  }
+
+  // 🏢 ២. បើបើកលើ Link ពិត kcwater-live ➔ ចូល Database ពិត (PROD) អូតូ ១០០%
+  if (host.includes('kcwater-live')) {
+    return 'PROD';
+  }
+
+  // ៣. ឆែកបន្ថែមតាម URL query (បើមាន)
   var urlParams = new URLSearchParams(window.location.search);
   var envParam = urlParams.get('env');
   if (envParam) {
     var p = envParam.toUpperCase();
-    if (p === 'TEST' || p === 'PROD') {
-      localStorage.setItem('kc_current_env', p);
-      return p;
-    }
+    if (p === 'TEST' || p === 'PROD') return p;
   }
+
+  return 'PROD';
+}
 
   // ខ. ឆែកតាមការចងចាំក្នុង Browser (localStorage)
   var savedEnv = localStorage.getItem('kc_current_env');
