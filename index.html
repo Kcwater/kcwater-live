@@ -3381,15 +3381,21 @@ function recalcCartDock() {
     }
 
    // ==========================================
-// 🔗 មុខងារចែករំលែក KC MART (TELEGRAM MINI APP @KC_water_pos_bot, LINE, MESSENGER)
+// 🔗 មុខងារចែករំលែក KC MART (TELEGRAM MINI APP @KC_water_pos_bot, LINE, MESSENGER & QR)
 // ==========================================
 function getShareStoreDetails() {
-  // 🤖 Link ផ្លូវការនៃ Telegram Mini App របស់ហាង
   var telegramMiniAppUrl = "https://t.me/KC_water_pos_bot/app";
   var webUrl = window.location.origin + window.location.pathname;
-  
   var shareTitle = "KC MART - ទឹកពិសាបរិសុទ្ធ & ទំនិញទូទៅ (ប៉ោយប៉ែត)";
   var shareDesc = "កុម្ម៉ង់ទិញទឹកពិសា & គ្រឿងទេសដឹកដល់មុខផ្ទះរហ័ស ៣០-៤៥ នាទី តាមរយៈ Telegram Mini App ឬ Website!";
+
+  if (typeof currentLang !== 'undefined' && currentLang === 'en') {
+    shareTitle = "KC MART - Pure Water & Groceries Delivery (Poipet)";
+    shareDesc = "Fast home delivery in 30-45 mins: Purified water, rice, noodles, and daily essentials!";
+  } else if (typeof currentLang !== 'undefined' && currentLang === 'zh') {
+    shareTitle = "KC MART - 波贝优质饮用水与生活百货配送";
+    shareDesc = "30-45分钟极速送货上门：桶装水、大米、粮油与生活日常百货！";
+  }
 
   return { 
     webUrl: webUrl, 
@@ -3407,21 +3413,17 @@ function openShareStoreModal() {
   var btnTg = document.getElementById('btnShareTelegram');
   var btnLine = document.getElementById('btnShareLine');
 
-  // បង្ហាញ Link Telegram Mini App លើប្រអប់ Copy
   if (linkInp) linkInp.value = s.tgAppUrl;
 
-  // បង្កើត QR Code ស្វ័យប្រវត្តិតាម Telegram Mini App Link
   if (qrImg) {
     qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(s.tgAppUrl);
   }
 
-  // ✈️ ចុច Share ទៅ Telegram វានឹងបើក Mini App @KC_water_pos_bot ភ្លាម
   if (btnTg) {
     var tgShareText = s.title + "\n" + s.desc;
     btnTg.href = "https://t.me/share/url?url=" + encodeURIComponent(s.tgAppUrl) + "&text=" + encodeURIComponent(tgShareText);
   }
 
-  // 💬 ចុច Share ទៅ LINE
   if (btnLine) {
     var lineText = s.title + "\n" + s.desc + "\n" + s.tgAppUrl;
     btnLine.href = "https://line.me/R/msg/text/?" + encodeURIComponent(lineText);
@@ -3429,19 +3431,19 @@ function openShareStoreModal() {
 
   if (modal) modal.classList.remove('hidden');
 }
-    
+
 function closeShareStoreModal() {
   var modal = document.getElementById('shareStoreModal');
   if (modal) modal.classList.add('hidden');
 }
 
-// 📋 ចម្លង Link (Copy Link)
 function copyShareStoreLink() {
   var linkInp = document.getElementById('shareStoreLinkInput');
   var btn = document.getElementById('btnCopyShareLink');
   if (!linkInp) return;
 
-  navigator.clipboard.writeText(linkInp.value).then(function() {
+  var textToCopy = linkInp.value || "https://t.me/KC_water_pos_bot/app";
+  navigator.clipboard.writeText(textToCopy).then(function() {
     if (btn) {
       btn.innerHTML = '<i class="fas fa-check"></i> បានចម្លង!';
       btn.className = "px-3 py-1.5 bg-emerald-700 text-white rounded-xl text-[10px] font-black shadow-xs transition";
@@ -3456,14 +3458,13 @@ function copyShareStoreLink() {
   });
 }
 
-// 🌐 បើកផ្ទាំង Share របស់ទូរស័ព្ទ (Messenger, Facebook, WhatsApp...)
 function shareViaNativeSheet() {
   var s = getShareStoreDetails();
   if (navigator.share) {
     navigator.share({
       title: s.title,
       text: s.desc,
-      url: s.url
+      url: s.tgAppUrl
     }).catch(function() {});
   } else {
     copyShareStoreLink();
@@ -3471,7 +3472,6 @@ function shareViaNativeSheet() {
   }
 }
 
-// 📥 ទាញយករូប QR Code ទុក
 function downloadShareStoreQr() {
   var qrImg = document.getElementById('shareStoreQrImage');
   if (!qrImg || !qrImg.src) return;
