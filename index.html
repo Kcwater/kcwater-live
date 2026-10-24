@@ -108,7 +108,7 @@
         </div>
       </div>
 
-     <div class="flex items-center gap-1.5">
+      <div class="flex items-center gap-1.5">
         <!-- ៣ ភាសា (ខ្មែរ / EN / 中文) -->
         <div class="flex items-center bg-slate-100 p-1 rounded-full border border-slate-200 text-xs font-black">
           <button onclick="changeAppLanguage('km')" id="langBtn_km" class="px-2.5 py-1 rounded-full bg-emerald-700 text-white shadow-xs transition">ខ្មែរ</button>
@@ -121,22 +121,24 @@
           <i class="fas fa-share-nodes"></i>
         </button>
       </div>
+    </div>
+  </header>
 
-    <!-- ប្រអប់ជូនដំណឹងពេលផុតម៉ោងធ្វើការ -->
-    <div id="storeClosedNoticeBanner" class="w-full max-w-md mx-auto px-4 pt-2 pb-1 hidden">
-      <div class="p-2.5 bg-amber-50 border border-amber-300 rounded-2xl flex items-center gap-2.5 text-amber-950 text-xs shadow-2xs">
-        <div class="w-7 h-7 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-xs shrink-0">
-          <i class="fas fa-moon"></i>
+  <!-- 🌙 ប្រអប់ជូនដំណឹងពេលផុតម៉ោងធ្វើការ (នៅក្រៅ Header ចំកណ្តាលពេញទទឹង ១០០% ទាំងលើទូរស័ព្ទ និងកុំព្យូទ័រ) -->
+  <div id="storeClosedNoticeBanner" class="w-full max-w-md mx-auto px-4 pt-2.5 pb-1 hidden">
+    <div class="p-2.5 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center gap-2.5 text-amber-950 text-xs shadow-2xs">
+      <div class="w-7 h-7 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-xs shrink-0">
+        <i class="fas fa-moon"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5">
+          <b class="text-amber-950 font-black text-xs" id="storeClosedTitle">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
+          <span class="text-[9px] bg-amber-200 text-amber-900 px-2 py-0.2 rounded-full font-bold shrink-0">កុម្ម៉ង់ទុកមុន</span>
         </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1.5">
-            <b class="text-amber-950 font-black text-xs" id="storeClosedTitle">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
-            <span class="text-[9px] bg-amber-200 text-amber-900 px-2 py-0.2 rounded-full font-bold">កុម្ម៉ង់ទុកមុន</span>
-          </div>
-          <span class="text-[10px] text-amber-800 leading-tight block truncate mt-0.5" id="storeClosedTimeHint"></span>
-        </div>
+        <span class="text-[10px] text-amber-800 leading-tight block truncate mt-0.5" id="storeClosedTimeHint"></span>
       </div>
     </div>
+  </div>
   </header>
 
   <!-- ២. BANNER & TRUST BADGES -->
