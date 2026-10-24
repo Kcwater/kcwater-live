@@ -2540,7 +2540,7 @@ function recalcCartDock() {
         if (hint) {
           hint.innerHTML = '<div class="p-2.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-amber-950 font-bold text-xs space-y-1.5 text-left mt-1">' +
             '<div class="flex items-center gap-1.5 text-amber-900 font-black"><i class="fas fa-triangle-exclamation text-amber-600"></i> លោកអ្នកកំពុងបើកក្នុង Messenger / LINE!</div>' +
-            '<div class="text-[11px] leading-relaxed text-amber-800">Facebook/LINE បានបិទសិទ្ធិចាប់ GPS។ ដើម្បីចាប់ទីតាំងបាន សូមចុចសញ្ញាចុច ៣ <b>`...`</b> នៅខាងលើស្តាំ ហើយរើស <b>«បើកក្នុងកម្មវិធីរុករក (Open in Chrome/Safari)»</b></div>' +
+            '<div class="text-[11px] leading-relaxed text-amber-800">Facebook/LINE បានបិទសិទ្ធិចាប់ GPS។ ដើម្បីចាប់ទីតាំងបាន សូមចុចសញ្ញាចុច ៣ <b>`...`</b> នៅខាងលើស្តាំ ហើយរើស <b>«បើកក្នុង Chrome/Safari»</b></div>' +
             '<div class="text-[10px] text-slate-500 italic">*ឬលោកអ្នកអាចវាយភូមិ/សង្កាត់/ចំណាំផ្ទះក្នុងប្រអប់ខាងក្រោមដោយផ្ទាល់បាន។</div>' +
           '</div>';
         }
@@ -2576,7 +2576,7 @@ function recalcCartDock() {
         if (btnLabel) btnLabel.innerText = "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ";
 
         var errorMsg = "⚠️ មិនអាចចាប់ GPS បានទេ (សូមវាយទីតាំងផ្ទះដោយដៃ)";
-        if (err.code === 1) { // PERMISSION_DENIED
+        if (err.code === 1) {
           if (isInAppBrowser) {
             errorMsg = "⚠️ Messenger/Facebook បានបិទសិទ្ធិចាប់ GPS! សូមចុចសញ្ញាចុច ៣ `...` នៅខាងលើស្តាំ ហើយរើស «Open in Chrome / Safari» ឬវាយទីតាំងដោយដៃខាងក្រោម។";
           } else {
