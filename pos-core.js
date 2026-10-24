@@ -165,8 +165,14 @@ function renderSidebarMenu() {
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
   }
 
+  // 🔄 ប៊ូតុងប្តូររវាង TEST និង PROD ក្នុងម៉ឺនុយ
+  var nextEnv = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? 'PROD' : 'TEST';
+  var envBtnClass = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? 'bg-amber-500 text-amber-950 font-black' : 'bg-green-800 text-green-200 font-bold';
+  var envBtnText = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? '🧪 កំពុងនៅ៖ សាកល្បង (ចុចប្តូរ 🔄)' : '🏢 កំពុងនៅ៖ ប្រព័ន្ធពិត (ចុចប្តូរ 🔄)';
+
   html += '<hr class="border-green-800 my-3">';
-  html += '<button onclick="logout()" class="w-full text-left p-3 text-red-300 hover:bg-red-800 rounded-xl transition flex items-center font-bold"><i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>ចាកចេញ</button>';
+  html += '<button type="button" onclick="switchAppEnvironment(\'' + nextEnv + '\')" class="w-full text-left p-3 rounded-xl transition flex items-center shadow-xs text-xs ' + envBtnClass + ' mb-2"><i class="fas fa-database mr-3 w-5 text-center text-base"></i>' + envBtnText + '</button>';
+  html += '<button onclick="logout()" class="w-full text-left p-3 text-red-300 hover:bg-red-800 rounded-xl transition flex items-center font-bold"><i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>ចាកចេញ</button>';  
   sNav.innerHTML = html;
 }
 
