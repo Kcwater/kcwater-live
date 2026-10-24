@@ -123,14 +123,17 @@
       </div>
 
     <!-- ប្រអប់ជូនដំណឹងពេលផុតម៉ោងធ្វើការ -->
-    <div id="storeClosedNoticeBanner" class="max-w-md mx-auto px-4 pt-3 hidden">
-      <div class="p-3 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-start gap-2.5 text-amber-950 text-xs shadow-xs">
-        <div class="w-8 h-8 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-sm shrink-0 mt-0.5">
+    <div id="storeClosedNoticeBanner" class="w-full max-w-md mx-auto px-4 pt-2 pb-1 hidden">
+      <div class="p-2.5 bg-amber-50 border border-amber-300 rounded-2xl flex items-center gap-2.5 text-amber-950 text-xs shadow-2xs">
+        <div class="w-7 h-7 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-xs shrink-0">
           <i class="fas fa-moon"></i>
         </div>
-        <div>
-          <b class="text-amber-950 font-black block" id="storeClosedTitle">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
-          <span class="text-[11px] text-amber-800 leading-snug block mt-0.5" id="storeClosedTimeHint"></span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5">
+            <b class="text-amber-950 font-black text-xs" id="storeClosedTitle">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
+            <span class="text-[9px] bg-amber-200 text-amber-900 px-2 py-0.2 rounded-full font-bold">កុម្ម៉ង់ទុកមុន</span>
+          </div>
+          <span class="text-[10px] text-amber-800 leading-tight block truncate mt-0.5" id="storeClosedTimeHint"></span>
         </div>
       </div>
     </div>
@@ -1637,118 +1640,101 @@ function getLocalizedProductName(p, lang) {
       }
     }
     
-    // 🎨 បង្ហាញកាតទំនិញ (គាំទ្រតម្រង ❤️ ចូលចិត្ត & ប៊ូតុងបេះដូងលើកាត)
-function renderCatalogGrid(filterCat) {
-  filterCat = filterCat || activeCatalogCategoryFilter || 'ALL';
-  var grid = document.getElementById('catalogGrid');
-  if (!grid) return;
-  var d = DICT[currentLang] || DICT.km;
-  var favList = getCustomerFavoritesList();
-  var html = '';
+    // 🎨 បង្ហាញកាតទំនិញ (ចេញផ្លាក 🎁 ថែមទំនិញ នៅលើកាតផ្ទាល់)
+    function renderCatalogGrid(filterCat) {
+      filterCat = filterCat || activeCatalogCategoryFilter || 'ALL';
+      var grid = document.getElementById('catalogGrid');
+      if (!grid) return;
+      var d = DICT[currentLang] || DICT.km;
+      var favList = getCustomerFavoritesList();
+      var html = '';
 
-  STORE_CATALOG.forEach(function(item) {
-    var isFavorited = (favList.indexOf(String(item.id)) !== -1);
+      STORE_CATALOG.forEach(function(item) {
+        var isFavorited = (favList.indexOf(String(item.id)) !== -1);
 
-    // 🔍 ១. តម្រងតាម ❤️ ចូលចិត្ត (Favorites)
-    if (filterCat === 'FAVORITES') {
-      if (!isFavorited) return; // បើភ្ញៀវមិនបានចុចបេះដូង មិនបង្ហាញឡើយ
-    } 
-    // 🔍 ២. តម្រងតាម Category ធម្មតា
-    else if (filterCat !== 'ALL') {
-      var isMatch = (item.cat === filterCat);
-      if (filterCat === 'GENERAL' && (item.cat === 'GROCERY' || item.cat === 'HOUSEHOLD' || item.cat === 'GENERAL')) {
-        isMatch = true;
-      }
-      if (!isMatch) return;
+        if (filterCat === 'FAVORITES') {
+          if (!isFavorited) return;
+        } else if (filterCat !== 'ALL') {
+          var isMatch = (item.cat === filterCat);
+          if (filterCat === 'GENERAL' && (item.cat === 'GROCERY' || item.cat === 'HOUSEHOLD' || item.cat === 'GENERAL')) {
+            isMatch = true;
+          }
+          if (!isMatch) return;
+        }
+
+        var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
+        var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
+        var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
+
+        // 🎁 ឆែកមើលថាតើទំនិញនេះមាន Promotion ថែមដែរឬទេ
+        var promoRule = null;
+        if (activePromoConfig && activePromoConfig.rules && activePromoConfig.rules.length > 0) {
+          promoRule = activePromoConfig.rules.find(function(r) {
+            return r.buyProduct.trim().toLowerCase() === item.raw_name.trim().toLowerCase();
+          });
+        }
+
+        var badgeLabel = '';
+        if (isOutOfStock) {
+          badgeLabel = '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ស្តុក</span>';
+        } else if (promoRule) {
+          // 🔥 បង្ហាញផ្លាក Promotion ពិសេសលើកាតទំនិញផ្ទាល់
+          badgeLabel = '<span class="bg-gradient-to-r from-red-600 to-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs animate-pulse truncate max-w-[120px]">' +
+            '🎁 ថែម ' + promoRule.freeProduct + ' x ' + promoRule.freeQty +
+          '</span>';
+        } else {
+          var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
+          if (rawBadge !== 'NONE') {
+            badgeLabel = '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[85px]">' + rawBadge + '</span>';
+          }
+        }
+
+        var favBtn = '<button type="button" onclick="toggleFavoriteProduct(\'' + item.id + '\', event)" class="w-7 h-7 rounded-full bg-white/90 hover:bg-rose-50 border border-slate-200 text-xs flex items-center justify-center shadow-2xs active:scale-90 transition shrink-0 ' + 
+          (isFavorited ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400') + '" title="ចូលចិត្ត">' +
+          '<i class="' + (isFavorited ? 'fas fa-heart' : 'far fa-heart') + '"></i>' +
+        '</button>';
+
+        var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
+        var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
+
+        var actionBtn = isOutOfStock ? 
+          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">អស់ស្តុក</span>' : 
+          '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0">' +
+            (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
+          '</button>';
+
+        var khrStr = '៛ ' + Number(item.priceKhr || 0).toLocaleString();
+        var thbStr = '฿ ' + Number(item.priceThb || 0).toLocaleString();
+        var usdStr = '$ ' + Number(item.priceUsd || 0).toFixed(2);
+
+        var priceDisplay = '<div class="space-y-0.5 text-left">' +
+          '<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">' + khrStr + '</div>' +
+          '<div class="text-[10px] sm:text-[11px] font-black text-amber-700 leading-none">' + thbStr + '</div>' +
+          '<div class="text-[10px] sm:text-[11px] font-black text-blue-700 leading-none">' + usdStr + '</div>' +
+        '</div>';
+
+        html += '<div ' + clickAction + ' class="kc-glass-card p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
+          '<div class="flex justify-between items-center w-full mb-1 min-h-[24px]">' +
+            badgeLabel +
+            favBtn +
+          '</div>' +
+          '<div class="w-full h-24 sm:h-28 flex items-center justify-center p-1 my-1 bg-slate-50/80 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/50 transition">' + 
+            item.svg + 
+          '</div>' +
+          '<div class="text-left px-0.5 mt-1 mb-1.5">' +
+            '<h4 data-trans-key="' + item.raw_name + '" class="text-[11px] sm:text-xs font-bold text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
+          '</div>' +
+          '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
+            '<div class="min-w-0 flex-1">' +
+              priceDisplay +
+            '</div>' +
+            actionBtn +
+          '</div>' +
+        '</div>';
+      });
+
+      grid.innerHTML = html;
     }
-
-    var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
-    var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
-    var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
-
-    // 🏷️ Badge ទំនិញ
-    var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
-    var badgeText = rawBadge;
-    if (currentLang === 'en') {
-      if (rawBadge === 'ពេញនិយម') badgeText = 'Popular';
-      else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = 'Premium';
-      else if (rawBadge === 'លក់ដាច់') badgeText = 'Best Seller';
-      else if (rawBadge === 'ទំនិញថ្មី') badgeText = 'New';
-    } else if (currentLang === 'zh') {
-      if (rawBadge === 'ពេញនិយម') badgeText = '热销';
-      else if (rawBadge === 'គុណភាពខ្ពស់') badgeText = '品质';
-      else if (rawBadge === 'លក់ដាច់') badgeText = '爆款';
-      else if (rawBadge === 'ទំនិញថ្មី') badgeText = '新品';
-    }
-
-    var badgeLabel = isOutOfStock ? 
-      '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">' + (currentLang === 'en' ? 'Out of Stock' : (currentLang === 'zh' ? '缺货' : '❌ អស់ស្តុក')) + '</span>' : 
-      ((badgeText !== 'NONE') ? 
-        '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[85px]">' + badgeText + '</span>' : '<span></span>');
-
-    // ❤️ ប៊ូតុងបេះដូង Favorite លើកាតទំនិញ
-    var favBtn = '<button type="button" onclick="toggleFavoriteProduct(\'' + item.id + '\', event)" class="w-7 h-7 rounded-full bg-white/90 hover:bg-rose-50 border border-slate-200 text-xs flex items-center justify-center shadow-2xs active:scale-90 transition shrink-0 ' + 
-      (isFavorited ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400') + '" title="ចូលចិត្ត">' +
-      '<i class="' + (isFavorited ? 'fas fa-heart' : 'far fa-heart') + '"></i>' +
-    '</button>';
-
-    var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
-    var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
-
-    var actionBtn = isOutOfStock ? 
-      '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">' + (currentLang === 'en' ? 'Sold' : (currentLang === 'zh' ? '已售' : 'អស់ស្តុក')) + '</span>' : 
-      '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition shrink-0">' +
-        (inCart > 0 ? '<span class="text-xs font-black">' + inCart + '</span>' : '<i class="fas fa-plus text-xs"></i>') +
-      '</button>';
-
-    var khrStr = '៛ ' + Number(item.priceKhr || 0).toLocaleString();
-    var thbStr = '฿ ' + Number(item.priceThb || 0).toLocaleString();
-    var usdStr = '$ ' + Number(item.priceUsd || 0).toFixed(2);
-
-    var priceDisplay = '<div class="space-y-0.5 text-left">' +
-      '<div class="text-xs sm:text-sm font-black text-emerald-700 leading-tight">' + khrStr + '</div>' +
-      '<div class="text-[10px] sm:text-[11px] font-black text-amber-700 leading-none">' + thbStr + '</div>' +
-      '<div class="text-[10px] sm:text-[11px] font-black text-blue-700 leading-none">' + usdStr + '</div>' +
-    '</div>';
-
-    var priceLabelText = (currentLang === 'en' ? 'Price' : (currentLang === 'zh' ? '价格' : 'តម្លៃ'));
-
-    html += '<div ' + clickAction + ' class="kc-glass-card p-2.5 sm:p-3 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + '">' +
-      '<div class="flex justify-between items-center w-full mb-1 min-h-[24px]">' +
-        badgeLabel +
-        favBtn +
-      '</div>' +
-      '<div class="w-full h-24 sm:h-28 flex items-center justify-center p-1 my-1 bg-slate-50/80 rounded-2xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/50 transition">' + 
-        item.svg + 
-      '</div>' +
-      '<div class="text-left px-0.5 mt-1 mb-1.5">' +
-        '<h4 data-trans-key="' + item.raw_name + '" class="text-[11px] sm:text-xs font-bold text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-800 transition">' + localizedName + '</h4>' +
-      '</div>' +
-      '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
-        '<div class="min-w-0 flex-1">' +
-          '<span class="text-[8.5px] sm:text-[9px] text-slate-400 font-bold block leading-none mb-0.5">' + priceLabelText + '</span>' +
-          priceDisplay +
-        '</div>' +
-        actionBtn +
-      '</div>' +
-    '</div>';
-  });
-
-  if (!html) {
-    var emptyText = (filterCat === 'FAVORITES') ? 
-      (currentLang === 'en' ? 'You have no favorite products yet. Tap the heart ❤️ icon to save items!' : (currentLang === 'zh' ? '您还没有收藏任何商品，点击商品上的 ❤️ 即可收藏！' : 'លោកអ្នកមិនទាន់មានទំនិញចូលចិត្តនៅឡើយទេ។ ចុចរូបបេះដូង ❤️ លើទំនិញដើម្បីចំណាំទុក!')) :
-      (currentLang === 'en' ? 'No products available in this category' : (currentLang === 'zh' ? '当前分类暂无商品' : 'មិនទាន់មានទំនិញក្នុងផ្នែកនេះនៅឡើយទេ'));
-
-    html = '<div class="col-span-full py-12 text-center text-slate-400 font-bold text-xs space-y-2">' +
-      '<div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg">' + 
-        (filterCat === 'FAVORITES' ? '<i class="fas fa-heart-crack text-rose-300"></i>' : '<i class="fas fa-box-open"></i>') + 
-      '</div>' +
-      '<span class="block px-4">' + emptyText + '</span>' +
-    '</div>';
-  }
-
-  grid.innerHTML = html;
-}
     
     // ==========================================
 // ❤️ ប្រព័ន្ធគ្រប់គ្រងទំនិញចូលចិត្ត (CUSTOMER FAVORITES ENGINE)
@@ -2776,7 +2762,7 @@ function recalcCartDock() {
      } catch(e) {}
    }
     
-    // 📥 ទាញយកការកំណត់ Store Rules, 50,000៛ ដឹក Free & រូបភាព Banner Promotion ពី Supabase
+    // 📥 ទាញយកការកំណត់ & បញ្ចូល Promotion ទៅក្នុង Slide ទី ១ តែមួយគត់ (កុំឱ្យធ្លាក់ទំនិញ)
     async function loadStoreSettingsFromSupabase() {
       try {
         const { data: settings } = await supabaseClient.from('settings').select('*');
@@ -2789,7 +2775,6 @@ function recalcCartDock() {
         if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'];
         if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'];
 
-        // សេវាដឹកជញ្ជូន & ៥០,០០០៛ ដឹក Free
         if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
         if (sMap['Delivery_Free_Min_Qty']) storeDeliveryConfig.freeMinQty = parseInt(sMap['Delivery_Free_Min_Qty']) || 2;
         storeDeliveryConfig.freeMinAmount = parseFloat(sMap['Delivery_Free_Min_Amount'] || 50000);
@@ -2815,20 +2800,22 @@ function recalcCartDock() {
           if (banner) banner.classList.add('hidden');
         }
 
-        // 🎁 ពិនិត្យលក្ខខណ្ឌ Promotion (Status, Date Timer & Image)
+        // 🎁 ពិនិត្យ Promotion
         var promoStatus = (sMap['Promo_Status'] || "OFF").toUpperCase();
         var startTimeStr = sMap['Promo_Start_Time'] || '';
         var endTimeStr = sMap['Promo_End_Time'] || '';
         var isPromoTimeValid = true;
 
-        if (startTimeStr) {
-          if (new Date() < new Date(startTimeStr)) isPromoTimeValid = false;
-        }
-        if (endTimeStr) {
-          if (new Date() > new Date(endTimeStr)) isPromoTimeValid = false;
-        }
+        if (startTimeStr && new Date() < new Date(startTimeStr)) isPromoTimeValid = false;
+        if (endTimeStr && new Date() > new Date(endTimeStr)) isPromoTimeValid = false;
 
-        if (promoStatus === 'ON' && isPromoTimeValid) {
+        // លុបកាតចាស់ចោលជានិច្ច ដើម្បីកុំឱ្យជាន់ ២ ជាន់
+        var oldCard = document.getElementById('storeLivePromoCard');
+        if (oldCard) oldCard.remove();
+
+        var slideTrack = document.getElementById('promoBannerTrack');
+
+        if (promoStatus === 'ON' && isPromoTimeValid && slideTrack) {
           var promoRulesArr = [];
           try { promoRulesArr = JSON.parse(sMap['Promo_Rules'] || '[]'); } catch(e) { promoRulesArr = []; }
 
@@ -2839,45 +2826,35 @@ function recalcCartDock() {
             rules: promoRulesArr
           };
 
-          var oldCard = document.getElementById('storeLivePromoCard');
-          if (oldCard) oldCard.remove();
-
-          // 🖼️ បង្ហាញរូបភាព Banner Promotion យ៉ាងធំ និងស្រស់ស្អាត
-          var promoImageHtml = '';
-          if (activePromoConfig.bannerImg) {
-            promoImageHtml = '<div class="w-full h-44 sm:h-52 overflow-hidden bg-slate-900 relative cursor-pointer" onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})">' +
-              '<img src="' + activePromoConfig.bannerImg + '" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt="Promotion Banner">' +
-              '<span class="absolute top-2.5 right-3 bg-red-600 text-white text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-md animate-pulse">🔥 PROMOTION</span>' +
-            '</div>';
-          }
-
-          var promoHtml = '<div id="storeLivePromoCard" class="max-w-md mx-auto px-4 pt-3 pb-1 animate-in zoom-in duration-300">' +
-            '<div class="overflow-hidden rounded-3xl shadow-xl border-2 border-amber-300 bg-white">' +
-              promoImageHtml +
-              '<div class="p-3.5 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white flex items-center justify-between gap-2.5">' +
-                '<div class="flex items-center gap-2.5 min-w-0">' +
-                  (!activePromoConfig.bannerImg ? '<div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl shadow-inner shrink-0"><i class="fas fa-gift animate-bounce text-white"></i></div>' : '') +
+          // 🌟 បញ្ចូល Promotion ទៅក្នុង Slide ទី ១ ផ្ទាល់តែម្តង (មានរូបភាពច្បាស់ស្អាត & មិនជាន់គ្នា)
+          if (slideTrack.children.length > 0) {
+            var promoSlideHtml = '';
+            if (activePromoConfig.bannerImg) {
+              promoSlideHtml = '<div onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})" class="min-w-full h-44 sm:h-52 relative cursor-pointer select-none overflow-hidden bg-slate-900 rounded-3xl">' +
+                '<img src="' + activePromoConfig.bannerImg + '" class="w-full h-full object-cover" alt="Promo">' +
+                '<div class="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-white flex items-center justify-between gap-2">' +
                   '<div class="min-w-0">' +
-                    '<span class="text-[9px] font-black uppercase tracking-wider bg-white/25 px-2 py-0.5 rounded-full">🎁 PROMOTION កំពុងដំណើរការ</span>' +
-                    '<div class="text-xs font-black mt-1 leading-snug line-clamp-2">' + activePromoConfig.bannerText + '</div>' +
+                    '<span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-red-600 text-white shadow-xs animate-pulse">🔥 PROMOTION</span>' +
+                    '<div class="text-xs font-black text-amber-200 mt-0.5 truncate">' + activePromoConfig.bannerText + '</div>' +
                   '</div>' +
+                  '<span class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] rounded-xl shadow-xs shrink-0">👉 កុម្ម៉ង់ឥឡូវ</span>' +
                 '</div>' +
-                '<button type="button" onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})" class="px-3.5 py-2 bg-white hover:bg-amber-50 text-amber-950 font-black text-xs rounded-xl shadow active:scale-95 transition whitespace-nowrap shrink-0">' +
-                  'កុម្ម៉ង់ឥឡូវ' +
-                '</button>' +
-              '</div>' +
-            '</div>' +
-          '</div>';
-
-          var headerEl = document.querySelector('header');
-          if (headerEl) headerEl.insertAdjacentHTML('afterend', promoHtml);
+              '</div>';
+            } else {
+              promoSlideHtml = '<div onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})" class="min-w-full p-4 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white relative cursor-pointer select-none rounded-3xl">' +
+                '<div class="space-y-1.5">' +
+                  '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-black text-amber-200 animate-pulse">🎁 PROMOTION កំពុងដំណើរការ</span>' +
+                  '<h2 class="text-lg font-black tracking-tight">' + activePromoConfig.bannerText + '</h2>' +
+                  '<div class="pt-1"><span class="px-3 py-1 bg-white text-amber-950 font-black text-[10px] rounded-xl shadow-xs">👉 ចុចមើលទំនិញថែម</span></div>' +
+                '</div>' +
+              '</div>';
+            }
+            slideTrack.children[0].outerHTML = promoSlideHtml;
+          }
         } else {
-          var oldCard = document.getElementById('storeLivePromoCard');
-          if (oldCard) oldCard.remove();
           activePromoConfig = null;
         }
 
-        // អាប់ដេតកាតទំនិញឱ្យចេញផ្លាក Promo ភ្លាមៗ
         renderCatalogGrid();
       } catch(e) {}
     }
