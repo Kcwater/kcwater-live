@@ -1541,22 +1541,26 @@ async function delUserFromSupabase(id) {
   }
 }
 // ==========================================
-// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ (SETTINGS & គ្រប់គ្រងអត្រាប្តូរប្រាក់ពេញលេញ)
+// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ (SETTINGS, 50,000៛ FREE ដឹក & ADVANCED PROMOTION)
 // ==========================================
 var currentTelegramAlertStatus = "ON";
+var currentPromoRules = []; // បញ្ជីលក្ខខណ្ឌថែមទំនិញ (Buy A -> Free B)
 
 function renderSettingsModule() {
   var area = document.getElementById('contentArea');
-  var prodOptions = '<option value="ALL">🔄 គ្រប់មុខទំនិញទាំងអស់ (All Products)</option>';
-  allProducts.forEach(function(p) {
-    prodOptions += '<option value="' + p.name + '">📦 ' + p.name + '</option>';
-  });
+  if (!area) return;
 
   var curUsd = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var curThb = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
+  // បញ្ជីមុខទំនិញសម្រាប់រើសក្នុង Promotion
+  var prodOptions = '<option value="">-- រើសមុខទំនិញ --</option>';
+  (allProducts || []).forEach(function(p) {
+    prodOptions += '<option value="' + p.name + '">' + p.name + '</option>';
+  });
+
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
-    // 💵 កាតកំណត់អត្រាប្តូរប្រាក់កម្រិតខ្ពស់ (Smart Exchange Rates Card)
+    // 💵 ១. កាតកំណត់អត្រាប្តូរប្រាក់ (Exchange Rates)
     '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
       '<div class="flex justify-between items-center">' +
         '<div>' +
@@ -1565,76 +1569,115 @@ function renderSettingsModule() {
           '</h3>' +
           '<p class="text-[11px] text-gray-500 font-bold mt-0.5">*កំណត់អត្រាប្រាក់រៀល (៛), បាតថៃ (฿), និងដុល្លារ ($) សម្រាប់ POS & Store Web</p>' +
         '</div>' +
-        '<span class="text-[10px] text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full font-black border border-emerald-300">Auto-Sync 3 Currencies</span>' +
+        '<span class="text-[10px] text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full font-black border border-emerald-300">Auto-Sync</span>' +
       '</div>' +
-
-      // ប្រអប់បញ្ចូលអត្រា
       '<div class="grid grid-cols-2 gap-3 text-xs">' +
         '<div class="p-3 bg-blue-50/60 rounded-2xl border-2 border-blue-200 space-y-1.5">' +
           '<label class="font-black text-blue-900 uppercase block">💵 $1 ដុល្លារ = (... ៛)</label>' +
-          '<input type="number" id="set_rate_usd" oninput="updateRatePreviewLive()" placeholder="ឧ៖ 4100" value="' + curUsd + '" class="font-black border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-blue-950 bg-white shadow-2xs">' +
-          '<div class="flex gap-1 pt-0.5">' +
-            '<button type="button" onclick="setQuickRateValue(\'set_rate_usd\', 4080)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border text-[10px] font-bold">4080</button>' +
-            '<button type="button" onclick="setQuickRateValue(\'set_rate_usd\', 4100)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border text-[10px] font-bold">4100</button>' +
-            '<button type="button" onclick="setQuickRateValue(\'set_rate_usd\', 4120)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border text-[10px] font-bold">4120</button>' +
-            '<button type="button" onclick="setQuickRateValue(\'set_rate_usd\', 4150)" class="flex-1 py-1 bg-white hover:bg-blue-100 text-blue-800 rounded-lg border text-[10px] font-bold">4150</button>' +
-          '</div>' +
+          '<input type="number" id="set_rate_usd" oninput="updateRatePreviewLive()" value="' + curUsd + '" class="font-black border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-blue-950 bg-white">' +
         '</div>' +
-
         '<div class="p-3 bg-amber-50/60 rounded-2xl border-2 border-amber-200 space-y-1.5">' +
           '<label class="font-black text-amber-950 uppercase block">🪙 1฿ បាត = (... ៛)</label>' +
-          '<input type="number" id="set_rate_thb" oninput="updateRatePreviewLive()" placeholder="ឧ៖ 115" value="' + curThb + '" class="font-black border-2 border-amber-300 focus:border-amber-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-amber-950 bg-white shadow-2xs">' +
-          '<div class="flex gap-1 pt-0.5">' +
-            '<button type="button" onclick="setQuickRateValue(\'set_rate_thb\', 112)" class="flex-1 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border text-[10px] font-bold">112</button>' +
-            '<button type="button" onclick="setQuickRateValue(\'set_rate_thb\', 115)" class="flex-1 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border text-[10px] font-bold">115</button>' +
-            '<button type="button" onclick="setQuickRateValue(\'set_rate_thb\', 118)" class="flex-1 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border text-[10px] font-bold">118</button>' +
-            '<button type="button" onclick="setQuickRateValue(\'set_rate_thb\', 120)" class="flex-1 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border text-[10px] font-bold">120</button>' +
-          '</div>' +
+          '<input type="number" id="set_rate_thb" oninput="updateRatePreviewLive()" value="' + curThb + '" class="font-black border-2 border-amber-300 focus:border-amber-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-amber-950 bg-white">' +
         '</div>' +
       '</div>' +
-
-      // 🧮 ផ្ទាំងគណនាមើលលទ្ធផលជាក់ស្តែង (Live Conversion Calculator)
-      '<div id="exchangeLiveCalcBox" class="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1">' +
-        '<div class="font-black text-slate-700 text-[11px] mb-1"><i class="fas fa-calculator text-emerald-600 mr-1"></i> លទ្ធផលបំប្លែងលុយជាក់ស្តែងតាមអត្រានេះ៖</div>' +
-        '<div id="calcPreviewLines" class="grid grid-cols-1 sm:grid-cols-3 gap-2 font-bold text-center"></div>' +
-      '</div>' +
-
-      // ប៊ូតុង Save អត្រាប្តូរប្រាក់រហ័ស
-      '<button type="button" onclick="saveQuickExchangeRates()" id="btnSaveQuickRates" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md active:scale-95 transition flex items-center justify-center gap-2">' +
-        '<i class="fas fa-floppy-disk text-base"></i> រក្សាទុកអត្រាប្តូរប្រាក់ (Save Exchange Rates)' +
+      '<button type="button" onclick="saveQuickExchangeRates()" id="btnSaveQuickRates" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs transition">' +
+        '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុកអត្រាប្តូរប្រាក់' +
       '</button>' +
     '</div>' +
 
-    // ម៉ោងបើក/បិទ & សេវាដឹក
+    // 🛵 ២. កាតម៉ោងបើក/បិទ & ៥០,០០០៛ ដឹក FREE (Store & Delivery Rules)
     '<div class="card border-t-4 border-indigo-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<h2 class="font-extrabold text-indigo-950 text-base flex items-center gap-2"><i class="fas fa-clock text-indigo-600"></i>ម៉ោងទទួលកុម្ម៉ង់ & សេវាដឹក (Store Rules)</h2>' +
       '<div class="grid grid-cols-2 gap-2 text-xs">' +
         '<div><label class="font-bold text-gray-500 uppercase block">ម៉ោងបើក (Open)</label><input type="time" id="set_open_time" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
         '<div><label class="font-bold text-gray-500 uppercase block">ម៉ោងបិទ (Close)</label><input type="time" id="set_close_time" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
       '</div>' +
-      '<div class="grid grid-cols-2 gap-2 text-xs">' +
-        '<div><label class="font-bold text-gray-500 uppercase block">ថ្លៃដឹកធម្មតា (៛)</label><input type="number" id="set_del_fee" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
-        '<div><label class="font-bold text-gray-500 uppercase block">កុម្ម៉ង់ចាប់ពី (X ធុង) ដឹក FREE</label><input type="number" id="set_del_min" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
+      '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">' +
+        '<div><label class="font-bold text-gray-500 uppercase block">ថ្លៃដឹកធម្មតា (៛)</label><input type="number" id="set_del_fee" placeholder="ឧ៖ 2000" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
+        '<div><label class="font-bold text-gray-500 uppercase block">កុម្ម៉ង់ចាប់ពី (X ធុង) ដឹក Free</label><input type="number" id="set_del_min" placeholder="ឧ៖ 2" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
+        '<div><label class="font-extrabold text-emerald-800 uppercase block">🎉 ទិញអស់ (... ៛) ដឹក FREE</label><input type="number" id="set_del_free_amount" placeholder="ឧ៖ 50000" class="font-black border-2 border-emerald-400 bg-emerald-50 text-emerald-950 p-2 rounded-xl w-full text-center"></div>' +
       '</div>' +
     '</div>' +
 
-    // ប្រព័ន្ធ Promotion
-    '<div class="card border-t-4 border-amber-500 shadow-xl p-5 mb-0 space-y-3">' +
-      '<div class="flex justify-between items-center">' +
-        '<h3 class="font-extrabold text-amber-950 text-base flex items-center gap-2"><i class="fas fa-gift text-amber-600"></i>ប្រព័ន្ធ Promotion លើ Website</h3>' +
-        '<select id="set_promo_status" class="text-xs font-bold border border-amber-300 rounded-xl p-1.5"><option value="OFF">🔕 បិទ (OFF)</option><option value="ON">🔔 បើក (ON)</option></select>' +
-      '</div>' +
-      '<div class="space-y-2 text-xs">' +
-        '<select id="set_promo_product" class="w-full font-bold border border-amber-300 rounded-xl p-2 bg-white">' + prodOptions + '</select>' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="number" id="set_promo_buy_qty" placeholder="ទិញគ្រប់ (X ធុង)" class="border border-amber-300 p-2 rounded-xl text-center font-bold">' +
-          '<input type="number" id="set_promo_free_qty" placeholder="ថែម Free (Y ធុង)" class="border border-emerald-300 p-2 rounded-xl text-center font-bold text-emerald-800">' +
+    // 🎁 ៣. កាតប្រព័ន្ធ PROMOTION កម្រិតខ្ពស់ (Cross-Product, Banner Image & Date/Time)
+    '<div class="card border-t-4 border-amber-500 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div>' +
+          '<h3 class="font-extrabold text-amber-950 text-base flex items-center gap-2">' +
+            '<i class="fas fa-gift text-amber-500"></i>ប្រព័ន្ធ Promotion លើ Website' +
+          '</h3>' +
+          '<p class="text-[10px] text-gray-400 font-bold mt-0.5">រូបភាព Banner, កាលបរិច្ឆេទចាប់ផ្តើម-បញ្ចប់ & ថែមទំនិញ</p>' +
         '</div>' +
-        '<input type="text" id="set_promo_banner" placeholder="ពាក្យផ្សាយ Promotion លើក្បាលទំព័រ..." class="border p-2 rounded-xl w-full font-bold">' +
+        '<select id="set_promo_status" class="text-xs font-black border-2 border-amber-400 bg-amber-50 rounded-xl p-2">' +
+          '<option value="OFF">🔕 បិទ (OFF)</option>' +
+          '<option value="ON">🔔 បើក (ON)</option>' +
+        '</select>' +
+      '</div>' +
+
+      // កាលបរិច្ឆេទ ចាប់ផ្តើម & បញ្ចប់
+      '<div class="p-3 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-1.5">' +
+        '<label class="text-[10px] font-black text-amber-950 uppercase block"><i class="fas fa-calendar-days text-amber-600 mr-1"></i> កំណត់ពេលចាប់ផ្តើម និងបញ្ចប់ Promotion (Auto-Timer)</label>' +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold">' +
+          '<div><span class="text-[9.5px] text-gray-500 block mb-0.5">ថ្ងៃ & ម៉ោងចាប់ផ្តើម៖</span><input type="datetime-local" id="set_promo_start" class="border border-amber-300 p-2 rounded-xl w-full bg-white"></div>' +
+          '<div><span class="text-[9.5px] text-gray-500 block mb-0.5">ថ្ងៃ & ម៉ោងបញ្ចប់៖</span><input type="datetime-local" id="set_promo_end" class="border border-amber-300 p-2 rounded-xl w-full bg-white"></div>' +
+        '</div>' +
+      '</div>' +
+
+      // ពាក្យផ្សាយ & រូបថត Banner Promotion
+      '<div class="space-y-2 text-xs">' +
+        '<div>' +
+          '<label class="text-[10px] font-black text-gray-600 uppercase block mb-1">ពាក្យផ្សាយ Promotion លើក្បាលទំព័រ</label>' +
+          '<input type="text" id="set_promo_banner" placeholder="ឧ៖ 🎁 ប្រូម៉ូសិនពិសេស! ទិញអង្ករ ១បាវ ថែមទឹកធុងខៀវ ២ធុង Free!" class="border-2 border-amber-200 focus:border-amber-500 p-2.5 rounded-xl w-full font-bold bg-white">' +
+        '</div>' +
+
+        // ប្រអប់ដាក់រូបភាព Banner Promotion
+        '<div class="p-3 bg-slate-50 border-2 border-dashed border-amber-300 rounded-2xl flex items-center justify-between gap-3">' +
+          '<div class="flex items-center gap-2.5">' +
+            '<div class="w-16 h-12 rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-xs shrink-0">' +
+              '<img id="promoBannerImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-w-full max-h-full object-cover">' +
+            '</div>' +
+            '<div>' +
+              '<b class="text-xs text-slate-800 block">រូបភាព Banner Promotion</b>' +
+              '<span class="text-[9.5px] text-slate-400 block" id="promoImgStatusNote">អាច Upload រូបផ្សាយពាណិជ្ជកម្មផ្ទាល់</span>' +
+              '<input type="hidden" id="set_promo_img_base64" value="">' +
+            '</div>' +
+          '</div>' +
+          '<label class="cursor-pointer px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-xs active:scale-95 transition whitespace-nowrap">' +
+            '<i class="fas fa-image mr-1"></i> រើសរូប Banner' +
+            '<input type="file" accept="image/*" onchange="previewPromoBannerFile(this)" class="hidden">' +
+          '</label>' +
+        '</div>' +
+      '</div>' +
+
+      // 🛒 បង្កើតលក្ខខណ្ឌថែមទំនិញ (Cross-Product Rules: ទិញ A ថែម B)
+      '<div class="p-3.5 bg-gradient-to-br from-amber-50/80 to-orange-50/50 rounded-2xl border-2 border-amber-300 space-y-2.5">' +
+        '<div class="flex justify-between items-center">' +
+          '<b class="text-xs text-amber-950 font-black flex items-center gap-1"><i class="fas fa-boxes-packing text-amber-600"></i> លក្ខខណ្ឌថែមទំនិញ (ទិញ A ថែម B)</b>' +
+          '<span class="text-[9px] text-amber-800 bg-amber-200 px-2 py-0.5 rounded-full font-bold">Cross-Product</span>' +
+        '</div>' +
+
+        // ប្រអប់បន្ថែមលក្ខខណ្ឌថ្មី
+        '<div class="bg-white p-3 rounded-xl border border-amber-200 space-y-2 text-xs shadow-2xs">' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">១. ទិញទំនិញ (Buy)៖</span><select id="pr_buy_prod" class="font-bold border p-2 rounded-xl w-full bg-white">' + prodOptions + '</select></div>' +
+            '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">ចំនួនទិញ (Qty)៖</span><input type="number" id="pr_buy_qty" placeholder="ឧ៖ 1" value="1" class="font-black border p-2 rounded-xl w-full text-center"></div>' +
+          '</div>' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div><span class="text-[9.5px] font-bold text-emerald-800 block mb-0.5">២. ថែមជូន Free (Free Gift)៖</span><select id="pr_free_prod" class="font-bold border border-emerald-300 p-2 rounded-xl w-full bg-emerald-50/50 text-emerald-950">' + prodOptions + '</select></div>' +
+            '<div><span class="text-[9.5px] font-bold text-emerald-800 block mb-0.5">ចំនួនថែម (Free Qty)៖</span><input type="number" id="pr_free_qty" placeholder="ឧ៖ 2" value="2" class="font-black border border-emerald-300 p-2 rounded-xl w-full text-center text-emerald-900 bg-emerald-50/50"></div>' +
+          '</div>' +
+          '<button type="button" onclick="addNewPromoRule()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5">' +
+            '<i class="fas fa-plus"></i> + បញ្ចូលលក្ខខណ្ឌ Promotion នេះ' +
+          '</button>' +
+        '</div>' +
+
+        // តារាងបង្ហាញលក្ខខណ្ឌកំពុងដំណើរការ
+        '<div id="activePromoRulesContainer" class="space-y-1.5 pt-1"></div>' +
       '</div>' +
     '</div>' +
 
-    // Telegram Bot
+    // 🔔 ៤. Telegram Bot Alert
     '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0 space-y-3">' +
       '<div class="flex justify-between items-center">' +
         '<h3 class="font-extrabold text-green-950 text-base flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i>Telegram Bot Alert</h3>' +
@@ -1643,17 +1686,104 @@ function renderSettingsModule() {
           '<button type="button" onclick="testTelegramAlertNow()" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200">🔔 តេស្ត</button>' +
         '</div>' +
       '</div>' +
-      '<p class="text-[11px] text-gray-500">*ចុចប៊ូតុងខាងលើដើម្បី <b>បិទ (OFF)</b> ឬ <b>បើក (ON)</b> សារដំណឹង Telegram។</p>' +
       '<div class="space-y-2 text-xs">' +
         '<input type="text" id="set_tg_token" placeholder="Telegram Bot Token" class="border p-2 rounded-xl w-full font-mono">' +
         '<input type="text" id="set_tg_chatid" placeholder="Telegram Chat ID" class="border p-2 rounded-xl w-full font-mono">' +
       '</div>' +
-      '<button onclick="saveSettingsToSupabase()" class="btn-green py-3 text-sm font-bold">រក្សាទុកការកំណត់ទាំងអស់</button>' +
+      '<button onclick="saveSettingsToSupabase()" id="btnSaveAllSettings" class="btn-green py-3.5 text-sm font-black shadow-md flex items-center justify-center gap-2">' +
+        '<i class="fas fa-floppy-disk"></i> រក្សាទុកការកំណត់ទាំងអស់ (Save All Settings)' +
+      '</button>' +
     '</div>' +
   '</div>';
 
   loadSettingsForm();
-  updateRatePreviewLive();
+  if (typeof updateRatePreviewLive === 'function') updateRatePreviewLive();
+}
+
+// 🖼️ មុខងារ Preview រូប Banner Promotion
+function previewPromoBannerFile(input) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var maxDim = 800; // កម្រិតច្បាស់ល្មមមិនធ្ងន់
+        var w = img.width, h = img.height;
+        if (w > h) {
+          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        } else {
+          if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        var preview = document.getElementById('promoBannerImgPreview');
+        var hiddenInp = document.getElementById('set_promo_img_base64');
+        var note = document.getElementById('promoImgStatusNote');
+        if (preview) preview.src = base64;
+        if (hiddenInp) hiddenInp.value = base64;
+        if (note) note.innerHTML = '<span class="text-emerald-700 font-black">✔️ បានភ្ជាប់រូប Banner រួចរាល់</span>';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// ➕ មុខងារបន្ថែមលក្ខខណ្ឌ Promotion ថ្មី
+function addNewPromoRule() {
+  var buyP = document.getElementById('pr_buy_prod') ? document.getElementById('pr_buy_prod').value : '';
+  var buyQ = parseFloat(document.getElementById('pr_buy_qty') ? document.getElementById('pr_buy_qty').value || 1 : 1);
+  var freeP = document.getElementById('pr_free_prod') ? document.getElementById('pr_free_prod').value : '';
+  var freeQ = parseFloat(document.getElementById('pr_free_qty') ? document.getElementById('pr_free_qty').value || 1 : 1);
+
+  if (!buyP || !freeP) {
+    showToast("សូមជ្រើសរើសទំនិញដែលត្រូវទិញ និងទំនិញដែលត្រូវថែម!", "error");
+    return;
+  }
+
+  currentPromoRules.push({
+    buyProduct: buyP,
+    buyQty: buyQ,
+    freeProduct: freeP,
+    freeQty: freeQ
+  });
+
+  renderPromoRulesList();
+  showToast("បានបញ្ចូលលក្ខខណ្ឌ Promotion ថ្មី!", "success");
+}
+
+// 🗑️ លុបលក្ខខណ្ឌ Promotion
+function deletePromoRule(idx) {
+  currentPromoRules.splice(idx, 1);
+  renderPromoRulesList();
+}
+
+// 📋 បង្ហាញបញ្ជីលក្ខខណ្ឌ Promotion កំពុងមាន
+function renderPromoRulesList() {
+  var container = document.getElementById('activePromoRulesContainer');
+  if (!container) return;
+
+  if (currentPromoRules.length === 0) {
+    container.innerHTML = '<div class="text-center py-2.5 text-gray-400 italic text-[11px] bg-white rounded-xl border border-dashed border-amber-200">មិនទាន់មានលក្ខខណ្ឌថែមទំនិញនៅឡើយទេ</div>';
+    return;
+  }
+
+  var html = '';
+  currentPromoRules.forEach(function(r, idx) {
+    html += '<div class="bg-white p-2.5 rounded-xl border border-amber-300 flex items-center justify-between text-xs shadow-2xs">' +
+      '<div class="space-y-0.5">' +
+        '<div class="text-slate-800 font-black">ទិញ <b>' + r.buyProduct + '</b> x ' + r.buyQty + '</div>' +
+        '<div class="text-emerald-700 font-bold flex items-center gap-1 text-[11px]"><i class="fas fa-gift text-amber-500"></i> ថែម Free <b>' + r.freeProduct + '</b> x ' + r.freeQty + '</div>' +
+      '</div>' +
+      '<button type="button" onclick="deletePromoRule(' + idx + ')" class="p-1.5 text-red-400 hover:text-red-600 active:scale-90 transition" title="លុប"><i class="fas fa-trash-can"></i></button>' +
+    '</div>';
+  });
+  container.innerHTML = html;
 }
 
 // 🧮 មុខងារជំនួយគណនា Live Preview ក្នុង Settings
@@ -1777,6 +1907,7 @@ async function toggleTelegramAlertStatusLive() {
   }
 }
 
+// 📥 ទាញយកទិន្នន័យពី Supabase មកបង្ហាញលើផ្ទាំង Settings
 async function loadSettingsForm() {
   try {
     const { data } = await supabaseClient.from('settings').select('*');
@@ -1788,50 +1919,78 @@ async function loadSettingsForm() {
       if (r.key === 'Store_Close_Time') document.getElementById('set_close_time').value = r.value;
       if (r.key === 'Delivery_Fee_Standard') document.getElementById('set_del_fee').value = r.value;
       if (r.key === 'Delivery_Free_Min_Qty') document.getElementById('set_del_min').value = r.value;
+      if (r.key === 'Delivery_Free_Min_Amount') { var fa = document.getElementById('set_del_free_amount'); if (fa) fa.value = r.value; }
+      
+      // Promo
+      if (r.key === 'Promo_Status') document.getElementById('set_promo_status').value = r.value;
+      if (r.key === 'Promo_Start_Time') { var ps = document.getElementById('set_promo_start'); if (ps) ps.value = r.value; }
+      if (r.key === 'Promo_End_Time') { var pe = document.getElementById('set_promo_end'); if (pe) pe.value = r.value; }
+      if (r.key === 'Promo_Banner_Text') document.getElementById('set_promo_banner').value = r.value;
+      if (r.key === 'Promo_Banner_Img') {
+        var pi = document.getElementById('promoBannerImgPreview');
+        var ph = document.getElementById('set_promo_img_base64');
+        if (pi && r.value) pi.src = r.value;
+        if (ph) ph.value = r.value || '';
+      }
+      if (r.key === 'Promo_Rules') {
+        try { currentPromoRules = JSON.parse(r.value || '[]'); } catch(e) { currentPromoRules = []; }
+      }
+
+      // Telegram & Exchange
       if (r.key === 'Telegram_Token') document.getElementById('set_tg_token').value = r.value;
       if (r.key === 'Telegram_ChatID') document.getElementById('set_tg_chatid').value = r.value;
       if (r.key === 'Telegram_Alert_Status') tgStatus = r.value;
-      if (r.key === 'Promo_Status') document.getElementById('set_promo_status').value = r.value;
-      if (r.key === 'Promo_Target_Product') document.getElementById('set_promo_product').value = r.value;
-      if (r.key === 'Promo_Buy_Qty') document.getElementById('set_promo_buy_qty').value = r.value;
-      if (r.key === 'Promo_Free_Qty') document.getElementById('set_promo_free_qty').value = r.value;
-      if (r.key === 'Promo_Banner_Text') document.getElementById('set_promo_banner').value = r.value;
-      // ទាញអត្រាប្តូរប្រាក់មកបង្ហាញ
-      if (r.key === 'Exchange_Rate_USD') { var eu = document.getElementById('set_rate_usd'); if(eu) eu.value = r.value; }
-      if (r.key === 'Exchange_Rate_THB') { var et = document.getElementById('set_rate_thb'); if(et) et.value = r.value; }
+      if (r.key === 'Exchange_Rate_USD') { var eu = document.getElementById('set_rate_usd'); if (eu) eu.value = r.value; }
+      if (r.key === 'Exchange_Rate_THB') { var et = document.getElementById('set_rate_thb'); if (et) et.value = r.value; }
     });
 
+    renderPromoRulesList();
     updateTelegramButtonUI(tgStatus);
   } catch(e) {}
 }
 
+// 💾 រក្សាទុកការកំណត់ទាំងអស់ចូល Supabase
 async function saveSettingsToSupabase() {
+  var btn = document.getElementById('btnSaveAllSettings');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...'; }
+
   var rows = [
     { key: 'Store_Open_Time', value: document.getElementById('set_open_time').value || "07:00" },
     { key: 'Store_Close_Time', value: document.getElementById('set_close_time').value || "18:00" },
     { key: 'Delivery_Fee_Standard', value: document.getElementById('set_del_fee').value || "2000" },
     { key: 'Delivery_Free_Min_Qty', value: document.getElementById('set_del_min').value || "2" },
+    { key: 'Delivery_Free_Min_Amount', value: document.getElementById('set_del_free_amount') ? document.getElementById('set_del_free_amount').value || "50000" : "50000" },
+
+    // Promotion
+    { key: 'Promo_Status', value: document.getElementById('set_promo_status').value },
+    { key: 'Promo_Start_Time', value: document.getElementById('set_promo_start') ? document.getElementById('set_promo_start').value : '' },
+    { key: 'Promo_End_Time', value: document.getElementById('set_promo_end') ? document.getElementById('set_promo_end').value : '' },
+    { key: 'Promo_Banner_Text', value: document.getElementById('set_promo_banner').value.trim() },
+    { key: 'Promo_Banner_Img', value: document.getElementById('set_promo_img_base64') ? document.getElementById('set_promo_img_base64').value : '' },
+    { key: 'Promo_Rules', value: JSON.stringify(currentPromoRules) },
+
+    // Telegram & Rates
     { key: 'Telegram_Token', value: document.getElementById('set_tg_token').value.trim() },
     { key: 'Telegram_ChatID', value: document.getElementById('set_tg_chatid').value.trim() },
     { key: 'Telegram_Alert_Status', value: currentTelegramAlertStatus },
-    { key: 'Promo_Status', value: document.getElementById('set_promo_status').value },
-    { key: 'Promo_Target_Product', value: document.getElementById('set_promo_product').value },
-    { key: 'Promo_Buy_Qty', value: document.getElementById('set_promo_buy_qty').value || "5" },
-    { key: 'Promo_Free_Qty', value: document.getElementById('set_promo_free_qty').value || "1" },
-    { key: 'Promo_Banner_Text', value: document.getElementById('set_promo_banner').value.trim() },
-    // រក្សាទុកអត្រាប្តូរប្រាក់
     { key: 'Exchange_Rate_USD', value: document.getElementById('set_rate_usd').value || "4100" },
     { key: 'Exchange_Rate_THB', value: document.getElementById('set_rate_thb').value || "115" }
   ];
 
   try {
     await supabaseClient.from('settings').upsert(rows);
-    showToast("បានរក្សាទុកការកំណត់ជោគជ័យ!", "success");
+    showToast("បានរក្សាទុកការកំណត់ Promotion & ដឹកជញ្ជូនជោគជ័យ!", "success");
     await loadSettingsAndTelegram();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុកការកំណត់ទាំងអស់ (Save All Settings)';
+    }
   }
 }
+
 function testTelegramAlertNow() {
   if (currentTelegramAlertStatus === "OFF") {
     showToast("⚠️ ប្រព័ន្ធ Telegram កំពុងបិទ (OFF)! សូមចុចបើក (ON) ជាមុនសិន", "warning");
@@ -1840,7 +1999,6 @@ function testTelegramAlertNow() {
   sendTelegramAlert("🔔 <b>[KC WATER - តេស្តប្រព័ន្ធ]</b>\n\nTelegram Bot បានតភ្ជាប់ជាមួយប្រព័ន្ធ Vercel + Supabase ជោគជ័យ ១០០% ហើយ!\n🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH'));
   showToast("បានផ្ញើសារតេស្តទៅ Telegram!", "success");
 }
-
 // ==========================================
 // 🏠 ៦. ទំព័រដើមគណនីម៉ូយប្រចាំ (CUSTOMER PORTAL - CUSTPORTAL)
 // ==========================================
