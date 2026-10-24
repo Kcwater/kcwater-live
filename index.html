@@ -2053,35 +2053,20 @@ function recalcCartDock() {
       document.getElementById('checkoutModal').classList.add('hidden');
     }
 
-    // 🛒 មុខងារគណនាកន្ត្រកទំនិញ (បកប្រែផ្លាកសំបកធុង & គណនា ២ រូបិយប័ណ្ណស្វ័យប្រវត្តិ)
+    // 🛒 មុខងារគណនាកន្ត្រកទំនិញ (គាំទ្រ Cross-Product Free Gift & ៥០,០០០៛ ដឹក FREE)
     function updateCheckoutCalculation() {
       var listCont = document.getElementById('checkoutCartItemsList');
       var grandText = document.getElementById('coGrandTotalText');
       var khqrDue = document.getElementById('khqrDueAmountText');
       var barrelHint = document.getElementById('barrelCountSummaryBadge');
       var d = DICT[currentLang] || DICT.km;
-
-      if (!listCont) {
-        var modalBox = document.querySelector('#checkoutModal .modal-scrollable') || document.getElementById('checkoutModal');
-        if (modalBox) {
-          listCont = document.createElement('div');
-          listCont.id = 'checkoutCartItemsList';
-          listCont.className = 'bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1.5 my-2';
-          var refNode = document.getElementById('compactSavedProfileBox') || document.getElementById('fullCheckoutFormSection') || modalBox.children[1];
-          modalBox.insertBefore(listCont, refNode || null);
-        }
-      }
+      var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
 
       var html = '', waterTotal = 0, totalUnits = 0;
       var blueBarrelsQty = 0;
       var whiteBarrelsQty = 0;
 
-      var targetProdName = (activePromoConfig && activePromoConfig.targetProduct) ? activePromoConfig.targetProduct : 'ALL';
-      var eligibleQty = 0;
-      var eligibleSubTotal = 0;
-      var eligibleUnitPrice = 0;
-
-      // ១. រាប់ចំនួនទំនិញ និងគណនាតម្លៃ
+      // ១. រាប់ចំនួនទំនិញក្នុងកន្ត្រក
       for (var k in cartItems) {
         if (cartItems[k].qty > 0) {
           var sub = cartItems[k].qty * cartItems[k].price;
@@ -2097,16 +2082,9 @@ function recalcCartDock() {
             }
           }
 
-          var isEligible = (targetProdName === 'ALL' || cartItems[k].raw_name === targetProdName);
-          if (isEligible) {
-            eligibleQty += cartItems[k].qty;
-            eligibleSubTotal += sub;
-            eligibleUnitPrice = cartItems[k].price;
-          }
-
           var displayName = getLocalizedProductName({ name: cartItems[k].raw_name }, currentLang);
-          var subUsd = (sub / 4100).toFixed(2);
-          var unitUsd = (cartItems[k].price / 4100).toFixed(2);
+          var subUsd = (sub / rateU).toFixed(2);
+          var unitUsd = (cartItems[k].price / rateU).toFixed(2);
 
           html += '<div class="flex items-center justify-between py-1.5 border-b border-slate-200 last:border-none gap-2">' +
             '<div class="flex-1 min-w-0 text-left">' +
@@ -2127,126 +2105,82 @@ function recalcCartDock() {
         }
       }
 
-      // 🏷️ បកប្រែផ្លាកសង្ខេបចំនួនធុងទឹក (1 ធុងខៀវ ➔ 1 蓝桶 / 1 Blue)
-      if (barrelHint) {
-        var hintParts = [];
-        var blueLabel = (currentLang === 'en' ? ' Blue Barrel(s)' : (currentLang === 'zh' ? ' 蓝桶' : ' ធុងខៀវ'));
-        var whiteLabel = (currentLang === 'en' ? ' White Barrel(s)' : (currentLang === 'zh' ? ' 白桶' : ' ធុងស'));
-        var noBarrelLabel = (currentLang === 'en' ? 'No 20L Barrels' : (currentLang === 'zh' ? '无20L大桶水' : 'គ្មានទឹកធុង ២០L'));
+      // 🎁 ២. គណនាទំនិញថែម Free ស្វ័យប្រវត្តិ (Cross-Product Rules: ឧទាហរណ៍ ទិញអង្ករ ថែមទឹកធុងខៀវ ២)
+      var freeGiftItems = [];
+      if (activePromoConfig && activePromoConfig.rules && activePromoConfig.rules.length > 0) {
+        activePromoConfig.rules.forEach(function(rule) {
+          // រកមើលថាតើភ្ញៀវមានទិញទំនិញតាមលក្ខខណ្ឌដែរឬទេ
+          for (var id in cartItems) {
+            var cItem = cartItems[id];
+            if (cItem.qty > 0 && cItem.raw_name.trim().toLowerCase() === rule.buyProduct.trim().toLowerCase()) {
+              var freeMultiplier = Math.floor(cItem.qty / (rule.buyQty || 1));
+              if (freeMultiplier > 0) {
+                var totalGiftCount = freeMultiplier * (rule.freeQty || 1);
+                freeGiftItems.push({
+                  name: rule.freeProduct,
+                  qty: totalGiftCount
+                });
 
-        if (blueBarrelsQty > 0) hintParts.push(blueBarrelsQty + blueLabel);
-        if (whiteBarrelsQty > 0) hintParts.push(whiteBarrelsQty + whiteLabel);
-        barrelHint.innerText = hintParts.length > 0 ? hintParts.join(' | ') : noBarrelLabel;
+                html += '<div class="flex justify-between items-center py-2 border-t-2 border-amber-300 text-amber-950 bg-amber-100/90 px-2.5 rounded-xl mt-1.5 animate-pulse">' +
+                  '<span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-700 text-sm"></i><b>[កាដូថែម Free] ' + rule.freeProduct + ' x ' + totalGiftCount + '</b></span>' +
+                  '<b class="text-emerald-800 font-black text-xs">៛ 0 (FREE 🎉)</b>' +
+                '</div>';
+              }
+            }
+          }
+        });
       }
 
-      // ២. ស្វែងរកសំបកធុង
-      var blueBarrelProd = STORE_CATALOG.find(function(p) {
-        var n = (p.raw_name || '').toLowerCase();
-        return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
-      });
-
-      var whiteBarrelProd = STORE_CATALOG.find(function(p) {
-        var n = (p.raw_name || '').toLowerCase();
-        if (n.indexOf('សំបក') === -1 && n.indexOf('empty') === -1) return false;
-        var withoutSombok = n.replace(/សំបក/g, '').replace(/empty/g, '').trim();
-        return (withoutSombok.indexOf('ពណ៌ស') !== -1 || withoutSombok.indexOf('ធុងស') !== -1 || withoutSombok.indexOf('ស') !== -1 || withoutSombok.indexOf('white') !== -1);
-      });
-
+      // 🛢️ ៣. គណនាសំបកធុង
+      var blueBarrelProd = STORE_CATALOG.find(p => (p.raw_name || '').includes('ខៀវ') && (p.raw_name || '').includes('សំបក'));
       var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.price || 0) : 10000;
-      var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.price || 0) : 0;
-
       var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
       var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
       var barrelFee = 0;
-      var barrelItemsToCharge = [];
 
-      if (isNoSwap) {
-        if (blueBarrelsQty > 0 && blueBarrelPrice > 0) {
-          var bTotal = blueBarrelsQty * blueBarrelPrice;
-          barrelFee += bTotal;
-          barrelItemsToCharge.push({
-            prod: blueBarrelProd,
-            name: blueBarrelProd ? blueBarrelProd.raw_name : "ទិញសំបកធុងខៀវថ្មី",
-            price: blueBarrelPrice,
-            qty: blueBarrelsQty
-          });
-
-          var bLabel = blueBarrelProd ? getLocalizedProductName({ name: blueBarrelProd.raw_name }, currentLang) : 
-            (currentLang === 'en' ? 'New Blue Barrel Deposit' : (currentLang === 'zh' ? '购买全新蓝桶押金' : "សំបកធុងខៀវថ្មី"));
-          html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-cart-shopping mr-1 text-blue-700"></i><b>' + bLabel + ' (' + blueBarrelsQty + ' x ' + Number(blueBarrelPrice).toLocaleString() + '៛)</b></span>' +
-            '<b class="text-blue-900 font-black">+៛ ' + bTotal.toLocaleString() + '</b>' +
-          '</div>';
-        }
-
-        if (whiteBarrelsQty > 0) {
-          if (whiteBarrelProd && whiteBarrelPrice > 0) {
-            var wTotal = whiteBarrelsQty * whiteBarrelPrice;
-            barrelFee += wTotal;
-            barrelItemsToCharge.push({
-              prod: whiteBarrelProd,
-              name: whiteBarrelProd.raw_name,
-              price: whiteBarrelPrice,
-              qty: whiteBarrelsQty
-            });
-
-            var wLabel = getLocalizedProductName({ name: whiteBarrelProd.raw_name }, currentLang);
-            html += '<div class="flex justify-between items-center py-1.5 border-t border-amber-300 text-amber-950 bg-amber-100/80 px-2 rounded-lg mt-1">' +
-              '<span><i class="fas fa-cart-shopping mr-1 text-amber-800"></i><b>' + wLabel + ' (' + whiteBarrelsQty + ' x ' + Number(whiteBarrelPrice).toLocaleString() + '៛)</b></span>' +
-              '<b class="text-amber-900 font-black">+៛ ' + wTotal.toLocaleString() + '</b>' +
-            '</div>';
-          }
-        }
+      if (isNoSwap && blueBarrelsQty > 0) {
+        var bTotal = blueBarrelsQty * blueBarrelPrice;
+        barrelFee += bTotal;
+        html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
+          '<span><i class="fas fa-cart-shopping mr-1 text-blue-700"></i><b>សំបកធុងខៀវថ្មី (' + blueBarrelsQty + ' x ' + Number(blueBarrelPrice).toLocaleString() + '៛)</b></span>' +
+          '<b class="text-blue-900 font-black">+៛ ' + bTotal.toLocaleString() + '</b>' +
+        '</div>';
       }
 
-      // ៣. គណនាថ្លៃដឹកជញ្ជូន
+      // 🛵 ៤. គណនាថ្លៃដឹកជញ្ជូន (កុម្ម៉ង់គ្រប់ ៥០,០០០៛ ដឹក FREE ឬគ្រប់ចំនួនធុង)
       var deliveryFee = 0;
       var stdFee = parseFloat((storeDeliveryConfig && storeDeliveryConfig.standardFee) || 0);
       var minFreeQty = parseInt((storeDeliveryConfig && storeDeliveryConfig.freeMinQty) || 2);
+      var minFreeAmount = parseFloat((storeDeliveryConfig && storeDeliveryConfig.freeMinAmount) || 50000);
 
       if (totalUnits > 0) {
-        if (stdFee > 0 && totalUnits < minFreeQty) {
+        var isFreeByAmount = (waterTotal >= minFreeAmount);
+        var isFreeByQty = (totalUnits >= minFreeQty);
+
+        if (isFreeByAmount || isFreeByQty) {
+          var freeReason = isFreeByAmount ? ('ទិញគ្រប់ ៛ ' + minFreeAmount.toLocaleString()) : ('កុម្ម៉ង់ចាប់ពី ' + minFreeQty + ' ធុង');
+          html += '<div class="flex justify-between items-center py-1.5 border-t border-emerald-300 text-emerald-950 bg-emerald-100/80 px-2 rounded-lg mt-1">' +
+            '<span><i class="fas fa-truck-fast text-emerald-700 mr-1"></i><b>សេវាដឹកដល់ផ្ទះ (' + freeReason + ')</b></span>' +
+            '<b class="text-emerald-800 font-black">Free (ឥតគិតថ្លៃ) 🎉</b>' +
+          '</div>';
+        } else if (stdFee > 0) {
           deliveryFee = stdFee;
-          var hintText = (d.breakdownMinFreeHint || 'កុម្ម៉ង់ចាប់ពី {min} ធុងឡើង ដឹក Free').replace('{min}', minFreeQty);
+          var diffAmount = minFreeAmount - waterTotal;
           html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-truck text-blue-600 mr-1"></i><b>' + (d.breakdownDeliveryFee || 'សេវាដឹក') + ' (' + hintText + ')</b></span>' +
+            '<div>' +
+              '<span><i class="fas fa-truck text-blue-600 mr-1"></i><b>សេវាដឹកជញ្ជូន</b></span>' +
+              '<span class="text-[9.5px] text-blue-700 block font-bold mt-0.5">💡 ទិញថែម ៛ ' + diffAmount.toLocaleString() + ' ទៀត ដឹក Free!</span>' +
+            '</div>' +
             '<b class="text-blue-900 font-black">+៛ ' + deliveryFee.toLocaleString() + '</b>' +
           '</div>';
-        } else {
-          html += '<div class="flex justify-between items-center py-1.5 border-t border-emerald-200 text-emerald-950 bg-emerald-50 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-truck-fast text-emerald-600 mr-1"></i><b>' + (d.breakdownDeliveryFree || 'សេវាដឹកដល់ផ្ទះ') + '</b></span>' +
-            '<b class="text-emerald-700 font-black">' + (d.breakdownFreeTag || 'Free') + '</b>' +
-          '</div>';
         }
       }
 
-      // ៤. គណនា Promotion
-      var promoDiscount = 0;
-      if (activePromoConfig && activePromoConfig.active && eligibleQty > 0) {
-        if (activePromoConfig.type === 'BUY_X_GET_Y' && eligibleQty >= activePromoConfig.buyQty) {
-          var freeCount = Math.floor(eligibleQty / activePromoConfig.buyQty) * activePromoConfig.freeQty;
-          promoDiscount = freeCount * eligibleUnitPrice;
-        } else if (activePromoConfig.type === 'PERCENT_DISCOUNT' && activePromoConfig.discountVal > 0) {
-          promoDiscount = Math.round((eligibleSubTotal * activePromoConfig.discountVal) / 100);
-        } else if (activePromoConfig.type === 'CASH_DISCOUNT' && activePromoConfig.discountVal > 0) {
-          promoDiscount = Math.min(eligibleSubTotal, activePromoConfig.discountVal);
-        }
+      var grandTotalKhr = Math.max(0, waterTotal + barrelFee + deliveryFee);
+      var grandTotalUsd = (grandTotalKhr / rateU).toFixed(2);
 
-        if (promoDiscount > 0) {
-          html += '<div class="flex justify-between items-center py-1.5 border-t border-emerald-300 text-emerald-950 bg-emerald-100/90 px-2 rounded-lg mt-1">' +
-            '<span><i class="fas fa-gift text-emerald-700 mr-1"></i><b>' + (d.breakdownPromoTag || 'ប្រូម៉ូសិន') + '</b></span>' +
-            '<b class="text-emerald-800 font-black">-៛ ' + promoDiscount.toLocaleString() + '</b>' +
-          '</div>';
-        }
-      }
-
-      var grandTotalKhr = Math.max(0, waterTotal + barrelFee + deliveryFee - promoDiscount);
-      var grandTotalUsd = (grandTotalKhr / 4100).toFixed(2);
-
-      // 💵 បង្ហាញ ២ រូបិយប័ណ្ណទន្ទឹមគ្នាលើផ្ទាំងគិតលុយ និង KHQR
       if (listCont) {
-        var emptyCartText = (currentLang === 'en' ? 'Cart is empty' : (currentLang === 'zh' ? '购物车为空' : 'កន្ត្រកទទេ'));
-        listCont.innerHTML = html || '<div class="text-center py-3 text-slate-400 italic text-xs">' + emptyCartText + '</div>';
+        listCont.innerHTML = html || '<div class="text-center py-3 text-slate-400 italic text-xs">កន្ត្រកទទេ</div>';
       }
       if (grandText) {
         grandText.innerHTML = '៛ ' + grandTotalKhr.toLocaleString() + ' <span class="text-xs sm:text-sm font-bold text-blue-700 font-mono">($' + grandTotalUsd + ')</span>';
@@ -2260,7 +2194,7 @@ function recalcCartDock() {
         grandTotalUsd: grandTotalUsd,
         deliveryFee: deliveryFee,
         barrelFee: barrelFee,
-        barrelItemsToCharge: barrelItemsToCharge
+        freeGifts: freeGiftItems
       };
     }
     
@@ -2842,6 +2776,7 @@ function recalcCartDock() {
      } catch(e) {}
    }
     
+    // 📥 ទាញយកការកំណត់ Store Rules, 50,000៛ ដឹក Free & រូបភាព Banner Promotion ពី Supabase
     async function loadStoreSettingsFromSupabase() {
       try {
         const { data: settings } = await supabaseClient.from('settings').select('*');
@@ -2854,8 +2789,10 @@ function recalcCartDock() {
         if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'];
         if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'];
 
+        // សេវាដឹកជញ្ជូន & ៥០,០០០៛ ដឹក Free
         if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
         if (sMap['Delivery_Free_Min_Qty']) storeDeliveryConfig.freeMinQty = parseInt(sMap['Delivery_Free_Min_Qty']) || 2;
+        storeDeliveryConfig.freeMinAmount = parseFloat(sMap['Delivery_Free_Min_Amount'] || 50000);
 
         var openTime = sMap['Store_Open_Time'] || "07:00";
         var closeTime = sMap['Store_Close_Time'] || "18:00";
@@ -2869,7 +2806,7 @@ function recalcCartDock() {
 
         var banner = document.getElementById('storeClosedNoticeBanner');
         var hint = document.getElementById('storeClosedTimeHint');
-        var d = DICT[currentLang];
+        var d = DICT[currentLang] || DICT.km;
 
         if (!isOpen) {
           if (banner) banner.classList.remove('hidden');
@@ -2878,44 +2815,73 @@ function recalcCartDock() {
           if (banner) banner.classList.add('hidden');
         }
 
+        // 🎁 ពិនិត្យលក្ខខណ្ឌ Promotion (Status, Date Timer & Image)
         var promoStatus = (sMap['Promo_Status'] || "OFF").toUpperCase();
-        if (promoStatus === 'ON') {
+        var startTimeStr = sMap['Promo_Start_Time'] || '';
+        var endTimeStr = sMap['Promo_End_Time'] || '';
+        var isPromoTimeValid = true;
+
+        if (startTimeStr) {
+          if (new Date() < new Date(startTimeStr)) isPromoTimeValid = false;
+        }
+        if (endTimeStr) {
+          if (new Date() > new Date(endTimeStr)) isPromoTimeValid = false;
+        }
+
+        if (promoStatus === 'ON' && isPromoTimeValid) {
+          var promoRulesArr = [];
+          try { promoRulesArr = JSON.parse(sMap['Promo_Rules'] || '[]'); } catch(e) { promoRulesArr = []; }
+
           activePromoConfig = {
             active: true,
-            targetProduct: sMap['Promo_Target_Product'] || 'ALL',
-            type: sMap['Promo_Type'] || 'BUY_X_GET_Y',
-            buyQty: parseInt(sMap['Promo_Buy_Qty']) || 5,
-            freeQty: parseInt(sMap['Promo_Free_Qty']) || 1,
-            discountVal: parseFloat(sMap['Promo_Discount_Val']) || 0,
-            bannerText: sMap['Promo_Banner_Text'] || '🎁 Special Promotion!'
+            bannerText: sMap['Promo_Banner_Text'] || '🎁 Special Promotion!',
+            bannerImg: sMap['Promo_Banner_Img'] || '',
+            rules: promoRulesArr
           };
 
           var oldCard = document.getElementById('storeLivePromoCard');
           if (oldCard) oldCard.remove();
 
+          // 🖼️ បង្ហាញរូបភាព Banner Promotion យ៉ាងធំ និងស្រស់ស្អាត
+          var promoImageHtml = '';
+          if (activePromoConfig.bannerImg) {
+            promoImageHtml = '<div class="w-full h-44 sm:h-52 overflow-hidden bg-slate-900 relative cursor-pointer" onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})">' +
+              '<img src="' + activePromoConfig.bannerImg + '" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" alt="Promotion Banner">' +
+              '<span class="absolute top-2.5 right-3 bg-red-600 text-white text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-md animate-pulse">🔥 PROMOTION</span>' +
+            '</div>';
+          }
+
           var promoHtml = '<div id="storeLivePromoCard" class="max-w-md mx-auto px-4 pt-3 pb-1 animate-in zoom-in duration-300">' +
-            '<div class="p-3.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white rounded-3xl shadow-xl border-2 border-amber-300 flex items-center justify-between gap-2.5">' +
-              '<div class="flex items-center gap-2.5">' +
-                '<div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl shadow-inner">' +
-                  '<i class="fas fa-gift animate-bounce text-white"></i>' +
+            '<div class="overflow-hidden rounded-3xl shadow-xl border-2 border-amber-300 bg-white">' +
+              promoImageHtml +
+              '<div class="p-3.5 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white flex items-center justify-between gap-2.5">' +
+                '<div class="flex items-center gap-2.5 min-w-0">' +
+                  (!activePromoConfig.bannerImg ? '<div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl shadow-inner shrink-0"><i class="fas fa-gift animate-bounce text-white"></i></div>' : '') +
+                  '<div class="min-w-0">' +
+                    '<span class="text-[9px] font-black uppercase tracking-wider bg-white/25 px-2 py-0.5 rounded-full">🎁 PROMOTION កំពុងដំណើរការ</span>' +
+                    '<div class="text-xs font-black mt-1 leading-snug line-clamp-2">' + activePromoConfig.bannerText + '</div>' +
+                  '</div>' +
                 '</div>' +
-                '<div>' +
-                  '<span class="text-[9px] font-black uppercase tracking-wider bg-white/25 px-2 py-0.5 rounded-full">' + d.promoBannerTag + '</span>' +
-                  '<div class="text-xs font-black mt-0.5 leading-snug">' + activePromoConfig.bannerText + '</div>' +
-                '</div>' +
+                '<button type="button" onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})" class="px-3.5 py-2 bg-white hover:bg-amber-50 text-amber-950 font-black text-xs rounded-xl shadow active:scale-95 transition whitespace-nowrap shrink-0">' +
+                  'កុម្ម៉ង់ឥឡូវ' +
+                '</button>' +
               '</div>' +
-              '<button type="button" onclick="document.getElementById(\'catalogSection\').scrollIntoView({behavior:\'smooth\'})" class="px-3.5 py-2 bg-white hover:bg-amber-50 text-amber-950 font-black text-xs rounded-xl shadow active:scale-95 transition whitespace-nowrap">' +
-                d.promoBannerBtn +
-              '</button>' +
             '</div>' +
           '</div>';
 
           var headerEl = document.querySelector('header');
           if (headerEl) headerEl.insertAdjacentHTML('afterend', promoHtml);
+        } else {
+          var oldCard = document.getElementById('storeLivePromoCard');
+          if (oldCard) oldCard.remove();
+          activePromoConfig = null;
         }
+
+        // អាប់ដេតកាតទំនិញឱ្យចេញផ្លាក Promo ភ្លាមៗ
+        renderCatalogGrid();
       } catch(e) {}
     }
-
+    
     function checkQuickReorderAvailability() {
       var cardBox = document.getElementById('quickReorderCardBox');
       var summaryText = document.getElementById('quickReorderSummaryText');
