@@ -168,13 +168,12 @@ function renderStockModule() {
       '</button>' +
     '</div>' +
 
-    '<div class="card p-0 overflow-x-auto shadow-lg rounded-2xl border">' +
+    '<div class="card p-0 overflow-x-auto max-h-[500px] overflow-y-auto shadow-lg rounded-2xl border border-gray-200">' +
       '<table class="w-full text-left text-xs border-collapse">' +
-        '<thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3 text-center w-16">🔢 លេខរៀង</th><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>' +
+        '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs"><tr><th class="p-3 text-center w-16">🔢 លេខរៀង</th><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>' +
         '<tbody id="stockModuleTableBody"></tbody>' +
       '</table>' +
     '</div>' +
-  '</div>';
 
   tCF();
   toggleChannelPrices();
