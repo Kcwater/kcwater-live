@@ -2525,28 +2525,35 @@ function recalcCartDock() {
       }
     }
 
+    // 📍 មុខងារចាប់ GPS ផ្ទះ (គាំទ្រទាំងក្នុង Facebook, Messenger, LINE & Chrome/Safari)
     function detectGPSLocation() {
       var hint = document.getElementById('gpsStatusHint');
       var inpUrl = document.getElementById('inp_custMapUrl');
       var btnLabel = document.getElementById('btnGpsLabel');
       var btn = document.getElementById('btnDetectGPSAction');
-      var d = DICT[currentLang] || DICT.km;
 
-      // ១. ពិនិត្យមើលថាតើ Browser គាំទ្រ Geolocation ដែរឬទេ
-      if (!navigator.geolocation) {
-        if (hint) hint.innerHTML = '<span class="text-red-500 font-bold">⚠️ Browser នេះមិនគាំទ្រ GPS ទេ (សូមវាយចំណាំទីតាំងដោយដៃ)</span>';
-        return;
+      // ១. ឆែកមើលថាតើភ្ញៀវកំពុងបើកក្នុង Facebook / Messenger / LINE ដែរឬទេ
+      var ua = navigator.userAgent || navigator.vendor || window.opera;
+      var isInAppBrowser = (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBIOS') > -1) || (ua.indexOf('Messenger') > -1) || (ua.indexOf('Line') > -1);
+
+      if (isInAppBrowser) {
+        if (hint) {
+          hint.innerHTML = '<div class="p-2.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-amber-950 font-bold text-xs space-y-1.5 text-left mt-1">' +
+            '<div class="flex items-center gap-1.5 text-amber-900 font-black"><i class="fas fa-triangle-exclamation text-amber-600"></i> លោកអ្នកកំពុងបើកក្នុង Messenger / LINE!</div>' +
+            '<div class="text-[11px] leading-relaxed text-amber-800">Facebook/LINE បានបិទសិទ្ធិចាប់ GPS។ ដើម្បីចាប់ទីតាំងបាន សូមចុចសញ្ញាចុច ៣ <b>`...`</b> នៅខាងលើស្តាំ ហើយរើស <b>«បើកក្នុងកម្មវិធីរុករក (Open in Chrome/Safari)»</b></div>' +
+            '<div class="text-[10px] text-slate-500 italic">*ឬលោកអ្នកអាចវាយភូមិ/សង្កាត់/ចំណាំផ្ទះក្នុងប្រអប់ខាងក្រោមដោយផ្ទាល់បាន។</div>' +
+          '</div>';
+        }
       }
 
-      // ២. ពិនិត្យមើល HTTPS (Browser ទូរស័ព្ទតម្រូវឱ្យមាន HTTPS ទើបអនុញ្ញាតឱ្យចាប់ GPS)
-      if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-        if (hint) hint.innerHTML = '<span class="text-amber-700 font-bold">🔒 GPS ដំណើរការតែលើវេបសាយមាន HTTPS (មានសញ្ញារូបសោរ)។ សូមវាយទីតាំងដោយដៃខាងក្រោម!</span>';
+      if (!navigator.geolocation) {
+        if (hint) hint.innerHTML = '<span class="text-red-500 font-bold">⚠️ កម្មវិធីនេះមិនគាំទ្រ GPS ទេ (សូមវាយចំណាំទីតាំងផ្ទះដោយដៃ)</span>';
         return;
       }
 
       if (btn) btn.disabled = true;
       if (btnLabel) btnLabel.innerText = "កំពុងចាប់ទីតាំង GPS...";
-      if (hint) hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងចាប់ទីតាំង GPS...</span>';
+      if (hint && !isInAppBrowser) hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងចាប់ទីតាំង GPS...</span>';
 
       function onGpsSuccess(pos) {
         var lat = pos.coords.latitude.toFixed(6);
@@ -2565,14 +2572,44 @@ function recalcCartDock() {
       }
 
       function onGpsError(err) {
-        // បើចាប់ផ្កាយរណបកម្រិតខ្ពស់មិនទាន់ (ឧទាហរណ៍ នៅក្នុងផ្ទះបាំងសេវា) ➔ សាកល្បងចាប់តាម Network/Wi-Fi ម្តងទៀតអូតូ
-        if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
-          if (hint) hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងប្តូរមកចាប់តាមសេវា Wi-Fi/ទូរស័ព្ទ...</span>';
-          navigator.geolocation.getCurrentPosition(onGpsSuccess, function(fallbackErr) {
-            handleFinalGpsError(fallbackErr);
-          }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
-        } else {
-          handleFinalGpsError(err);
+        if (btn) btn.disabled = false;
+        if (btnLabel) btnLabel.innerText = "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ";
+
+        var errorMsg = "⚠️ មិនអាចចាប់ GPS បានទេ (សូមវាយទីតាំងផ្ទះដោយដៃ)";
+        if (err.code === 1) { // PERMISSION_DENIED
+          if (isInAppBrowser) {
+            errorMsg = "⚠️ Messenger/Facebook បានបិទសិទ្ធិចាប់ GPS! សូមចុចសញ្ញាចុច ៣ `...` នៅខាងលើស្តាំ ហើយរើស «Open in Chrome / Safari» ឬវាយទីតាំងដោយដៃខាងក្រោម។";
+          } else {
+            errorMsg = "⚠️ លោកអ្នកបានបដិសេធសិទ្ធិ (សូមចុច Allow Location លើ Browser របស់អ្នក ឬវាយទីតាំងដោយដៃ)!";
+          }
+        } else if (err.code === 2) {
+          errorMsg = "⚠️ មិនមានសញ្ញា GPS ទេ (សូមបើក Location លើទូរស័ព្ទដៃ ឬវាយទីតាំងដោយដៃ)!";
+        }
+
+        if (hint) {
+          hint.innerHTML = '<span class="text-amber-800 font-bold text-[11px] block text-left">' + errorMsg + '</span>';
+        }
+      }
+
+      navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 30000
+      });
+    }
+      function onGpsSuccess(pos) {
+        var lat = pos.coords.latitude.toFixed(6);
+        var lng = pos.coords.longitude.toFixed(6);
+        var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
+
+        if (inpUrl) inpUrl.value = googleMapUrl;
+        if (btn) {
+          btn.disabled = false;
+          btn.className = "w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition";
+        }
+        if (btnLabel) btnLabel.innerText = "✅ ចាប់បានទីតាំងផ្ទះជោគជ័យ!";
+        if (hint) {
+          hint.innerHTML = '<span class="text-emerald-700 font-bold">✅ ចាប់បានទីតាំងជោគជ័យ!</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(មើលផែនទី)</a>';
         }
       }
 
@@ -3343,24 +3380,23 @@ function recalcCartDock() {
       }
     }
 
-    // ==========================================
-// 🔗 មុខងារចែករំលែក KC MART (QR CODE, TELEGRAM, LINE & WEB)
+   // ==========================================
+// 🔗 មុខងារចែករំលែក KC MART (TELEGRAM MINI APP @KC_water_pos_bot, LINE, MESSENGER)
 // ==========================================
 function getShareStoreDetails() {
-  // យក Link ពិតប្រាកដដែលភ្ញៀវកំពុងបើក
-  var shareUrl = window.location.origin + window.location.pathname;
+  // 🤖 Link ផ្លូវការនៃ Telegram Mini App របស់ហាង
+  var telegramMiniAppUrl = "https://t.me/KC_water_pos_bot/app";
+  var webUrl = window.location.origin + window.location.pathname;
+  
   var shareTitle = "KC MART - ទឹកពិសាបរិសុទ្ធ & ទំនិញទូទៅ (ប៉ោយប៉ែត)";
-  var shareDesc = "សេវាដឹកជញ្ជូនដល់មុខផ្ទះរហ័ស ៣០-៤៥ នាទី៖ ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី ស្បៀងអាហារ និងសម្ភារប្រើប្រាស់ប្រចាំថ្ងៃ!";
+  var shareDesc = "កុម្ម៉ង់ទិញទឹកពិសា & គ្រឿងទេសដឹកដល់មុខផ្ទះរហ័ស ៣០-៤៥ នាទី តាមរយៈ Telegram Mini App ឬ Website!";
 
-  if (currentLang === 'en') {
-    shareTitle = "KC MART - Pure Water & Groceries Delivery (Poipet)";
-    shareDesc = "Fast home delivery in 30-45 mins: Purified water, rice, noodles, and daily essentials!";
-  } else if (currentLang === 'zh') {
-    shareTitle = "KC MART - 波贝优质饮用水与生活百货配送";
-    shareDesc = "30-45分钟极速送货上门：桶装水、大米、粮油与生活日常百货！";
-  }
-
-  return { url: shareUrl, title: shareTitle, desc: shareDesc };
+  return { 
+    webUrl: webUrl, 
+    tgAppUrl: telegramMiniAppUrl, 
+    title: shareTitle, 
+    desc: shareDesc 
+  };
 }
 
 function openShareStoreModal() {
@@ -3371,28 +3407,29 @@ function openShareStoreModal() {
   var btnTg = document.getElementById('btnShareTelegram');
   var btnLine = document.getElementById('btnShareLine');
 
-  if (linkInp) linkInp.value = s.url;
+  // បង្ហាញ Link Telegram Mini App លើប្រអប់ Copy
+  if (linkInp) linkInp.value = s.tgAppUrl;
 
-  // បង្កើត QR Code ស្វ័យប្រវត្តិតាម Link ជាក់ស្តែង
+  // បង្កើត QR Code ស្វ័យប្រវត្តិតាម Telegram Mini App Link
   if (qrImg) {
-    qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(s.url);
+    qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(s.tgAppUrl);
   }
 
-  // កំណត់ Link សម្រាប់ Telegram Share
+  // ✈️ ចុច Share ទៅ Telegram វានឹងបើក Mini App @KC_water_pos_bot ភ្លាម
   if (btnTg) {
-    var tgText = s.title + "\n" + s.desc;
-    btnTg.href = "https://t.me/share/url?url=" + encodeURIComponent(s.url) + "&text=" + encodeURIComponent(tgText);
+    var tgShareText = s.title + "\n" + s.desc;
+    btnTg.href = "https://t.me/share/url?url=" + encodeURIComponent(s.tgAppUrl) + "&text=" + encodeURIComponent(tgShareText);
   }
 
-  // កំណត់ Link សម្រាប់ LINE Share
+  // 💬 ចុច Share ទៅ LINE
   if (btnLine) {
-    var lineText = s.title + " " + s.desc + "\n" + s.url;
+    var lineText = s.title + "\n" + s.desc + "\n" + s.tgAppUrl;
     btnLine.href = "https://line.me/R/msg/text/?" + encodeURIComponent(lineText);
   }
 
   if (modal) modal.classList.remove('hidden');
 }
-
+    
 function closeShareStoreModal() {
   var modal = document.getElementById('shareStoreModal');
   if (modal) modal.classList.add('hidden');
