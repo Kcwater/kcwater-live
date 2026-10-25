@@ -33,7 +33,12 @@
       
       <div class="space-y-4">
         <input type="text" id="user" placeholder="ឈ្មោះអ្នកប្រើប្រាស់ (Username)" onkeyup="if(event.key==='Enter') document.getElementById('pass').focus()" class="w-full border-2 border-gray-200 rounded-2xl p-3 outline-none focus:border-green-600 focus:bg-green-50/50 font-bold text-sm">
-        <input type="password" id="pass" placeholder="លេខកូដសម្ងាត់ (Password)" onkeyup="if(event.key==='Enter') login()" class="w-full border-2 border-gray-200 rounded-2xl p-3 outline-none focus:border-green-600 focus:bg-green-50/50 font-bold text-sm">
+        <div class="relative">
+          <input type="password" id="pass" placeholder="លេខកូដសម្ងាត់ (Password)" onkeyup="if(event.key==='Enter') login()" class="w-full border-2 border-gray-200 rounded-2xl p-3 pr-11 outline-none focus:border-green-600 focus:bg-green-50/50 font-bold text-sm">
+          <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-3.5 text-gray-400 hover:text-green-700 active:scale-90 transition text-base" title="បង្ហាញ/លាក់ លេខសម្ងាត់">
+            <i id="passEyeIcon" class="fas fa-eye"></i>
+          </button>
+        </div>
         
         <div class="flex items-center text-left text-gray-600 text-sm">
           <input type="checkbox" id="rememberMe" class="mr-2 w-4 h-4 accent-green-600 cursor-pointer">
@@ -210,5 +215,20 @@
   <script src="pos-orders.js"></script>
   <script src="pos-modules.js"></script>
   <script src="pos-reports.js"></script>
+  <script>
+    // 👁️ មុខងារបង្ហាញ និងបិទបាំងលេខសម្ងាត់
+    function togglePasswordVisibility() {
+      var p = document.getElementById('pass');
+      var icon = document.getElementById('passEyeIcon');
+      if (!p || !icon) return;
+      if (p.type === 'password') {
+        p.type = 'text';
+        icon.className = 'fas fa-eye-slash text-green-700';
+      } else {
+        p.type = 'password';
+        icon.className = 'fas fa-eye text-gray-400';
+      }
+    }
+  </script>
 </body>
 </html>
