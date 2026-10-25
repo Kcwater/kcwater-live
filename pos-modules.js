@@ -1005,10 +1005,20 @@ function renderCustomersModule() {
     prodOptions += '<option value="' + p.name + '">' + p.name + '</option>';
   });
 
-  var bossOptions = '<option value="">-- ជ្រើសរើសពីបញ្ជីម៉ូយ ឬវាយខាងក្រោម --</option>';
+  // 🚚 បង្ហាញតែអ្នកលក់បន្ត (Reseller) សុទ្ធសាធ សម្រាប់កូនចៅដកទឹកជំនួសមេ (គ្មានភ្ញៀវប្រចាំខែឡើយ)
+  var bossOptions = '<option value="">-- ជ្រើសរើសពីបញ្ជីអ្នកលក់បន្ត (Reseller) ឬវាយខាងក្រោម --</option>';
   (allCustomers || []).forEach(function(c) {
-    if (c.role === 'Customer' || c.type === 'Regular' || c.type === 'Monthly') {
-      bossOptions += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
+    var isReseller = (c.type === 'Regular' || c.role === 'Customer') && c.type !== 'Monthly' && c.type !== 'Retail' && c.role !== 'Admin' && c.full_name !== 'Walk-in';
+    if (isReseller) {
+      bossOptions += '<option value="' + c.full_name + '">' + c.full_name + ' [អ្នកលក់បន្ត]</option>';
+    }
+  });
+
+  // 🏢 បង្ហាញតែអតិថិជនប្រចាំខែ (Monthly) ប៉ុណ្ណោះ សម្រាប់កំណត់តម្លៃពិសេសកុងត្រា
+  var monthlyCustOptions = '<option value="">-- រើសអតិថិជនប្រចាំខែ (Monthly) --</option>';
+  (allCustomers || []).forEach(function(c) {
+    if (c.type === 'Monthly' && c.role !== 'Admin') {
+      monthlyCustOptions += '<option value="' + c.full_name + '">' + c.full_name + ' [ប្រចាំខែ]</option>';
     }
   });
 
@@ -1071,7 +1081,7 @@ function renderCustomersModule() {
       '<div class="space-y-3">' +
         '<div>' +
           '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">១. ជ្រើសរើសម៉ូយ</label>' +
-          '<select id="spCustSelect" class="w-full font-bold border p-2.5 rounded-xl bg-white">' + custOptions + '</select>' +
+          '<select id="spCustSelect" class="w-full font-bold border p-2.5 rounded-xl bg-white">' + monthlyCustOptions + '</select>'
         '</div>' +
         '<div class="grid grid-cols-2 gap-2">' +
           '<div>' +
@@ -1482,7 +1492,17 @@ async function saveSpecialPriceToSupabase() {
   var prod = document.getElementById('spProdSelect').value;
   var price = parseFloat(document.getElementById('spPriceInput').value || 0);
 
-  if (!cust || !prod || price <= 0) { showToast("សូមជ្រើសរើសម៉ូយ ទំនិញ និងតម្លៃពិសេស!", "error"); return; }
+  if (!cust || !prod || price <= 0) { 
+    showToast("សូមជ្រើសរើសអតិថិជនប្រចាំខែ ទំនិញ និងតម្លៃពិសេស!", "error"); 
+    return; 
+  }
+
+  // 🔒 ធានាថាតម្លៃពិសេសត្រូវបានកំណត់តែចំពោះអតិថិជនប្រចាំខែ (Monthly) ប៉ុណ្ណោះ
+  var custObj = (allCustomers || []).find(c => c.full_name === cust);
+  if (!custObj || custObj.type !== 'Monthly') {
+    showToast("តម្លៃពិសេសអាចកំណត់បានតែចំពោះអតិថិជនប្រចាំខែ (Monthly) ប៉ុណ្ណោះ!", "error");
+    return;
+  }
 
   try {
     await supabaseClient.from('customer_prices').upsert([{
@@ -1492,15 +1512,14 @@ async function saveSpecialPriceToSupabase() {
       currency: "KHR"
     }]);
 
-    showToast("បានរក្សាទុកតម្លៃពិសេសជោគជ័យ!", "success");
+    showToast("បានរក្សាទុកតម្លៃកុងត្រាពិសេសសម្រាប់ [" + cust + "] ជោគជ័យ!", "success");
     document.getElementById('spPriceInput').value = "";
-    await fetchInitialPOSData(); // Update memory ភ្លាមៗ
+    await fetchInitialPOSData();
     fetchSpecialPricesTable();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-
 async function delSpecialPriceFromSupabase(id) {
   // 🌟 ប្រើ Pop-up បញ្ជាក់ការលុបបែប Danger ពណ៌ក្រហមរបស់ KC POS
   var ok = await kcConfirm({
