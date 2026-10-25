@@ -1076,7 +1076,7 @@ function getModalParsedPrice() {
   }
 }
 
-// 🛍️ ៤. បើកផ្ទាំង Modal រើសទំនិញ (ចាក់សោរតម្លៃកុងត្រាសម្រាប់អតិថិជន Monthly មិនឱ្យកែឡើយ)
+// 🛍️ ៤. បើកផ្ទាំង Modal រើសទំនិញ (ប្រអប់ ៣ រូបិយប័ណ្ណ មានតែលើ Admin និង Seller ប៉ុណ្ណោះ)
 function openProductModal(id) {
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
@@ -1106,9 +1106,22 @@ function openProductModal(id) {
   var khrQuickRow = document.getElementById('modalKhrQuickButtonsRow');
   var khrHintText = document.getElementById('modalKhrHintText');
 
+  // 🪙 ប្រអប់រើស ៣ រូបិយប័ណ្ណ (៛ រៀល / ฿ បាត / $ ដុល្លារ)
+  var currTabsRow = document.getElementById('btnModalCurr_KHR') ? document.getElementById('btnModalCurr_KHR').parentElement : null;
+
+  // 👑 ឆែកសិទ្ធិ៖ មានតែ Admin និង Seller ប៉ុណ្ណោះទើបជាអ្នកលក់
   var canEditPriceAndQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
 
-  // 🔒 សម្រាប់អតិថិជនប្រចាំខែ (Monthly)៖ បង្ហាញតម្លៃកុងត្រាពិតប្រាកដ & ចាក់សោរមិនឱ្យកែតម្លៃឡើយ!
+  // 🔒 លក្ខខណ្ឌច្បាស់លាស់៖ ប្រអប់ ៣ រូបិយប័ណ្ណ បង្ហាញតែលើ Admin និង Seller ប៉ុណ្ណោះ (បើជាម៉ូយ Reseller, Driver ឬភ្ញៀវ Monthly គឺលាក់ចោលស្វ័យប្រវត្តិ!)
+  if (currTabsRow) {
+    if (canEditPriceAndQuickPay && !isMonthly) {
+      currTabsRow.classList.remove('hidden');
+    } else {
+      currTabsRow.classList.add('hidden');
+    }
+  }
+
+  // 🏢 ១. បើជាអតិថិជនប្រចាំខែ (Monthly)៖ ចាក់សោរតម្លៃកុងត្រា មិនឱ្យកែតម្លៃ មិនឱ្យ Quick Pay និងមិនឱ្យប្តូរលុយឡើយ!
   if (isMonthly) {
     priceInp.readOnly = true;
     priceInp.value = unitPrice;
@@ -1120,6 +1133,7 @@ function openProductModal(id) {
     if (quickPayBtn) quickPayBtn.classList.add('hidden');
     if (addToCartBtn) addToCartBtn.className = "col-span-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
 
+  // 👑 ២. បើជា Admin ឬ Seller (លក់នៅកន្លែង Walk-in)៖ អាចកែតម្លៃ អាច Quick Pay និងអាចប្តូរ ៣ រូបិយប័ណ្ណបាន
   } else if (canEditPriceAndQuickPay) {
     priceInp.readOnly = false;
     priceInp.value = unitPrice > 0 ? unitPrice : "";
@@ -1128,6 +1142,8 @@ function openProductModal(id) {
 
     if (quickPayBtn) quickPayBtn.classList.remove('hidden');
     if (addToCartBtn) addToCartBtn.className = "py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
+
+  // 🚚 ៣. បើជាម៉ូយដកទឹក (Reseller) ឬកូនចៅមេ (Driver)៖ ចាក់សោរតម្លៃបោះដុំ មិនឱ្យកែតម្លៃ មិនឱ្យ Quick Pay និងលាក់ប្រអប់ប្តូរលុយចោល!
   } else {
     priceInp.readOnly = true;
     priceInp.value = unitPrice;
@@ -1148,6 +1164,7 @@ function openProductModal(id) {
     setTimeout(function() { priceInp.focus(); }, 150);
   }
 }
+
 // ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ
 function closeProductModal() {
   var modal = document.getElementById('productSelectModal');
