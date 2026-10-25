@@ -101,16 +101,16 @@ function logout() {
   showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
 }
 
-// 📱 បែងចែកម៉ឺនុយ SIDEBAR
+// 📱 បែងចែកម៉ឺនុយ SIDEBAR (កំណត់សិទ្ធិដាច់ដោយឡែក ១០០%)
 function renderSidebarMenu() {
   var sNav = document.getElementById('sidebarMenuContainer');
   if (!sNav) return;
   var html = '';
 
   var isAdmin = (currentUser && currentUser.role === 'Admin');
-  var isReseller = (currentUser.role === 'Customer' || currentUser.type === 'Regular' || currentUser.type === 'Monthly');
-  var isCompanyDriver = (currentUser.type === 'CompanyDriver');
-  var isDriver = (currentUser.role === 'Driver');
+  var isCompanyDriver = (currentUser && currentUser.type === 'CompanyDriver');
+  var isDriver = (currentUser && currentUser.role === 'Driver' && currentUser.type !== 'CompanyDriver');
+  var isReseller = (currentUser && (currentUser.role === 'Customer' || currentUser.type === 'Regular' || currentUser.type === 'Monthly'));
 
   var navOrderBtn = document.getElementById('navOnlineOrdersBtn');
   if (navOrderBtn) {
@@ -123,8 +123,8 @@ function renderSidebarMenu() {
     }
   }
 
-  // ១. សម្រាប់ ADMIN
-  if (currentUser.role === 'Admin') {
+  // ១. សម្រាប់ ADMIN (មានសិទ្ធិពេញលេញ & មានប៊ូតុងប្តូរ TEST vs PROD តែម្នាក់គត់)
+  if (isAdmin) {
     html += '<button onclick="loadModule(\'Dashboard\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-chart-pie mr-3 w-5 text-center"></i>Dashboard</button>';
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការលក់ & ទូទាត់</div>';
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
@@ -142,7 +142,23 @@ function renderSidebarMenu() {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការកំណត់ប្រព័ន្ធ</div>';
     html += '<button onclick="loadModule(\'Settings\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-yellow-300"><i class="fas fa-cog mr-3 w-5 text-center"></i>ការកំណត់ (Settings)</button>';
 
-  // ២. សម្រាប់ RESELLER / CUSTOMER
+    // 🔄 ប៊ូតុងប្តូរប្រព័ន្ធ TEST vs PROD (បង្ហាញតែចំពោះ ADMIN ម្នាក់គត់!)
+    var nextEnv = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? 'PROD' : 'TEST';
+    var envBtnClass = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? 'bg-amber-500 text-amber-950 font-black' : 'bg-emerald-800 text-green-200 font-bold';
+    var envBtnText = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? '🧪 កំពុងនៅ៖ សាកល្បង (ចុចប្តូរ 🔄)' : '🏢 កំពុងនៅ៖ ប្រព័ន្ធពិត (ចុចប្តូរ 🔄)';
+    html += '<div class="pt-2"><button type="button" onclick="switchAppEnvironment(\'' + nextEnv + '\')" class="w-full text-left p-3 rounded-xl transition flex items-center shadow-xs text-xs ' + envBtnClass + '"><i class="fas fa-database mr-3 w-5 text-center text-base"></i>' + envBtnText + '</button></div>';
+
+  // 🛵 ២. សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) -> មានតែបេសកកម្មដឹកទឹក គ្មានសិទ្ធិដកទំនិញ POS ឡើយ!
+  } else if (isCompanyDriver) {
+    html += '<div class="text-[10px] font-black text-emerald-300 uppercase px-3 pt-2 pb-1 opacity-90 tracking-wider">🛵 ការដឹកជញ្ជូន KC WATER</div>';
+    html += '<button onclick="loadModule(\'CompanyDeliveries\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white bg-green-800/80 shadow-xs"><i class="fas fa-motorcycle mr-3 w-5 text-center text-emerald-300"></i>បេសកកម្មដឹកទឹកថ្ងៃនេះ</button>';
+
+  // 🚚 ៣. សម្រាប់កូនចៅដកទឹកជំនួសមេ (Driver ធម្មតា)
+  } else if (isDriver) {
+    html += '<div class="text-[10px] font-bold text-amber-300 uppercase px-3 pt-2 pb-1 opacity-90 tracking-wider">ដកទឹកជំនួសមេ៖ ' + (currentUser.linkedBoss || '') + '</div>';
+    html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-truck mr-3 w-5 text-center text-amber-300"></i>ផ្ទាំងដកទំនិញ</button>';
+
+  // 🏢 ៤. សម្រាប់ RESELLER / CUSTOMER
   } else if (isReseller) {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-2 pb-1 opacity-80 tracking-wider">គណនីម៉ូយប្រចាំ</div>';
     html += '<button onclick="loadModule(\'CustPortal\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-house mr-3 w-5 text-center text-emerald-300"></i>ទំព័រដើមរបស់ខ្ញុំ</button>';
@@ -150,35 +166,32 @@ function renderSidebarMenu() {
     html += '<button onclick="loadModule(\'CustHistory\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-history mr-3 w-5 text-center text-emerald-300"></i>ប្រវត្តិដកទំនិញ</button>';
     html += '<button onclick="loadModule(\'CustBottles\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-dolly mr-3 w-5 text-center text-emerald-300"></i>សំបកធុងកំពុងខ្ចី</button>';
 
-  // ៣. សម្រាប់កូនចៅដកទឹកជំនួសមេ
-  } else if (isDriver) {
-    html += '<div class="text-[10px] font-bold text-amber-300 uppercase px-3 pt-2 pb-1 opacity-90 tracking-wider">ដកទឹកជំនួសមេ៖ ' + (currentUser.linkedBoss || '') + '</div>';
-    html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-truck mr-3 w-5 text-center text-amber-300"></i>ផ្ទាំងដកទំនិញ</button>';
-
-  // ៤. សម្រាប់អ្នកដឹកជញ្ជូនរោងចក្រ
-  } else if (isCompanyDriver) {
-    html += '<div class="text-[10px] font-black text-emerald-300 uppercase px-3 pt-2 pb-1 opacity-90 tracking-wider">🛵 ការដឹកជញ្ជូន KC WATER</div>';
-    html += '<button onclick="loadModule(\'CompanyDeliveries\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-white"><i class="fas fa-motorcycle mr-3 w-5 text-center text-emerald-300"></i>បេសកកម្មដឹកទឹកថ្ងៃនេះ</button>';
-
-  // ៥. បុគ្គលិកលក់នៅកន្លែង
+  // 🛒 ៥. បុគ្គលិកលក់នៅកន្លែង (Seller)
   } else {
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
   }
 
-  // 🔄 ប៊ូតុងប្តូររវាង TEST និង PROD ក្នុងម៉ឺនុយ
-  var nextEnv = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? 'PROD' : 'TEST';
-  var envBtnClass = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? 'bg-amber-500 text-amber-950 font-black' : 'bg-green-800 text-green-200 font-bold';
-  var envBtnText = (typeof CURRENT_ENV !== 'undefined' && CURRENT_ENV === 'TEST') ? '🧪 កំពុងនៅ៖ សាកល្បង (ចុចប្តូរ 🔄)' : '🏢 កំពុងនៅ៖ ប្រព័ន្ធពិត (ចុចប្តូរ 🔄)';
-
   html += '<hr class="border-green-800 my-3">';
-  html += '<button type="button" onclick="switchAppEnvironment(\'' + nextEnv + '\')" class="w-full text-left p-3 rounded-xl transition flex items-center shadow-xs text-xs ' + envBtnClass + ' mb-2"><i class="fas fa-database mr-3 w-5 text-center text-base"></i>' + envBtnText + '</button>';
-  html += '<button onclick="logout()" class="w-full text-left p-3 text-red-300 hover:bg-red-800 rounded-xl transition flex items-center font-bold"><i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>ចាកចេញ</button>';  
+  html += '<button onclick="logout()" class="w-full text-left p-3 text-red-300 hover:bg-red-800 rounded-xl transition flex items-center font-bold"><i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>ចាកចេញ</button>';
   sNav.innerHTML = html;
 }
 
+// 🎯 មុខងារប្តូរផ្ទាំងកម្មវិធី (បិទសិទ្ធិ POS ពីអ្នកដឹកជញ្ជូនរោងចក្រ ១០០%)
 function loadModule(name) {
   closeSidebar();
-  
+
+  // 🛡️ បើសិនជាអ្នកដឹកជញ្ជូនរោងចក្រ (CompanyDriver) គឺអនុញ្ញាតឱ្យចូលតែផ្ទាំងដឹកទឹកមួយគត់!
+  if (currentUser && currentUser.type === 'CompanyDriver') {
+    if (name !== 'CompanyDeliveries') {
+      showToast("អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដកទំនិញ ឬលក់ក្នុង POS ឡើយ!", "error");
+      renderCompanyDeliveriesModule();
+      return;
+    }
+    renderCompanyDeliveriesModule();
+    return;
+  }
+
+  // 🛡️ រារាំងតួនាទីផ្សេងទៀតពីផ្ទាំង Admin
   var isRestricted = (currentUser.role !== 'Admin' && currentUser.role !== 'Seller');
   if (isRestricted && (name === 'Dashboard' || name === 'Settlement' || name === 'OnlineHub' || name === 'Stock' || name === 'StockRep' || name === 'Expenses' || name === 'Customers' || name === 'MonthlyRep' || name === 'Reports' || name === 'Settings')) {
     showToast("អ្នកមិនមានសិទ្ធិចូលផ្ទាំងនេះឡើយ!", "error");
@@ -206,7 +219,9 @@ function loadModule(name) {
   else if (name === 'CustHistory' && typeof renderCustomerHistoryModule === 'function') renderCustomerHistoryModule();
   else if (name === 'CustBottles' && typeof renderCustomerBottlesModule === 'function') renderCustomerBottlesModule();
   else if (name === 'CompanyDeliveries' && typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
-}// ==========================================
+}
+
+// ==========================================
 // 📊 ២. ផ្ទាំង DASHBOARD & QUICK RESTOCK MODAL
 // ==========================================
 async function renderDashboardModule() {
