@@ -1048,21 +1048,24 @@ function setModalCurrency(curr) {
   updateModalSubtotal();
 }
 
-// 🧮 ២. មុខងារបំប្លែង និងទាញយកតម្លៃលក់ (ស្គាល់សញ្ញា , និង . លើប្រាក់ដុល្លារ)
+// 🧮 ២. មុខងារបំប្លែង និងទាញយកតម្លៃលក់ (ស្គាល់តម្លៃកុងត្រាអតិថិជន Monthly ជានិច្ច)
 function getModalParsedPrice() {
   var inp = document.getElementById('modalPriceInput');
-  var defaultPrice = selectedModalProduct ? parseFloat(selectedModalProduct.price || 0) : 0;
+  
+  // ទាញតម្លៃកុងត្រាពិសេសបើមាន ឬតម្លៃដើមទំនិញ
+  var custNameEl = document.getElementById('posCustSelect');
+  var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
+  var sp = (selectedModalProduct && specialPrices) ? specialPrices.find(s => s.customer_name === custName && s.product_name === selectedModalProduct.name) : null;
+  var defaultPrice = sp ? parseFloat(sp.price) : (selectedModalProduct ? parseFloat(selectedModalProduct.price || 0) : 0);
+
   if (!inp) return defaultPrice;
 
   var rawVal = String(inp.value || '').trim();
-
-  // បើប្រអប់ទទេ យកតម្លៃដើមរបស់ទំនិញធ្វើជាតួរលេខគណនា
   if (rawVal === '') {
     return defaultPrice;
   }
 
   if (currentModalCurrency === 'USD') {
-    // ប្តូរសញ្ញាក្បៀស , មកជាចុច . សម្រាប់ដុល្លារ
     rawVal = rawVal.replace(',', '.');
     var num = parseFloat(rawVal);
     return isNaN(num) ? defaultPrice : num;
@@ -1073,31 +1076,7 @@ function getModalParsedPrice() {
   }
 }
 
-// ⌨️ ៣. មុខងារពេលវាយតម្លៃ (អនុញ្ញាតឱ្យវាយលេខដោយសេរី មិនកន្ត្រាក់)
-function onModalPriceInput(val) {
-  updateModalSubtotal();
-}
-
-// ប៊ូតុងជំនួយថែមសូន្យរហ័ស (+00, +000)
-function appendModalZeros(zeros) {
-  var inp = document.getElementById('modalPriceInput');
-  if (!inp) return;
-  var cur = inp.value.replace(/[^0-9]/g, '');
-  if (cur === '' || cur === '0') cur = '1';
-  inp.value = cur + zeros;
-  updateModalSubtotal();
-}
-
-// ប៊ូតុងកំណត់តម្លៃជាក់លាក់ (500, 1000, 2000)
-function setModalExactPrice(p) {
-  var inp = document.getElementById('modalPriceInput');
-  if (inp) {
-    inp.value = p;
-    updateModalSubtotal();
-  }
-}
-
-// 🛍️ ៤. បើកផ្ទាំង Modal រើសទំនិញ
+// 🛍️ ៤. បើកផ្ទាំង Modal រើសទំនិញ (ចាក់សោរតម្លៃកុងត្រាសម្រាប់អតិថិជន Monthly មិនឱ្យកែឡើយ)
 function openProductModal(id) {
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
@@ -1107,6 +1086,9 @@ function openProductModal(id) {
   var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
   var sp = specialPrices.find(s => s.customer_name === custName && s.product_name === p.name);
   var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
+
+  var custObj = allCustomers.find(c => c.full_name === custName);
+  var isMonthly = (custObj && custObj.type === 'Monthly');
 
   document.getElementById('modalProdImg').src = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
   document.getElementById('modalProdTitle').innerText = p.name;
@@ -1124,12 +1106,23 @@ function openProductModal(id) {
   var khrQuickRow = document.getElementById('modalKhrQuickButtonsRow');
   var khrHintText = document.getElementById('modalKhrHintText');
 
-  // 👑🔒 ឆែកសិទ្ធិ៖ មានតែ Admin និង Seller ប៉ុណ្ណោះទើបកែតម្លៃ និងឃើញប៊ូតុងទូទាត់រហ័ស
   var canEditPriceAndQuickPay = (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
 
-  if (canEditPriceAndQuickPay) {
+  // 🔒 សម្រាប់អតិថិជនប្រចាំខែ (Monthly)៖ បង្ហាញតម្លៃកុងត្រាពិតប្រាកដ & ចាក់សោរមិនឱ្យកែតម្លៃឡើយ!
+  if (isMonthly) {
+    priceInp.readOnly = true;
+    priceInp.value = unitPrice;
+    priceInp.className = "w-full text-center text-xl font-black bg-amber-50 py-2.5 rounded-xl border-2 border-amber-300 text-amber-950 outline-none select-none pr-8";
+
+    if (costHint) costHint.innerHTML = '<span class="text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded-full text-[10px]">🔒 តម្លៃកុងត្រាប្រចាំខែ (ចាក់សោរ)</span>';
+    if (khrQuickRow) khrQuickRow.classList.add('hidden');
+    if (khrHintText) khrHintText.classList.add('hidden');
+    if (quickPayBtn) quickPayBtn.classList.add('hidden');
+    if (addToCartBtn) addToCartBtn.className = "col-span-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
+
+  } else if (canEditPriceAndQuickPay) {
     priceInp.readOnly = false;
-    priceInp.value = "";
+    priceInp.value = unitPrice > 0 ? unitPrice : "";
     priceInp.placeholder = unitPrice > 0 ? unitPrice : "0";
     priceInp.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8";
 
@@ -1144,7 +1137,6 @@ function openProductModal(id) {
     if (quickPayBtn) quickPayBtn.classList.add('hidden');
     if (khrQuickRow) khrQuickRow.classList.add('hidden');
     if (khrHintText) khrHintText.classList.add('hidden');
-
     if (addToCartBtn) addToCartBtn.className = "col-span-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition";
   }
 
@@ -1152,11 +1144,10 @@ function openProductModal(id) {
   updateModalSubtotal();
   document.getElementById('productSelectModal').classList.remove('hidden');
 
-  if (canEditPriceAndQuickPay) {
+  if (canEditPriceAndQuickPay && !isMonthly) {
     setTimeout(function() { priceInp.focus(); }, 150);
   }
 }
-
 // ❌ មុខងារបិទផ្ទាំង Modal រើសទំនិញ
 function closeProductModal() {
   var modal = document.getElementById('productSelectModal');
@@ -1676,3 +1667,13 @@ window.addEventListener('load', function() {
 // 🔄 បង្កើតឈ្មោះស្តង់ដារពេញលេញ
 var renderProductGrid = rPG;
 var renderCart = rC;
+
+// 📱 បិទ Sidebar ស្វ័យប្រវត្តិពេលចុចលើផ្ទៃខាងក្រៅ (ទាំងលើកុំព្យូទ័រ និងទូរស័ព្ទ)
+document.addEventListener('click', function(e) {
+  var sb = document.getElementById('sidebar');
+  var toggleBtn = e.target.closest('[onclick="toggleSidebar()"]');
+  if (!sb || sb.classList.contains('hidden-sidebar') || toggleBtn) return;
+  if (!sb.contains(e.target)) {
+    closeSidebar();
+  }
+});
