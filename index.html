@@ -1966,13 +1966,13 @@ function filterCatalog(cat, btn) {
       updateModalButtonText(val);
     }
 
-   // 🔘 មុខងារបូកសរុបតម្លៃលើប៊ូតុង "បញ្ចូលកន្ត្រក" ជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
+    // 🔘 មុខងារបូកសរុបតម្លៃលើប៊ូតុង "បញ្ចូលកន្ត្រក" ជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
     function updateModalButtonText(qty) {
       if (!activeModalProduct) return;
       var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
       var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
-      var totKhr = qty * (activeModalProduct.priceKhr  activeModalProduct.price  0);
+      var totKhr = qty * (activeModalProduct.priceKhr || activeModalProduct.price || 0);
       var totThb = Math.round(totKhr / rateT).toLocaleString();
       var totUsd = (totKhr / rateU).toFixed(2);
       var d = DICT[currentLang] || DICT.km;
@@ -1981,6 +1981,22 @@ function filterCatalog(cat, btn) {
       if (btnLabel) {
         btnLabel.innerText = (d.modalAdd || 'បញ្ចូលកន្ត្រក') + ' (៛ ' + totKhr.toLocaleString() + ' | ฿ ' + totThb + ' | $' + totUsd + ')';
       }
+    }
+
+    function confirmAddToCart() {
+      if (!activeModalProduct) return;
+      var q = parseInt(document.getElementById('modalQtyDisplay').innerText) || 1;
+
+      cartItems[activeModalProduct.id] = {
+        raw_name: activeModalProduct.raw_name,
+        price: activeModalProduct.price,
+        qty: q,
+        isBarrel20L: activeModalProduct.isBarrel20L || false
+      };
+
+      closeProductDetailModal();
+      renderCatalogGrid();
+      recalcCartDock();
     }
 
     // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត ជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
@@ -2015,7 +2031,7 @@ function filterCatalog(cat, btn) {
             '<span class="text-white text-sm font-black block leading-none">៛ ' + totalPriceKhr.toLocaleString() + '</span>' +
             '<span class="text-[10.5px] font-bold block leading-none">' +
               '<b class="text-amber-300 font-mono">฿ ' + totalThb + '</b> ' +
-              '<span class="text-emerald-300 font-mono font-normal">($' + totalUsd + ')</span>' +
+              '<span class="text-emerald-300 font-mono font-normal">$' + totalUsd + '</span>' +
             '</span>' +
           '</div>';
         }
@@ -2401,35 +2417,38 @@ function filterCatalog(cat, btn) {
           }
         } catch(custErr) {}
 
-        // 🔔 ផ្ញើសារ Telegram Alert
+        // 🔔 ផ្ញើសារ Telegram Alert (មានប្រព័ន្ធការពារសញ្ញា & និងអក្សរពិសេសកុំឱ្យគាំង)
         try {
           if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
+            function escapeTgHtml(str) {
+              return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
             var itemLines = items.map(function(it) {
-              return "  • <b>" + it.raw_name + "</b> x " + it.qty + " = ៛ " + Number(it.price * it.qty).toLocaleString();
+              return "  • <b>" + escapeTgHtml(it.raw_name) + "</b> x " + it.qty + " = ៛ " + Number(it.price * it.qty).toLocaleString();
             }).join("\n");
 
             var tgMsg = "🔔 <b>[KC WATER - មានការកុម្ម៉ង់ទឹកថ្មីតាម ONLINE!]</b>\n\n" +
                         "🆔 <b>លេខកូដ៖</b> <code>" + orderId + "</code>\n" +
-                        "👤 <b>អតិថិជន៖</b> " + name + "\n" +
-                        "📞 <b>ទូរស័ព្ទ៖</b> " + phone + "\n" +
-                        "⏰ <b>ម៉ោងចង់ទទួល៖</b> <b>" + timeDetail + "</b>\n" +
-                        "🏢 <b>ទីកន្លែង៖</b> <b>" + floorDetail + "</b>\n" +
+                        "👤 <b>អតិថិជន៖</b> " + escapeTgHtml(name) + "\n" +
+                        "📞 <b>ទូរស័ព្ទ៖</b> " + escapeTgHtml(phone) + "\n" +
+                        "⏰ <b>ម៉ោងចង់ទទួល៖</b> <b>" + escapeTgHtml(timeDetail) + "</b>\n" +
+                        "🏢 <b>ទីកន្លែង៖</b> <b>" + escapeTgHtml(floorDetail) + "</b>\n" +
                         "📦 <b>ទំនិញកុម្ម៉ង់៖</b>\n" + itemLines + "\n" +
-                        "🛢️ <b>សំបកធុង៖</b> <b>" + barrelSwapText + "</b>\n" +
+                        "🛢️ <b>សំបកធុង៖</b> <b>" + escapeTgHtml(barrelSwapText) + "</b>\n" +
                         "💰 <b>តម្លៃសរុប៖</b> <b>៛ " + Number(grandTotal).toLocaleString() + "</b>\n" +
-                        "💳 <b>វិធីបង់ប្រាក់៖</b> " + payMethodText + "\n" +
+                        "💳 <b>វិធីបង់ប្រាក់៖</b> " + escapeTgHtml(payMethodText) + "\n" +
                         (mapUrl ? "🗺️ <b>ទីតាំងផែនទី៖</b> <a href='" + mapUrl + "'>ចុចបើក Google Maps</a>\n" : "") +
-                        (address ? "📝 <b>ចំណាំទីតាំង៖</b> " + address + "\n" : "") +
+                        (address ? "📝 <b>ចំណាំទីតាំង៖</b> " + escapeTgHtml(address) + "\n" : "") +
                         "🕒 <b>ម៉ោងកុម្ម៉ង់៖</b> " + new Date().toLocaleTimeString('km-KH');
 
             fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ chat_id: telegramSettings.chatId, text: tgMsg, parse_mode: "HTML" })
-            }).catch(function(){});
+            }).catch(function(err){ console.warn("TG error:", err); });
           }
         } catch(tgE) {}
-
         // សម្អាតកន្ត្រក និងបិទផ្ទាំង
         cartItems = {};
         localStorage.removeItem('kc_auto_cart_backup');
