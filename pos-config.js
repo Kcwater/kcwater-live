@@ -79,22 +79,23 @@ async function switchAppEnvironment(targetEnv) {
   }
 }
 
-// 🏷️ ៤. មុខងារបង្ហាញផ្លាកសម្គាល់ប្រព័ន្ធ (ទាំង TEST និង PROD)
+// 🏷️ ៤. មុខងារបង្ហាញផ្លាកសម្គាល់ប្រព័ន្ធ (ដំណើរការពេញលេញទាំង TEST និង PROD គ្មានកូដស្ទួន)
 function renderEnvironmentBanner() {
+  // សម្អាតផ្លាកចាស់ចេញសិនដើម្បីកុំឱ្យជាន់គ្នា
   var oldBanner = document.getElementById('kcTestModeBanner');
   if (oldBanner) oldBanner.remove();
 
   var oldBadge = document.getElementById('navTestBadge');
   if (oldBadge) oldBadge.remove();
 
-  // ក. បង្ហាញរបារពណ៌ទឹកក្រូចធំពេលកំពុងនៅ TEST Mode
+  // ក. បើកំពុងនៅប្រព័ន្ធសាកល្បង (TEST)៖ បង្ហាញរបារពណ៌ទឹកក្រូចធំនៅខាងលើបង្អស់
   if (CURRENT_ENV === 'TEST') {
-    var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 7px 14px; text-align: center; font-size: 11px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">' +
+    var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 8px 14px; text-align: center; font-size: 11px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">' +
       '<div style="display: flex; align-items: center; gap: 8px; margin: 0 auto;">' +
         '<span style="display: inline-block; width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 0 8px white;"></span>' +
         '<span>🧪 កំពុងប្រើប្រព័ន្ធសាកល្បង (TEST MODE) — មិនប៉ះពាល់ទិន្នន័យលក់ពិតឡើយ</span>' +
       '</div>' +
-      '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 10px; padding: 3px 9px; border-radius: 8px; border: none; cursor: pointer; white-space: nowrap;">' +
+      '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 10px; padding: 4px 10px; border-radius: 8px; border: none; cursor: pointer; white-space: nowrap;">' +
         'ប្តូរទៅប្រព័ន្ធពិត ➔' +
       '</button>' +
     '</div>';
@@ -106,59 +107,22 @@ function renderEnvironmentBanner() {
     else document.body.insertAdjacentHTML('afterbegin', bannerHtml);
   }
 
-  // ខ. ដាក់ផ្លាក [🧪 TEST] ឬ [🏢 PROD] នៅក្បែរឈ្មោះ Admin លើ Navbar
-  var userInfo = document.getElementById('userInfo');
-  if (userInfo) {
-    var badgeColor = (CURRENT_ENV === 'TEST') ? 'background: #fbbf24; color: #78350f; border: 1px solid #f59e0b;' : 'background: #047857; color: #a7f3d0; border: 1px solid #059669;';
-    var badgeText = (CURRENT_ENV === 'TEST') ? '🧪 TEST' : '🏢 PROD';
-    var switchTarget = (CURRENT_ENV === 'TEST') ? 'PROD' : 'TEST';
-    var switchTitle = (CURRENT_ENV === 'TEST') ? 'ចុចប្តូរទៅប្រព័ន្ធពិត' : 'ចុចប្តូរទៅសាកល្បង';
-
-    var badgeHtml = '<button type="button" onclick="switchAppEnvironment(\'' + switchTarget + '\')" title="' + switchTitle + '" id="navTestBadge" style="' + badgeColor + ' font-size: 10px; font-weight: 900; padding: 2.5px 8px; border-radius: 9999px; margin-right: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">' +
-      badgeText + ' 🔄' +
-    '</button>';
-
-    userInfo.insertAdjacentHTML('beforebegin', badgeHtml);
-  }
-}
-
-// 🏷️ មុខងារបង្ហាញផ្លាកព្រមានពេលកំពុងនៅ Mode សាកល្បង (ធានាឃើញ ១០០% មិនឱ្យបាំងឡើយ)
-function renderEnvironmentBanner() {
-  var oldBanner = document.getElementById('kcTestModeBanner');
-  if (oldBanner) oldBanner.remove();
-
-  var oldBadge = document.getElementById('navTestBadge');
-  if (oldBadge) oldBadge.remove();
-
-  if (CURRENT_ENV !== 'TEST') return;
-
-  // ១. បង្កើតរបារពណ៌ទឹកក្រូចធំខាងលើបង្អស់
-  var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 8px 14px; text-align: center; font-size: 11px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">' +
-    '<div style="display: flex; align-items: center; gap: 8px; margin: 0 auto;">' +
-      '<span style="display: inline-block; width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 0 8px white;"></span>' +
-      '<span>🧪 នេះជាប្រព័ន្ធសាកល្បង (TEST MODE) — ភ្ជាប់ Database សាកល្បង (ntftdylk...)</span>' +
-    '</div>' +
-    '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 10px; padding: 4px 10px; border-radius: 8px; border: none; cursor: pointer; white-space: nowrap;">' +
-      'ប្តូរទៅប្រព័ន្ធពិត (PROD) ➔' +
-    '</button>' +
-  '</div>';
-
-  // ដាក់នៅពីលើរបារ Navbar ផ្ទាល់តែម្តង ធានាមិនឱ្យបាំង
-  var mainApp = document.getElementById('mainApp');
-  var loginPage = document.getElementById('loginPage');
-
-  if (mainApp) {
-    mainApp.insertAdjacentHTML('afterbegin', bannerHtml);
-  } else if (loginPage) {
-    loginPage.insertAdjacentHTML('beforebegin', bannerHtml);
-  } else {
-    document.body.insertAdjacentHTML('afterbegin', bannerHtml);
-  }
-
-  // ២. ដាក់ផ្លាកតូច [ 🧪 TEST ] នៅជាប់ឈ្មោះ Admin លើរបារបៃតង
+  // ខ. បង្ហាញប៊ូតុងផ្លាក [🧪 TEST 🔄] ឬ [🏢 PROD 🔄] នៅលើ Navbar ជាប់ឈ្មោះ Admin
   var userInfo = document.getElementById('userInfo');
   if (userInfo && !document.getElementById('navTestBadge')) {
-    userInfo.insertAdjacentHTML('beforebegin', '<span id="navTestBadge" style="background: #fbbf24; color: #78350f; font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 9999px; border: 1px solid #f59e0b; margin-right: 6px; display: inline-flex; align-items: center; gap: 4px;">🧪 TEST</span>');
+    var isTest = (CURRENT_ENV === 'TEST');
+    var badgeStyle = isTest ? 
+      'background: #fbbf24; color: #78350f; border: 1px solid #f59e0b;' : 
+      'background: #047857; color: #a7f3d0; border: 1px solid #059669;';
+    var badgeText = isTest ? '🧪 TEST 🔄' : '🏢 PROD 🔄';
+    var switchTarget = isTest ? 'PROD' : 'TEST';
+    var switchTitle = isTest ? 'ចុចដើម្បីប្តូរទៅប្រព័ន្ធពិត (PROD)' : 'ចុចដើម្បីប្តូរទៅប្រព័ន្ធសាកល្បង (TEST)';
+
+    var badgeBtnHtml = '<button type="button" onclick="switchAppEnvironment(\'' + switchTarget + '\')" title="' + switchTitle + '" id="navTestBadge" style="' + badgeStyle + ' font-size: 10px; font-weight: 900; padding: 3px 9px; border-radius: 9999px; margin-right: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">' +
+      badgeText +
+    '</button>';
+
+    userInfo.insertAdjacentHTML('beforebegin', badgeBtnHtml);
   }
 }
 
@@ -218,7 +182,7 @@ var cart = [];
 var selectedModalProduct = null;
 var currentPosCategoryFilter = 'ALL';
 var currentPosPayMethod = 'Cash';
-var telegramConfig = { token: "", chatId: "", status: "ON" };
+var telegramConfig = { token: "", chatId: "", driverChatId: "", status: "ON" };
 
 // អថេរសម្រាប់ទូទាត់លុយ (Settlement State)
 var currentSettlementCustomer = "";
@@ -286,6 +250,7 @@ async function loadSettingsAndTelegram() {
       data.forEach(function(r) {
         if (r.key === 'Telegram_Token') telegramConfig.token = r.value;
         if (r.key === 'Telegram_ChatID') telegramConfig.chatId = r.value;
+        if (r.key === 'Telegram_Driver_ChatID') telegramConfig.driverChatId = r.value;
         if (r.key === 'Telegram_Alert_Status') telegramConfig.status = r.value.toUpperCase();
         if (r.key === 'Exchange_Rate_USD') exchangeRateUSD = parseFloat(r.value) || 4100;
         if (r.key === 'Exchange_Rate_THB') exchangeRateTHB = parseFloat(r.value) || 115;
@@ -296,19 +261,33 @@ async function loadSettingsAndTelegram() {
   }
 }
 
-// 📲 ៦. មុខងារផ្ញើសារដំណឹងទៅកាន់ TELEGRAM BOT
-async function sendTelegramAlert(message) {
-  if (!telegramConfig.token || !telegramConfig.chatId || telegramConfig.status === 'OFF') return;
+// 📲 មុខងារផ្ញើសារដំណឹង Telegram (ប្រើផ្ទាំងជូនដំណឹងរបស់ POS kcAlert ពេលមានបញ្ហា)
+async function sendTelegramAlert(message, customChatId) {
+  if (!telegramConfig.token || telegramConfig.status === 'OFF') return;
+  var target = customChatId || telegramConfig.chatId;
+  if (!target) return;
+
   try {
-    await fetch("https://api.telegram.org/bot" + telegramConfig.token + "/sendMessage", {
+    var response = await fetch("https://api.telegram.org/bot" + telegramConfig.token + "/sendMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
-        chat_id: telegramConfig.chatId, 
+        chat_id: target, 
         text: message, 
         parse_mode: "HTML" 
       })
     });
+
+    var resData = await response.json();
+    if (!resData.ok) {
+      if (typeof kcAlert === 'function') {
+        kcAlert({
+          title: "⚠️ Telegram Bot Error",
+          message: "មិនអាចផ្ញើសារទៅ Chat ID [" + target + "] បានទេ៖\n👉 " + resData.description,
+          type: "warning"
+        });
+      }
+    }
   } catch(e) {
     console.error("Telegram alert error:", e);
   }
