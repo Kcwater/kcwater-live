@@ -4,6 +4,7 @@
  *  ========================================================================== */
 
 var currentActivePendingPaymentId = null;
+var isSubmittingSettleLock = false;
 
 // 🔔 សំឡេងរោទ៍ដំណឹងពេលទូទាត់ជោគជ័យ (AUDIO SOUND FEEDBACK)
 function playPaymentSuccessAudio() {
@@ -26,9 +27,9 @@ function playPaymentSuccessAudio() {
   } catch(e) {}
 }
 
-// ==========================================
-// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT UI (SMART POS)
-// ==========================================
+// ==========================================================================
+// 💳 ១. ផ្ទាំងទូទាត់លុយ SETTLEMENT UI (SMART POS - រចនាសម្ព័ន្ធត្រឹមត្រូវ ១០០%)
+// ==========================================================================
 async function renderSettlementModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -42,7 +43,8 @@ async function renderSettlementModule() {
   var custOptions = '<option value="">-- សូមជ្រើសរើសឈ្មោះម៉ូយ --</option><option value="Walk-in">🛒 -- លក់នៅកន្លែង (Walk-in) --</option>';
   allCustomers.forEach(function(c) {
     if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
-      custOptions += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
+      var tag = (c.type === 'Monthly') ? ' [ប្រចាំខែ]' : ' [អ្នកលក់បន្ត]';
+      custOptions += '<option value="' + c.full_name + '">' + c.full_name + tag + '</option>';
     }
   });
 
@@ -113,7 +115,7 @@ async function renderSettlementModule() {
       '</div>' +
     '</div>' +
 
-    // 📝 ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ
+    // 📝 ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ (Card Container ធំ)
     '<div id="settlement_card" class="card border-t-4 border-blue-600 shadow-2xl p-5 sm:p-6 mb-0">' +
       '<h3 class="font-bold text-center mb-4 text-blue-900 text-base sm:text-lg flex items-center justify-center gap-2">' +
         '<i class="fas fa-file-invoice-dollar text-blue-600"></i>ទម្រង់គិតលុយ និងចេញវិក្កយបត្រ' +
@@ -126,11 +128,15 @@ async function renderSettlementModule() {
         '</select>' +
       '</div>' +
 
+      // 📦 តំបន់ UI ទូទាត់លម្អិត (បង្ហាញពេលរើសឈ្មោះម៉ូយ)
       '<div id="settlement_ui" class="hidden space-y-4">' +
         '<div class="flex justify-between items-center border-b pb-2">' +
           '<b class="text-xs sm:text-sm text-blue-950 flex items-center gap-1.5"><i class="fas fa-boxes text-blue-600"></i>បញ្ជីជើងទឹកដកជំពាក់ជាក់ស្តែង</b>' +
           '<span id="settleSelectedCountBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0 ជើងទឹក</span>' +
         '</div>' +
+
+        // ប្រអប់សរុបបរិមាណតាមមុខទំនិញ
+        '<div id="settleProductSummaryArea" class="hidden p-2.5 bg-blue-50/80 rounded-2xl border border-blue-200 text-xs space-y-1 my-2"></div>' +
 
         // តារាងជើងទឹកជំពាក់
         '<div class="overflow-x-auto max-h-60 overflow-y-auto rounded-xl border mb-3">' +
@@ -226,8 +232,8 @@ async function renderSettlementModule() {
         '<button onclick="submitSettlementPayment()" id="btnSubmitSettlement" class="btn-green shadow-xl py-4 text-base font-black flex items-center justify-center gap-2 active:scale-95 transition mt-3">' +
           '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)' +
         '</button>' +
-      '</div>' +
-    '</div>' +
+      '</div>' + // បិទ #settlement_ui
+    '</div>' +   // បិទ #settlement_card
   '</div>';
 
   checkAdminPendingPayments();
@@ -540,8 +546,9 @@ async function loadSettlementDebtorsList() {
 // 🔍 ៦. ជ្រើសរើសម៉ូយ & ទាញជើងទឹកជំពាក់ជាក់ស្តែង
 // ==========================================
 async function selectCustomerForSettlement(custName) {
+  var ui = document.getElementById('settlement_ui');
   if (!custName) {
-    document.getElementById('settlement_ui').classList.add('hidden');
+    if (ui) ui.classList.add('hidden');
     currentSettlementOldDebt = 0;
     return;
   }
@@ -551,11 +558,15 @@ async function selectCustomerForSettlement(custName) {
   var sel = document.getElementById('set_c');
   if (sel) sel.value = custName;
 
-  document.getElementById('settlement_ui').classList.remove('hidden');
+  // 🛡️ បើកផ្ទាំងដោយមានការការពារ Null មិនឱ្យ Error ឡើយ
+  if (ui) {
+    ui.classList.remove('hidden');
+  }
 
   var tbody = document.getElementById('settleItemsTableBody');
-  tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញជើងទឹក...</td></tr>';
-
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញជើងទឹក...</td></tr>';
+  }
   try {
     const { data: items } = await supabaseClient
       .from('transactions')
@@ -624,9 +635,11 @@ function getSelectedSettlementTotal() {
   return sum;
 }
 
+// 🧮 មុខងារគណនាប្រាក់ និងសរុបបរិមាណតាមមុខទំនិញដែលបានធីក (Realtime)
 function recalcSettlementCalculation() {
   var sub = getSelectedSettlementTotal();
-  var count = document.querySelectorAll('.settle-item-cb:checked').length;
+  var checkedBoxes = document.querySelectorAll('.settle-item-cb:checked');
+  var count = checkedBoxes.length;
   
   var cbOldDebt = document.getElementById('cbIncludeOldDebt');
   var includeOldDebt = cbOldDebt ? cbOldDebt.checked : true;
@@ -636,6 +649,52 @@ function recalcSettlementCalculation() {
   document.getElementById('settleSelectedCountBadge').innerText = count + ' ជើងទឹក';
   document.getElementById('settleSelectedSubtotal').innerText = '៛ ' + sub.toLocaleString();
   document.getElementById('settleTotalDueText').innerText = '៛ ' + totalDue.toLocaleString();
+
+  // 📦 គណនាសរុបបរិមាណតាមមុខទំនិញដែលបានធីក
+  var summaryArea = document.getElementById('settleProductSummaryArea');
+  if (summaryArea) {
+    if (count === 0) {
+      summaryArea.classList.add('hidden');
+    } else {
+      var prodQtyMap = {};
+      checkedBoxes.forEach(function(cb) {
+        var tr = cb.closest('tr');
+        if (tr) {
+          var tds = tr.querySelectorAll('td');
+          // ជួរទី ៣ ជាឈ្មោះទំនិញ និងជួរទី ៤ ជាចំនួន
+          if (tds.length >= 4) {
+            var pName = tds[2].innerText.split('\n')[0].trim();
+            var pQty = parseFloat(tds[3].innerText.trim() || 0);
+            if (pName) {
+              prodQtyMap[pName] = (prodQtyMap[pName] || 0) + pQty;
+            }
+          }
+        }
+      });
+
+      var keys = Object.keys(prodQtyMap);
+      if (keys.length > 0) {
+        var html = '<div class="text-[11px] font-black text-blue-950 flex items-center gap-1 mb-1">' +
+          '<i class="fas fa-cubes-stacked text-blue-600"></i> សរុបបរិមាណទំនិញដែលបានធីកគិតលុយ៖' +
+        '</div>' +
+        '<div class="flex flex-wrap gap-1.5">';
+
+        keys.forEach(function(pKey) {
+          var unit = (pKey.indexOf("ធុង") !== -1) ? "ធុង" : ((pKey.indexOf("យួរ") !== -1) ? "យួរ" : ((pKey.indexOf("កេស") !== -1) ? "កេស" : ((pKey.indexOf("បាវ") !== -1) ? "បាវ" : ((pKey.indexOf("កំប៉ុង") !== -1) ? "កំប៉ុង" : ((pKey.indexOf("ដប") !== -1) ? "ដប" : "ឯកតា")))));
+          html += '<div class="bg-white px-2.5 py-1 rounded-xl border border-blue-200 shadow-2xs text-[11px] font-bold text-slate-800">' +
+            '<span>' + pKey + '៖ </span>' +
+            '<b class="text-blue-700">' + Number(prodQtyMap[pKey]).toLocaleString() + ' ' + unit + '</b>' +
+          '</div>';
+        });
+
+        html += '</div>';
+        summaryArea.innerHTML = html;
+        summaryArea.classList.remove('hidden');
+      } else {
+        summaryArea.classList.add('hidden');
+      }
+    }
+  }
 
   calcSettleChange();
 }
@@ -721,11 +780,7 @@ function setSettlePayMode(mode) {
   calcSettleChange();
 }
 
-// ==========================================
-// 💾 ៧. បញ្ជាក់ការទូទាត់លុយ (SUBMIT SETTLEMENT ទៅ SUPABASE)
-// ==========================================
-var isSubmittingSettleLock = false;
-
+// 💾 មុខងារបញ្ជាក់ការទូទាត់លុយ & ចេញវិក្កយបត្រ (កែសម្រួលជួរទូទាត់បំណុលចាស់ច្បាស់លាស់)
 async function submitSettlementPayment() {
   if (isSubmittingSettleLock) return;
 
@@ -739,11 +794,28 @@ async function submitSettlementPayment() {
   var includeOldDebt = cbOldDebt ? cbOldDebt.checked : true;
 
   if (selectedIds.length === 0 && (!includeOldDebt || currentSettlementOldDebt === 0)) {
-    showToast("សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជួរដើម្បីទូទាត់!", "error"); 
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "មិនទាន់បានជ្រើសរើស",
+        message: "សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជើងទឹកដើម្បីទូទាត់ប្រាក់!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមធីកជ្រើសរើសយ៉ាងហោចណាស់ ១ ជួរដើម្បីទូទាត់!", "error");
+    }
     return;
   }
+
   if (paid === 0) {
-    showToast("សូមបញ្ចូលចំនួនប្រាក់ដែលបានបង់!", "error"); 
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះចំនួនប្រាក់",
+        message: "សូមបញ្ចូលចំនួនប្រាក់ដែលបានទទួលពីអតិថិជន!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមបញ្ចូលចំនួនប្រាក់ដែលបានបង់!", "error");
+    }
     return;
   }
 
@@ -772,7 +844,7 @@ async function submitSettlementPayment() {
   isSubmittingSettleLock = true;
 
   try {
-    // ១. ប្តូរ status ទៅ 'Paid' ក្នុង transactions table
+    // ១. ប្តូរស្ថានភាពជើងទឹកដែលបានធីកទៅជា 'Paid' ក្នុង Transactions
     if (selectedIds.length > 0) {
       const { error: updErr } = await supabaseClient
         .from('transactions')
@@ -781,7 +853,7 @@ async function submitSettlementPayment() {
       if (updErr) throw updErr;
     }
 
-    // ២. កត់ត្រាចូល settlements table ក្នុង Supabase
+    // ២. កត់ត្រាចូលតារាង Settlements ក្នុង Supabase
     const { error: setErr } = await supabaseClient.from('settlements').insert([{
       customer_name: currentSettlementCustomer,
       total_due_khr: totalDue,
@@ -795,13 +867,13 @@ async function submitSettlementPayment() {
     }]);
     if (setErr) throw setErr;
 
-    // ៣. បិទបញ្ចប់សំណើ Pending Payment បើមាន
+    // ៣. បិទបញ្ចប់សំណើ Pending Payment របស់ម៉ូយ (បើមាន)
     if (currentActivePendingPaymentId) {
       await supabaseClient.from('pending_payments').update({ status: 'Approved' }).eq('id', currentActivePendingPaymentId);
       currentActivePendingPaymentId = null;
     }
 
-    // ៤. បាញ់ Telegram Alert
+    // ៤. ផ្ញើ Telegram Alert
     try {
       var methodLabel = (currentSettlementPayMode === 'ABA') ? '📱 ស្កេន ABA' : 
                         (currentSettlementPayMode === 'Split' ? '🔀 ចម្រុះ (លុយសុទ្ធ: ៛ ' + cashKhrRecorded.toLocaleString() + ' + ABA: ៛ ' + scanKhrRecorded.toLocaleString() + ')' : '💵 លុយសុទ្ធ');
@@ -817,28 +889,27 @@ async function submitSettlementPayment() {
       sendTelegramAlert(tgMsg);
     } catch(e) {}
 
-    // ៥. 🔔 សំឡេងរោទ៍ Chime & បាញ់កាំជ្រួច
+    // ៥. សំឡេង Chime & បាញ់កាំជ្រួច
     playPaymentSuccessAudio();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
 
-    // ៦. 🧾 បង្កើតវិក្កយបត្ររូបភាព (Receipt PNG)
+    // ៦. 🧾 បង្កើតវិក្កយបត្ររូបភាព (បន្ថែមជួរបំណុលចាស់ឱ្យស៊ីគ្នានឹងសរុបប្រាក់ ១០០%)
     var receiptItems = currentSettlementItems.filter(i => selectedIds.indexOf(i.id) !== -1);
     
-    // ✅ បើបង់តែបំណុលចាស់ ឱ្យវិក្កយបត្របង្ហាញជួរ "ទូទាត់បំណុលចាស់" កុំឱ្យចេញតារាងទទេ
-    if (receiptItems.length === 0 && includeOldDebt && currentSettlementOldDebt > 0) {
-      receiptItems = [{
-        name: "ទូទាត់បំណុលចាស់ (Old Debt Settlement)",
+    if (includeOldDebt && currentSettlementOldDebt > 0) {
+      receiptItems.push({
+        name: "បំណុលចាស់ពីមុន (Old Debt Balance)",
         qty: 1,
-        price: actualSettledPaid,
+        price: currentSettlementOldDebt,
         currency: "KHR"
-      }];
+      });
     }
 
     generateReceiptImage("SET-" + new Date().getTime(), currentSettlementCustomer, totalDue, paid, receiptItems, "វិក្កយបត្រទូទាត់ប្រាក់ (SETTLEMENT)");
 
     showToast("បានទូទាត់ប្រាក់ និងជម្រះបញ្ជីជោគជ័យ!", "success");
 
-    // Refresh ឡើងវិញ
+    // ៧. Refresh ផ្ទាំង Settlement ឡើងវិញ
     document.getElementById('settlement_ui').classList.add('hidden');
     checkAdminPendingPayments();
     fetchSettlementOverviewData();
