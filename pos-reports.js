@@ -163,16 +163,27 @@ async function fetchCompanySummaryFromSupabase() {
     console.error("Company summary error:", e);
   }
 }
-// ==========================================
-// 👤 ទាញទិន្នន័យកាតគ្រីអតិថិជន (ប្រើម៉ោងកម្ពុជា UTC+7 ត្រឹមត្រូវ ១០០%)
-// ==========================================
+// 👤 មុខងារទាញកាតគ្រីអតិថិជន (គណនាស៊ីសង្វាក់គ្នា ១០០% មិនឱ្យលើសលុយជំពាក់ឡើយ)
 async function fetchFullStatementFromSupabase() {
-  var name = document.getElementById('custSearchInp').value.trim();
-  var sd = document.getElementById('custStartDate').value;
-  var ed = document.getElementById('custEndDate').value;
+  var nameInp = document.getElementById('custSearchInp');
+  var name = nameInp ? nameInp.value.trim() : '';
+  var sd = document.getElementById('custStartDate') ? document.getElementById('custStartDate').value : '';
+  var ed = document.getElementById('custEndDate') ? document.getElementById('custEndDate').value : '';
   var container = document.getElementById('statementReportContainer');
 
-  if (!name || !sd || !ed) { showToast("សូមរើសឈ្មោះ និងកាលបរិច្ឆេទ!", "error"); return; }
+  if (!name || !sd || !ed) { 
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះព័ត៌មាន",
+        message: "សូមជ្រើសរើសឈ្មោះអតិថិជន និងកំណត់ចន្លោះកាលបរិច្ឆេទឱ្យបានត្រឹមត្រូវ!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមរើសឈ្មោះ និងកាលបរិច្ឆេទ!", "error"); 
+    }
+    return; 
+  }
+
   container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin text-green-600 text-base"></i> កំពុងទាញទិន្នន័យកាតគ្រី...</div>';
 
   try {
@@ -181,7 +192,7 @@ async function fetchFullStatementFromSupabase() {
     var endIso = ed + 'T23:59:59.999+07:00';
 
     // ១. ស្វែងរកជើងទឹកដកក្នុងចន្លោះថ្ងៃតាមម៉ោងកម្ពុជា
-    const { data: items } = await supabaseClient
+    const { data: items, error: itemErr } = await supabaseClient
       .from('transactions')
       .select('*')
       .eq('customer_name', name)
@@ -189,8 +200,10 @@ async function fetchFullStatementFromSupabase() {
       .lte('created_at', endIso)
       .order('created_at', { ascending: true });
 
-    // ២. ស្វែងរកការទូទាត់សងក្នុងចន្លោះថ្ងៃតាមម៉ោងកម្ពុជា
-    const { data: payments } = await supabaseClient
+    if (itemErr) throw itemErr;
+
+    // ២. ស្វែងរកការទូទាត់សង (Settlements) ក្នុងចន្លោះថ្ងៃតាមម៉ោងកម្ពុជា
+    const { data: payments, error: payErr } = await supabaseClient
       .from('settlements')
       .select('*')
       .eq('customer_name', name)
@@ -198,7 +211,9 @@ async function fetchFullStatementFromSupabase() {
       .lte('settled_at', endIso)
       .order('settled_at', { ascending: true });
 
-    // ៣. ស្វែងរកបំណុលចាស់មុនថ្ងៃ Start Date តាមម៉ោងកម្ពុជា
+    if (payErr) throw payErr;
+
+    // ៣. ស្វែងរកបំណុលចាស់មុនថ្ងៃ Start Date
     const { data: oldSet } = await supabaseClient
       .from('settlements')
       .select('balance_khr, settled_at')
@@ -228,31 +243,43 @@ async function fetchFullStatementFromSupabase() {
       prevDebt += parseFloat(u.total || 0);
     });
 
-    var totalPurchased = 0, totalPaidInMonth = 0;
-    var unpaidCount = 0, unpaidTotal = 0;
+    var totalPurchased = 0;
+    var totalPaidInMonth = 0;
+    var unpaidCount = 0;
+    var unpaidTotal = 0;
     var productSummary = {};
 
+    // គណនាជើងទឹកដកក្នុងខែ និងបូកប្រាក់ដែលបានបង់ផ្ទាល់នៅ POS (បើមាន)
     (items || []).forEach(function(i) {
       var tot = parseFloat(i.total || 0);
       var q = parseFloat(i.qty || 0);
       totalPurchased += tot;
+
       if (i.status === 'Unpaid') {
         unpaidCount++;
         unpaidTotal += tot;
+      } else if (i.status === 'Paid') {
+        // បើបង់លុយនៅកន្លែង POS ភ្លាមៗ រាប់បញ្ចូលជាប្រាក់បានបង់កុំឱ្យច្រឡំជំពាក់
+        totalPaidInMonth += parseFloat(i.paid_khr || tot);
       }
+
       if (i.product_name) {
         productSummary[i.product_name] = (productSummary[i.product_name] || 0) + q;
       }
     });
 
+    // បូកបន្ថែមប្រាក់ដែលបានសងតាម Settlement
     (payments || []).forEach(function(p) {
       totalPaidInMonth += parseFloat(p.paid_khr || 0);
     });
 
+    // គណនាបំណុលសរុបជាក់ស្តែងចុងក្រោយ
     var finalBalance = Math.max(0, prevDebt + totalPurchased - totalPaidInMonth);
 
     stmtDataCache = {
-      custName: name, sd: sd, ed: ed,
+      custName: name, 
+      sd: sd, 
+      ed: ed,
       items: items || [],
       payments: payments || [],
       prevDebt: prevDebt,
@@ -266,6 +293,7 @@ async function fetchFullStatementFromSupabase() {
 
     stmtCurrentFilter = 'ALL';
     renderStatementReportUI();
+
   } catch(err) {
     container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + err.message + '</div>';
   }
@@ -698,39 +726,75 @@ async function renderStockRepModule() {
   await loadStockRepDataFromSupabase();
 }
 
+// 📦 មុខងារគណនារបាយការណ៍ស្តុក & ដើមទុន (គណនាបំប្លែងថ្លៃដើមទិញចូល ฿ និង $ ចេញជាលុយខ្មែរ ៛ ត្រឹមត្រូវ ១០០%)
 async function loadStockRepDataFromSupabase() {
   try {
     const { data: prods } = await supabaseClient.from('products').select('*');
     if (!prods) return;
 
-    var totalValuation = 0, alertCount = 0;
+    var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+    var totalValuationKhr = 0;
+    var alertCount = 0;
     var tbody = document.getElementById('stockRepTableBody');
     var html = '';
 
     prods.forEach(function(p) {
-      var cost = parseFloat(p.cost || 0);
+      var rawCost = parseFloat(p.cost || 0);
       var stock = parseFloat(p.stock || 0);
       var min = parseFloat(p.min_stock || 5);
-      var val = (p.type === 'ទិញគេ') ? (cost * stock) : 0;
-      totalValuation += val;
+      var curr = (p.currency || 'KHR').toUpperCase();
+
+      // 🪙 គណនាថ្លៃដើមទិញចូលចេញជាលុយខ្មែរ (៛) តាមអត្រាប្តូរប្រាក់ជាក់ស្តែង
+      var costKhr = rawCost;
+      var costDisplay = '-';
+
+      if (rawCost > 0) {
+        if (curr === 'USD') {
+          costKhr = Math.round(rawCost * rateUSD);
+          costDisplay = '$ ' + rawCost.toFixed(2) + ' <small class="text-emerald-700 font-bold block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>';
+        } else if (curr === 'THB') {
+          costKhr = Math.round(rawCost * rateTHB);
+          costDisplay = '฿ ' + rawCost.toLocaleString() + ' <small class="text-amber-800 font-bold block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>';
+        } else {
+          costKhr = Math.round(rawCost);
+          costDisplay = '៛ ' + costKhr.toLocaleString();
+        }
+      }
+
+      // គណនាដើមទុនស្តុកសរុបជាប្រាក់រៀល (៛)
+      var lineValuationKhr = (p.type === 'ទិញគេ') ? (costKhr * stock) : 0;
+      totalValuationKhr += lineValuationKhr;
 
       var isLow = (stock <= min);
       if (isLow && p.type === 'ទិញគេ') alertCount++;
 
-      var statusBadge = (p.type === 'ផលិតឯង') ? '<span class="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 font-bold">ផលិតឯង</span>' : (isLow ? '<span class="px-2 py-0.5 rounded-full text-[10px] bg-red-100 text-red-700 font-bold">ជិតអស់</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] bg-green-100 text-green-700 font-bold">គ្រប់គ្រាន់</span>');
+      var statusBadge = (p.type === 'ផលិតឯង') ? 
+        '<span class="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 font-bold">ផលិតឯង</span>' : 
+        (isLow ? 
+          '<span class="px-2 py-0.5 rounded-full text-[10px] bg-red-100 text-red-700 font-bold animate-pulse">ជិតអស់</span>' : 
+          '<span class="px-2 py-0.5 rounded-full text-[10px] bg-green-100 text-green-700 font-bold">គ្រប់គ្រាន់</span>');
 
       html += '<tr class="border-b hover:bg-gray-50">' +
         '<td class="p-2.5"><img src="' + (p.img || 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png') + '" class="w-8 h-8 object-contain rounded border"></td>' +
-        '<td class="p-2.5 font-bold text-gray-800">' + p.name + '</td>' +
-        '<td class="p-2.5 text-right">' + (cost > 0 ? Number(cost).toLocaleString() + ' ៛' : '-') + '</td>' +
+        '<td class="p-2.5 font-bold text-gray-800">' + p.name + '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + ' | ' + curr + '</span></td>' +
+        '<td class="p-2.5 text-right text-xs leading-tight">' + costDisplay + '</td>' +
         '<td class="p-2.5 text-center font-black ' + (isLow ? 'text-red-600' : 'text-blue-800') + '">' + stock + '</td>' +
-        '<td class="p-2.5 text-right font-black text-green-700">' + (val > 0 ? Number(val).toLocaleString() + ' ៛' : '-') + '</td>' +
+        '<td class="p-2.5 text-right font-black text-green-700 text-xs">' + (lineValuationKhr > 0 ? ('៛ ' + lineValuationKhr.toLocaleString()) : '-') + '</td>' +
         '<td class="p-2.5 text-center">' + statusBadge + '</td>' +
       '</tr>';
     });
 
-    document.getElementById('repStockValuation').innerText = '៛ ' + totalValuation.toLocaleString();
-    document.getElementById('repStockAlertCount').innerText = alertCount + ' មុខទំនិញ';
-    tbody.innerHTML = html;
-  } catch(e) {}
+    // បង្ហាញដើមទុនសរុបជាប្រាក់រៀលខ្មែរ (៛) ត្រឹមត្រូវ ១០០%
+    var valEl = document.getElementById('repStockValuation');
+    var alertEl = document.getElementById('repStockAlertCount');
+
+    if (valEl) valEl.innerText = '៛ ' + Math.round(totalValuationKhr).toLocaleString();
+    if (alertEl) alertEl.innerText = alertCount + ' មុខទំនិញ';
+    if (tbody) tbody.innerHTML = html || '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">គ្មានទំនិញក្នុងស្តុកឡើយ</td></tr>';
+
+  } catch(e) {
+    console.error("Stock rep error:", e);
+  }
 }
