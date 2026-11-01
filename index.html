@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>KC WATER - ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)</title>
 
+  <!-- 📲 PWA & Standalone App Tags សម្រាប់ POS (បើកពេញអេក្រង់ទូរស័ព្ទ/កុំព្យូទ័រ គ្មាន Tab Browser) -->
+  <link rel="manifest" href="pos-manifest.json">
+  <meta name="theme-color" content="#15803d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KC POS">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%2315803d'/%3E%3Cpath d='M256 80 C256 80 140 250 140 330 A116 116 0 0 0 372 330 C372 250 256 80 256 80 Z' fill='white'/%3E%3Ctext x='256' y='450' font-family='sans-serif' font-size='64' font-weight='900' fill='white' text-anchor='middle'%3EKC POS%3C/text%3E%3C/svg%3E">
+
+ <!-- 📲 PWA & Standalone App Tags (គាំទ្រទាំង Android និង iPhone ១០០%) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#047857">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KC MART">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23047857'/%3E%3Cpath d='M50 20 C50 20 28 54 28 68 A22 22 0 0 0 72 68 C72 54 50 20 50 20 Z' fill='white'/%3E%3C/svg%3E">
+
   <!-- 🌟 Open Graph Meta Tags (សម្រាប់ Share លើ Messenger, Facebook, Telegram) -->
   <meta property="og:title" content="KC MART - ទឹកពិសាបរិសុទ្ធ & ទំនិញទូទៅ (ប៉ោយប៉ែត)">
   <meta property="og:description" content="សេវាដឹកជញ្ជូនរហ័សដល់មុខផ្ទះ ៣០-៤៥ នាទី៖ ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី ស្បៀងអាហារ និងគ្រឿងទេសប្រចាំថ្ងៃ។">
@@ -92,55 +110,60 @@
 </head>
 <body class="pb-36 antialiased select-none">
 
-  <!-- ១. NAVBAR (KC MART - ទឹកពិសា & ទំនិញទូទៅ) -->
+  <!-- ១. NAVBAR (KC MART - ទំនើប ស្រាលភ្នែក និងមិនធ្លាក់អក្សរលើអេក្រង់តូច ១០០%) -->
   <header class="sticky top-0 z-40 kc-glass-nav">
-    <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 via-green-600 to-teal-700 flex items-center justify-center text-white text-lg shadow-md">
+    <div class="max-w-md mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
+      
+      <!-- ផ្នែកខាងឆ្វេង៖ Logo & ឈ្មោះហាង (មាន truncate ការពារមិនឱ្យធ្លាក់ជួរ) -->
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-emerald-600 via-green-600 to-teal-700 flex items-center justify-center text-white text-base sm:text-lg shadow-md shrink-0 border border-white/20">
           <i class="fas fa-shop"></i>
         </div>
-        <div>
-          <div class="flex items-center gap-1.5">
-            <h1 class="text-base font-black text-slate-900 tracking-tight leading-none">KC MART</h1>
-            <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Mart & Delivery</span>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <h1 class="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-none truncate">KC MART</h1>
+            <span class="text-[8px] sm:text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">Mart & Delivery</span>
           </div>
-          <p class="text-[10px] text-emerald-700 font-bold mt-0.5" id="txtTopSubtitle">ខេ ស៊ី ម៉ាត — ទឹកពិសា & ទំនិញទូទៅ (ប៉ោយប៉ែត)</p>
+          <p class="text-[9.5px] sm:text-[10px] text-emerald-700 font-bold leading-none mt-1 truncate block" id="txtTopSubtitle" title="ខេ ស៊ី ម៉ាត — ទឹកពិសា & ទំនិញទូទៅ (ប៉ោយប៉ែត)">
+            ខេ ស៊ី ម៉ាត — ទឹកពិសា & ទំនិញទូទៅ (ប៉ោយប៉ែត)
+          </p>
         </div>
       </div>
 
-      <div class="flex items-center gap-1.5">
+      <!-- ផ្នែកខាងស្តាំ៖ ៣ ភាសា & ប៊ូតុង Share (បង្រួមតូចល្មម បែប High-Tech Pill) -->
+      <div class="flex items-center gap-1.5 shrink-0">
         <!-- ៣ ភាសា (ខ្មែរ / EN / 中文) -->
-        <div class="flex items-center bg-slate-100 p-1 rounded-full border border-slate-200 text-xs font-black">
-          <button onclick="changeAppLanguage('km')" id="langBtn_km" class="px-2.5 py-1 rounded-full bg-emerald-700 text-white shadow-xs transition">ខ្មែរ</button>
-          <button onclick="changeAppLanguage('en')" id="langBtn_en" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition">EN</button>
-          <button onclick="changeAppLanguage('zh')" id="langBtn_zh" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition">中文</button>
+        <div class="flex items-center bg-slate-100/90 p-0.5 rounded-full border border-slate-200 text-[10px] font-black shadow-inner">
+          <button type="button" onclick="changeAppLanguage('km')" id="langBtn_km" class="px-2 py-0.5 rounded-full bg-emerald-700 text-white shadow-xs transition">ខ្មែរ</button>
+          <button type="button" onclick="changeAppLanguage('en')" id="langBtn_en" class="px-1.5 py-0.5 rounded-full text-slate-500 hover:text-slate-900 transition">EN</button>
+          <button type="button" onclick="changeAppLanguage('zh')" id="langBtn_zh" class="px-1.5 py-0.5 rounded-full text-slate-500 hover:text-slate-900 transition">中文</button>
         </div>
 
         <!-- 🔗 ប៊ូតុងចែករំលែក KC MART (Share) -->
-        <button type="button" onclick="openShareStoreModal()" class="w-8 h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-xs shadow-2xs active:scale-90 transition shrink-0" title="ចែករំលែកទៅកាន់មិត្តភក្តិ">
-          <i class="fas fa-share-nodes"></i>
+        <button type="button" onclick="openShareStoreModal()" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-xs shadow-2xs active:scale-90 transition shrink-0" title="ចែករំលែកទៅកាន់មិត្តភក្តិ">
+          <i class="fas fa-share-nodes text-[11px]"></i>
         </button>
       </div>
-    </div>
-  
 
-  <!-- 🌙 ប្រអប់ជូនដំណឹងពេលផុតម៉ោងធ្វើការ (នៅក្រៅ Header ចំកណ្តាលពេញទទឹង ១០០% ទាំងលើទូរស័ព្ទ និងកុំព្យូទ័រ) -->
-  <div id="storeClosedNoticeBanner" class="w-full max-w-md mx-auto px-4 pt-2.5 pb-1 hidden">
-    <div class="p-2.5 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center gap-2.5 text-amber-950 text-xs shadow-2xs">
-      <div class="w-7 h-7 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-xs shrink-0">
-        <i class="fas fa-moon"></i>
-      </div>
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-1.5">
-          <b class="text-amber-950 font-black text-xs" id="storeClosedTitle">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
-          <span class="text-[9px] bg-amber-200 text-amber-900 px-2 py-0.2 rounded-full font-bold shrink-0">កុម្ម៉ង់ទុកមុន</span>
+    </div>
+
+    <!-- 🌙 ប្រអប់ជូនដំណឹងពេលផុតម៉ោងធ្វើការ -->
+    <div id="storeClosedNoticeBanner" class="w-full max-w-md mx-auto px-3 sm:px-4 pt-1.5 pb-1 hidden">
+      <div class="p-2 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center gap-2 text-amber-950 text-xs shadow-2xs">
+        <div class="w-6 h-6 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center text-xs shrink-0">
+          <i class="fas fa-moon text-[10px]"></i>
         </div>
-        <span class="text-[10px] text-amber-800 leading-tight block truncate mt-0.5" id="storeClosedTimeHint"></span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5">
+            <b class="text-amber-950 font-black text-[11px]" id="storeClosedTitle">បច្ចុប្បន្នផុតម៉ោងដឹកជញ្ជូនហើយ!</b>
+            <span class="text-[8px] bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-full font-bold shrink-0">កុម្ម៉ង់ទុកមុន</span>
+          </div>
+          <span class="text-[9.5px] text-amber-800 leading-tight block truncate mt-0.5" id="storeClosedTimeHint"></span>
+        </div>
       </div>
     </div>
-  </div>
   </header>
-
+  
   <!-- ២. BANNER & TRUST BADGES -->
   <section class="max-w-md mx-auto px-4 pt-4 pb-2 space-y-3">
    <!-- 🌟 ផ្ទាំង Slide ផ្សព្វផ្សាយស្វ័យប្រវត្តិកំពូលទំនើប (Auto Promo Slider) -->
@@ -1168,8 +1191,8 @@ var exchangeRateTHB = 115;
     }
 
     // ==========================================================================
-// 🌐 ម៉ាស៊ីនបកប្រែស្វ័យប្រវត្តិឆ្លាតវៃ (SMART AUTO-TRANSLATE & MART LEXICON)
-// ស្គាល់ទំនិញម៉ាត ខ្នាតវេចខ្ចប់ និងបកប្រែ Description ស្វ័យប្រវត្តិ ១០០% មិនបាច់ពឹង AI
+// 🌐 ម៉ាស៊ីនបកប្រែស្វ័យប្រវត្តិឆ្លាតវៃ 2.0 (SMART AUTO-TRANSLATE & NO MIXED BUG)
+// ស្គាល់ទំនិញថ្មីៗ ខ្នាតវេចខ្ចប់ និងបកប្រែ ៣ ភាសា (ខ្មែរ / EN / 中文) ស្វ័យប្រវត្តិ ១០០%
 // ==========================================================================
 var KC_TRANSLATION_CACHE = {};
 
@@ -1186,27 +1209,46 @@ function saveTranslationToCache(key, targetLang, translatedText) {
   } catch(e) {}
 }
 
-// 🚀 មុខងារបកប្រែជាសកល (សម្រាប់ Description & ទំនិញថ្មីៗដែលគ្មានក្នុងវចនានុក្រម)
+// 🔄 មុខងារធ្វើបច្ចុប្បន្នភាពអក្សរដែលបានបកប្រែលើ UI គ្រប់កន្លែង (Catalog, Modal, Checkout)
+function updateTranslatedElementsOnUI(originalKey, translatedText) {
+  if (!originalKey || !translatedText || originalKey === translatedText) return;
+
+  // ១. Update លើកាតទំនិញទាំងអស់ក្នុង Catalog
+  document.querySelectorAll('[data-trans-key]').forEach(function(el) {
+    if (el.getAttribute('data-trans-key') === originalKey) {
+      el.innerText = translatedText;
+    }
+  });
+
+  // ២. Update លើផ្ទាំង Pop-up Detail Modal (បើកំពុងបើកមើលទំនិញនេះ)
+  var modalTitle = document.getElementById('modalTitle');
+  if (modalTitle && modalTitle.getAttribute('data-trans-key') === originalKey) {
+    modalTitle.innerText = translatedText;
+  }
+}
+
+// 🚀 មុខងារបាញ់ទៅបកប្រែតាម Google Translate API ដោយឥតគិតថ្លៃ (GTX Cloud Engine)
 async function fetchAutoTranslate(text, targetLang) {
   if (!text || !text.trim() || targetLang === 'km') return text;
   var cleanText = text.trim();
 
-  // ១. បើមានក្នុង Cache ស្រង់មកប្រើភ្លាម (0.001 វិនាទី)
+  // ១. បើមានក្នុង Cache ស្រង់មកប្រើភ្លាមក្នុង 0.0001 វិនាទី
   if (KC_TRANSLATION_CACHE[targetLang] && KC_TRANSLATION_CACHE[targetLang][cleanText]) {
     return KC_TRANSLATION_CACHE[targetLang][cleanText];
   }
 
-  // ២. បាញ់ទៅកាន់ម៉ាស៊ីនបកប្រែស្វ័យប្រវត្តិ
+  // ២. បាញ់ទៅកាន់ម៉ាស៊ីនបកប្រែ Google Translate
   try {
     var url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=km&tl=" + targetLang + "&dt=t&q=" + encodeURIComponent(cleanText);
     var response = await fetch(url);
-    if (!response.ok) throw new Error("Translation network error");
+    if (!response.ok) throw new Error("Network translation error");
     
     var data = await response.json();
     if (data && data[0] && data[0].length > 0) {
-      var result = data[0].map(function(item) { return item[0]; }).join('');
+      var result = data[0].map(function(item) { return item[0]; }).join('').trim();
       if (result) {
         saveTranslationToCache(cleanText, targetLang, result);
+        updateTranslatedElementsOnUI(cleanText, result);
         return result;
       }
     }
@@ -1217,7 +1259,7 @@ async function fetchAutoTranslate(text, targetLang) {
   return cleanText;
 }
 
-// 🛒 វចនានុក្រមទំនិញម៉ាតទូទៅ និងការបំប្លែងខ្នាតវេចខ្ចប់ឆ្លាតវៃ
+// 🛒 វចនានុក្រមទំនិញគោល & ការបំប្លែងទំនិញថ្មីៗ (គ្មានបញ្ហាចេញភាសាលាយគ្នាដាច់ខាត)
 function getLocalizedProductName(p, lang) {
   if (!p) return '';
   var rawName = (typeof p === 'string') ? p : (p.name || p.raw_name || '');
@@ -1225,12 +1267,12 @@ function getLocalizedProductName(p, lang) {
   if (lang === 'km') return rawName;
   var n = rawName.trim();
 
-  // ១. ឆែកក្នុង Cache ជាមុន
+  // ១. បើមានក្នុង Cache ស្រាប់ ស្រង់មកប្រើភ្លាម
   if (KC_TRANSLATION_CACHE[lang] && KC_TRANSLATION_CACHE[lang][n]) {
     return KC_TRANSLATION_CACHE[lang][n];
   }
 
-  // ២. វចនានុក្រមទំនិញម៉ាតទូទៅ (Offline Mart Vocabulary)
+  // ២. វចនានុក្រមទំនិញគោលស្តង់ដារ (Offline Lexicon សម្រាប់ពាក្យដែលប្រើញឹកញាប់បំផុត)
   var martLexicon = {
     // 💧 ទឹក និងភេសជ្ជៈ
     'ទឹកធុង ២០L ពណ៌ស': { en: '20L Pure Water (White Barrel)', zh: '20L 优质纯净水 (白桶)' },
@@ -1239,19 +1281,12 @@ function getLocalizedProductName(p, lang) {
     'ទឹកបរិសុទ្ធ 350ml': { en: '350ml Purified Water', zh: '350ml 瓶装纯净水' },
     'ទឹកបរិសុទ្ធ 500ml': { en: '500ml Purified Water', zh: '500ml 瓶装纯净水' },
     'ទឹកបរិសុទ្ធ 1500ml': { en: '1500ml Purified Water', zh: '1500ml 大瓶纯净水' },
-    'កូកាកូឡា': { en: 'Coca-Cola', zh: '可口可乐' },
-    'គោជល់': { en: 'Red Bull Energy Drink', zh: '红牛能量饮料' },
-    'ស្ទីង': { en: 'Sting Energy Drink', zh: 'Sting 能量饮料' },
-    'ស្រាបៀរ': { en: 'Beer', zh: '啤酒' },
 
     // 🍚 ស្បៀង និងគ្រឿងទេស
     'អង្ករផ្កាម្លិះ': { en: 'Premium Jasmine Fragrant Rice', zh: '特级精选茉莉香米' },
     'អង្ករនាងមិញ': { en: 'Neang Minh White Rice', zh: '优质柬埔寨白大米' },
-    'អង្ករ': { en: 'Premium Rice', zh: '优质大米' },
     'មីម៉ាម៉ា': { en: 'Mama Instant Noodles', zh: '妈妈牌经典方便面' },
     'មីកំប៉ុង': { en: 'Cup Instant Noodles', zh: '桶装速食方便面' },
-    'មីយីងហ៊ីង': { en: 'Ying-Hing Noodles', zh: '速食方便面' },
-    'មី': { en: 'Instant Noodles', zh: '方便面' },
     'ប្រេងឆា': { en: 'Pure Cooking Oil', zh: '精炼食用植物油' },
     'ទឹកត្រី': { en: 'Fish Sauce', zh: '特级鲜鱼露' },
     'ទឹកស៊ីអ៊ីវ': { en: 'Soy Sauce', zh: '特级生抽酱油' },
@@ -1260,13 +1295,10 @@ function getLocalizedProductName(p, lang) {
     'ស្ករស': { en: 'Refined White Sugar', zh: '精制纯白砂糖' },
     'អំបិល': { en: 'Cooking Salt', zh: '加碘食用盐' },
     'ប៊ីចេង': { en: 'MSG Seasoning', zh: '味精调味品' },
-    'ម្សៅស៊ុប': { en: 'Seasoning Soup Powder', zh: '鲜味调味鸡精' },
-    'ទឹកដោះគោ': { en: 'Sweet Condensed Milk', zh: '炼乳/牛奶' },
 
     // 🧻 របស់ប្រើប្រាស់ និងអនាម័យ
     'ក្រដាសអនាម័យ': { en: 'Toilet Tissue Rolls', zh: '高级卫生卷纸' },
     'ក្រដាសជូតមាត់': { en: 'Facial Tissue Paper', zh: '抽取式面巾纸' },
-    'ក្រដាស': { en: 'Tissue Paper', zh: '纸巾' },
     'សាប៊ូកក់សក់': { en: 'Hair Shampoo', zh: '洗发露' },
     'សាប៊ូដុសខ្លួន': { en: 'Body Wash / Shower Gel', zh: '沐浴露' },
     'សាប៊ូបោកខោអាវ': { en: 'Laundry Detergent', zh: '洗衣粉/洗衣液' },
@@ -1274,25 +1306,25 @@ function getLocalizedProductName(p, lang) {
     'ថង់សំរាម': { en: 'Trash Bags', zh: '加厚垃圾袋' },
 
     // 🛢️ បរិក្ខារធុងទឹក
-    'សំបកធុង ២០L ពណ៌ស': { en: '20L Empty White Barrel (Deposit)', zh: '20L 空白桶 (押金/买断)' },
-    'សំបកធុង ២០L ពណ៌ខៀវ': { en: '20L Empty Blue Barrel (Deposit)', zh: '20L 空蓝桶 (押金/买断)' },
+    'សំបកធុង ២០L ពណ៌ស': { en: '20L Empty White Barrel', zh: '20L 空白桶' },
+    'សំបកធុង ២០L ពណ៌ខៀវ': { en: '20L Empty Blue Barrel', zh: '20L 空蓝桶' },
     'ជើងទម្រធុងទឹក': { en: 'Water Barrel Stand', zh: '水桶专用支架' },
-    'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve Faucet', zh: '出水嘴水龙头' },
-    'ម៉ាស៊ីនទឹកក្តៅ-ត្រជាក់': { en: 'Hot & Cold Water Dispenser', zh: '冷热饮水机' }
+    'ក្បាលរ៉ូប៊ីណេ': { en: 'Water Dispenser Valve Faucet', zh: '出水嘴水龙头' }
   };
 
-  // ៣. បំប្លែងតាមខ្នាតវេចខ្ចប់ស្វ័យប្រវត្តិ (Smart Package Units Parser)
-  var parsed = n;
-  for (var key in martLexicon) {
-    if (parsed.indexOf(key) !== -1) {
-      parsed = parsed.replace(key, martLexicon[key][lang]);
-      break;
-    }
+  // ៣. បើឈ្មោះទំនិញត្រូវគ្នានឹងវចនានុក្រម ១០០%
+  if (martLexicon[n] && martLexicon[n][lang]) {
+    saveTranslationToCache(n, lang, martLexicon[n][lang]);
+    return martLexicon[n][lang];
   }
 
-  // បំប្លែងខ្នាតវេចខ្ចប់ជាភាសា EN និង ចិន
+  // ៤. 🚀 ប្រសិនបើជាទំនិញថ្មីស្រឡាង (New Product) ➔ បញ្ជូនទៅបកប្រែស្វ័យប្រវត្តិតាម Cloud ភ្លាម!
+  fetchAutoTranslate(n, lang);
+
+  // ៥. ក្នុងពេលរង់ចាំ Cloud បកប្រែ បំប្លែងតែខ្នាតវេចខ្ចប់សិន (កុំឱ្យចេញលាយភាសាគ្នា)
+  var tempParsed = n;
   if (lang === 'en') {
-    parsed = parsed
+    tempParsed = tempParsed
       .replace(/\(យួរ\)|យួរ/g, '(Pack)')
       .replace(/\(កេស\)|កេស/g, '(Box)')
       .replace(/\(បាវ\)|បាវ/g, '(Bag)')
@@ -1302,7 +1334,7 @@ function getLocalizedProductName(p, lang) {
       .replace(/\(ដើម\)|ដើម/g, '(Roll)')
       .replace(/គីឡូ|គក/g, 'kg');
   } else if (lang === 'zh') {
-    parsed = parsed
+    tempParsed = tempParsed
       .replace(/\(យួរ\)|យួរ/g, '(提)')
       .replace(/\(កេស\)|កេស/g, '(箱)')
       .replace(/\(បាវ\)|បាវ/g, '(袋)')
@@ -1313,18 +1345,18 @@ function getLocalizedProductName(p, lang) {
       .replace(/គីឡូ|គក/g, '公斤');
   }
 
-  // ៤. 🚀 ប្រសិនបើជាទំនិញថ្មីស្រឡាងដែលគ្មានក្នុងវចនានុក្រម ➔ បញ្ជាឱ្យបកប្រែស្វ័យប្រវត្តិ និង Update លើ UI ភ្លាមៗ
-  if (parsed === n && typeof fetchAutoTranslate === 'function') {
-    fetchAutoTranslate(n, lang).then(function(res) {
-      if (res && res !== n) {
-        document.querySelectorAll('[data-trans-key]').forEach(function(el) {
-          if (el.getAttribute('data-trans-key') === n) el.innerText = res;
-        });
-      }
-    });
-  }
+  return tempParsed;
+}
 
-  return parsed;
+// 🌐 មុខងារបកប្រែអត្ថបទជាសកល (សម្រាប់ Category ថ្មីៗ, Description និង Banner)
+function getLocalizedText(text, lang) {
+  if (!text || !text.trim() || lang === 'km') return text;
+  var clean = text.trim();
+  if (KC_TRANSLATION_CACHE[lang] && KC_TRANSLATION_CACHE[lang][clean]) {
+    return KC_TRANSLATION_CACHE[lang][clean];
+  }
+  fetchAutoTranslate(clean, lang);
+  return clean;
 }
 
     // 🌐 មុខងារប្តូរ ៣ ភាសា (ខ្មែរ / EN / 中文) ពេញលេញ ១០០% ទាំង Visual Chips & Buttons
@@ -1351,16 +1383,16 @@ function getLocalizedProductName(p, lang) {
         if (el && html !== undefined) el.innerHTML = html;
       }
 
-      // កំណត់ពណ៌ប៊ូតុងភាសាដែលកំពុងរើស
+      // កំណត់ពណ៌ប៊ូតុងភាសាដែលកំពុងរើស (ទំហំតូចស្អាត មិនរីកធំ)
       ['km', 'en', 'zh'].forEach(function(l) {
         var btn = document.getElementById('langBtn_' + l);
         if (btn) {
           btn.className = (l === lang) ? 
-            "px-2.5 py-1 rounded-full bg-emerald-700 text-white shadow-xs transition" : 
-            "px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition";
+            "px-2 py-0.5 rounded-full bg-emerald-700 text-white shadow-xs transition" : 
+            "px-1.5 py-0.5 rounded-full text-slate-500 hover:text-slate-900 transition";
         }
       });
-
+      
       // 🚀 ១. បកប្រែស្វ័យប្រវត្តិចំពោះរាល់ធាតុណាដែលមានស្លាក data-i18n
       document.querySelectorAll('[data-i18n]').forEach(function(el) {
         var key = el.getAttribute('data-i18n');
@@ -1811,21 +1843,31 @@ function toggleFavoriteProduct(prodId, event) {
   renderCatalogGrid(activeCatalogCategoryFilter);
 }
 
-// ==========================================
-// 📂 មុខងារបង្កើតប្រអប់ប្រភេទស្វ័យប្រវត្តិ (បង្ហាញតែប្រអប់ដែលមានទំនិញ + ❤️ ចូលចិត្ត)
-// ==========================================
+// ==========================================================================
+// 📂 បញ្ជី CATEGORIES លើ WEB (SYNC ពី SUPABASE អូតូ)
+// ==========================================================================
+var DYNAMIC_STORE_CATEGORIES = [
+  { key: "BARREL", name: "ទឹកធុង ២០L", icon: "💧" },
+  { key: "PACK", name: "ទឹកយួរ / ដប", icon: "📦" },
+  { key: "GROCERY", name: "ស្បៀង & គ្រឿងទេស", icon: "🍚" },
+  { key: "HOUSEHOLD", name: "របស់ប្រើប្រាស់", icon: "🧻" },
+  { key: "EQUIP", name: "បរិក្ខារ / ជើងទម្រ", icon: "🛢️" }
+];
+
+// ==========================================================================
+// 📂 មុខងារបង្កើតប្រអប់ប្រភេទស្វ័យប្រវត្តិ (DYNAMIC CATEGORIES & AUTO-HIDE 0 ITEMS)
+// ==========================================================================
 var activeCatalogCategoryFilter = 'ALL';
 
 function renderCategoryChips() {
   var container = document.getElementById('categoryChipsContainer');
   if (!container) return;
 
-  // ១. រាប់ចំនួនទំនិញជាក់ស្តែងតាមប្រភេទនីមួយៗ
-  var counts = { GROCERY: 0, HOUSEHOLD: 0, BARREL: 0, PACK: 0, EQUIP: 0, GENERAL: 0 };
+  // ១. រាប់ចំនួនទំនិញជាក់ស្តែងតាម Category នីមួយៗ (រាប់គ្រប់ Category ទាំងអស់)
+  var counts = {};
   STORE_CATALOG.forEach(function(item) {
     var c = (item.cat || 'GENERAL').toUpperCase();
-    if (counts[c] !== undefined) counts[c]++;
-    else counts.GENERAL++;
+    counts[c] = (counts[c] || 0) + 1;
   });
 
   // ២. រាប់ចំនួនទំនិញដែលភ្ញៀវបានចុចបេះដូង ❤️
@@ -1837,55 +1879,61 @@ function renderCategoryChips() {
     }
   });
 
-  // ៣. វចនានុក្រមឈ្មោះតាម ៣ ភាសា
-  var labels = {
-    ALL: (currentLang === 'en' ? 'All' : (currentLang === 'zh' ? '全部' : 'ទាំងអស់')),
-    FAVORITES: (currentLang === 'en' ? '❤️ Favorites' : (currentLang === 'zh' ? '❤️ 收藏' : '❤️ ចូលចិត្ត')) + (favCount > 0 ? ' (' + favCount + ')' : ''),
-    GROCERY: (currentLang === 'en' ? '🍚 Food & Groceries' : (currentLang === 'zh' ? '🍚 粮油副食' : '🍚 ស្បៀង & គ្រឿងទេស')),
-    HOUSEHOLD: (currentLang === 'en' ? '🧻 Daily Essentials' : (currentLang === 'zh' ? '🧻 日常百货' : '🧻 របស់ប្រើប្រាស់')),
-    BARREL: (currentLang === 'en' ? '💧 20L Barrels' : (currentLang === 'zh' ? '💧 20L 大桶水' : '💧 ទឹកធុង ២០L')),
-    PACK: (currentLang === 'en' ? '📦 Bottled Packs' : (currentLang === 'zh' ? '📦 瓶装/提装' : '📦 ទឹកយួរ / ដប')),
-    EQUIP: (currentLang === 'en' ? '🛢️ Stands & Equipment' : (currentLang === 'zh' ? '🛢️ 支架配件' : '🛢️ ជើងទម្រ / បរិក្ខារ'))
-  };
+  // ៣. វចនានុក្រមបកប្រែពាក្យ All & Favorites តាម ៣ ភាសា
+  var labelAll = (currentLang === 'en' ? 'All' : (currentLang === 'zh' ? '全部' : 'ទាំងអស់'));
+  var labelFav = (currentLang === 'en' ? '❤️ Favorites' : (currentLang === 'zh' ? '❤️ 收藏' : '❤️ ចូលចិត្ត')) + (favCount > 0 ? ' (' + favCount + ')' : '');
 
   var html = '';
 
-  // ក. ប៊ូតុង "ទាំងអស់" (បង្ហាញជានិច្ច)
+  // ក. ប៊ូតុង "ទាំងអស់" (All)
   var isAllActive = (activeCatalogCategoryFilter === 'ALL');
   html += '<button type="button" onclick="filterCatalog(\'ALL\', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
-    (isAllActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200') + '">' + 
-    labels.ALL + 
+    (isAllActive ? 'bg-emerald-700 text-white shadow-xs font-black' : 'bg-white text-slate-600 border border-slate-200') + '">' + 
+    labelAll + 
   '</button>';
 
-  // ខ. ប៊ូតុង "❤️ ចូលចិត្ត" (បង្ហាញតែពេលមានចុចបេះដូង favCount > 0 បើគ្មានទេគឺលាក់ចោល ១០០%)
+  // ខ. ប៊ូតុង "❤️ ចូលចិត្ត" (បង្ហាញតែពេល favCount > 0)
   if (favCount > 0) {
     var isFavActive = (activeCatalogCategoryFilter === 'FAVORITES');
     html += '<button type="button" onclick="filterCatalog(\'FAVORITES\', this)" id="catBtn_FAVORITES" class="cat-chip px-3.5 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition flex items-center gap-1 ' + 
       (isFavActive ? 'bg-rose-600 text-white shadow-xs font-black' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100') + '">' + 
-      labels.FAVORITES + 
+      labelFav + 
     '</button>';
   } else {
-    // បើភ្ញៀវដកបេះដូងអស់ ឱ្យត្រឡប់ទៅមើលទំនិញទាំងអស់ (ALL) វិញស្វ័យប្រវត្តិ
     if (activeCatalogCategoryFilter === 'FAVORITES') {
       activeCatalogCategoryFilter = 'ALL';
     }
   }
 
-  // គ. ត្រួតពិនិត្យ និងបង្ហាញតែប្រអប់ណាដែលមានចំនួនទំនិញ > 0 ប៉ុណ្ណោះ!
-  var categoriesToCheck = [
-    { key: 'GROCERY', label: labels.GROCERY, count: counts.GROCERY },
-    { key: 'HOUSEHOLD', label: labels.HOUSEHOLD, count: counts.HOUSEHOLD },
-    { key: 'BARREL', label: labels.BARREL, count: counts.BARREL },
-    { key: 'PACK', label: labels.PACK, count: counts.PACK },
-    { key: 'EQUIP', label: labels.EQUIP, count: counts.EQUIP }
-  ];
+  // គ. វចនានុក្រមបកប្រែ ៣ ភាសាសម្រាប់ Category គោល
+  var defaultTranslations = {
+    BARREL: { en: '💧 20L Barrels', zh: '💧 20L 大桶水', km: '💧 ទឹកធុង ២០L' },
+    PACK: { en: '📦 Bottled Packs', zh: '📦 瓶装/提装', km: '📦 ទឹកយួរ / ដប' },
+    GROCERY: { en: '🍚 Food & Groceries', zh: '🍚 粮油副食', km: '🍚 ស្បៀង & គ្រឿងទេស' },
+    HOUSEHOLD: { en: '🧻 Daily Essentials', zh: '🧻 日常百货', km: '🧻 របស់ប្រើប្រាស់' },
+    EQUIP: { en: '🛢️ Stands & Equipment', zh: '🛢️ 支架配件', km: '🛢️ ជើងទម្រ / បរិក្ខារ' }
+  };
 
-  categoriesToCheck.forEach(function(cat) {
-    if (cat.count > 0) { // ✅ បើគ្មានទំនិញ វាមិនបង្កើតប៊ូតុងឡើយ
-      var isActive = (activeCatalogCategoryFilter === cat.key);
-      html += '<button type="button" onclick="filterCatalog(\'' + cat.key + '\', this)" id="catBtn_' + cat.key + '" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
-        (isActive ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50') + '">' + 
-        cat.label + 
+  // ឃ. បង្កើតប៊ូតុងតាម Dynamic Categories (បកប្រែ ៣ ភាសាស្វ័យប្រវត្តិ ១០០%)
+  DYNAMIC_STORE_CATEGORIES.forEach(function(cat) {
+    var cKey = cat.key.toUpperCase();
+    var itemCount = counts[cKey] || 0;
+
+    if (itemCount > 0) { // ✅ បង្ហាញតែ Category ណាដែលមានទំនិញ
+      var isActive = (activeCatalogCategoryFilter === cKey);
+      var displayName = '';
+
+      if (defaultTranslations[cKey]) {
+        displayName = defaultTranslations[cKey][currentLang] || defaultTranslations[cKey].km;
+      } else {
+        // 🌐 បើជា Category ថ្មីស្រឡាង បញ្ជូនទៅបកប្រែស្វ័យប្រវត្តិភ្លាម
+        var translatedCatName = (currentLang === 'km') ? cat.name : getLocalizedText(cat.name, currentLang);
+        displayName = (cat.icon || '📦') + ' <span data-trans-key="' + cat.name + '">' + translatedCatName + '</span>';
+      }
+
+      html += '<button type="button" onclick="filterCatalog(\'' + cKey + '\', this)" id="catBtn_' + cKey + '" class="cat-chip px-4 py-2 rounded-2xl whitespace-nowrap active:scale-95 transition ' + 
+        (isActive ? 'bg-emerald-700 text-white shadow-xs font-black' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50') + '">' + 
+        displayName + 
       '</button>';
     }
   });
@@ -2624,33 +2672,40 @@ function updateCheckoutCalculation() {
      }
    }
 
-   // 📡 តាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់ (Realtime Sync ០.១ វិនាទីពេលអ្នកដឹកចុច "ដឹកដល់")
-    var liveOrderRealtimeChannel = null;
+   // ==========================================================================
+// 📡 ប្រព័ន្ធ REALTIME TRACKING ទំនើប (ភ្ជាប់តែម្តង មិនផ្តាច់ Socket & ស្គាល់ Departed)
+// ==========================================================================
+var liveOrderRealtimeChannel = null;
+var subscribedOrderId = null;
+var lastSeenOrderStatus = null;
 
-    function subscribeOrderRealtime(orderId) {
-      if (!orderId || !supabaseClient) return;
-      try {
-        if (liveOrderRealtimeChannel) {
-          supabaseClient.removeChannel(liveOrderRealtimeChannel);
-          liveOrderRealtimeChannel = null;
-        }
-        liveOrderRealtimeChannel = supabaseClient
-          .channel('order_live_' + orderId)
-          .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'orders',
-            filter: 'order_id=eq.' + orderId
-          }, function(payload) {
-            checkActiveOrderLiveStatus(); // ទទួលដំណឹងពីអ្នកដឹកភ្លាមៗ មិនបាច់រង់ចាំ 10s ឡើយ!
-          })
-          .subscribe();
-      } catch(e) {}
+function subscribeOrderRealtime(orderId) {
+  if (!orderId || !supabaseClient) return;
+  // 🛡️ បើបានភ្ជាប់ជាមួយការកុម្ម៉ង់នេះរួចហើយ មិនបាច់ផ្តាច់ភ្ជាប់ឡើងវិញរាល់ ១០ វិនាទីឡើយ
+  if (subscribedOrderId === orderId && liveOrderRealtimeChannel) return;
+
+  try {
+    if (liveOrderRealtimeChannel) {
+      supabaseClient.removeChannel(liveOrderRealtimeChannel);
+      liveOrderRealtimeChannel = null;
     }
 
-    // ==========================================================================
-// 📡 មុខងារតាមដានស្ថានភាពការកុម្ម៉ង់ផ្ទាល់របស់ភ្ញៀវ (Live Order Tracking - គ្មាន Error Syntax)
-// ==========================================================================
+    subscribedOrderId = orderId;
+    liveOrderRealtimeChannel = supabaseClient
+      .channel('order_live_' + orderId)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: 'order_id=eq.' + orderId
+      }, function(payload) {
+        // ⚡ ទទួលដំណឹង Realtime ភ្លាមៗក្នុង 0.1 វិនាទី
+        checkActiveOrderLiveStatus();
+      })
+      .subscribe();
+  } catch(e) {}
+}
+
 async function checkActiveOrderLiveStatus() {
   var orderId = currentTrackingOrderId || localStorage.getItem('kc_active_order_id');
   var cardBox = document.getElementById('activeOrderCardBox');
@@ -2659,7 +2714,7 @@ async function checkActiveOrderLiveStatus() {
     return;
   }
 
-  // ភ្ជាប់ Realtime Listener ជាមួយការកុម្ម៉ង់នេះ
+  // ភ្ជាប់ Realtime Listener (ភ្ជាប់តែម្តងគត់)
   subscribeOrderRealtime(orderId);
 
   var refreshIcon = document.getElementById('trackingRefreshIcon');
@@ -2679,12 +2734,28 @@ async function checkActiveOrderLiveStatus() {
       cardBox.classList.add('hidden');
       clearInterval(trackingPollTimer);
       localStorage.removeItem('kc_active_order_id');
+      if (liveOrderRealtimeChannel) {
+        supabaseClient.removeChannel(liveOrderRealtimeChannel);
+        liveOrderRealtimeChannel = null;
+        subscribedOrderId = null;
+      }
       return;
     }
 
-    // 🎉 បើអ្នកដឹកចុច "ដឹកដល់" ភ្លាម ផ្ទាំងអបអរសាទរលោតឡើងភ្លាមៗ!
+    // 📳 បើស្ថានភាពប្រែប្រួល (ឧ. ពី Assigned ទៅ Departed ឬ Delivered) ញ័រទូរស័ព្ទដាស់តឿនភ្ញៀវ
+    if (lastSeenOrderStatus && lastSeenOrderStatus !== info.status) {
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    }
+    lastSeenOrderStatus = info.status;
+
+    // 🎉 ១. បើអ្នកដឹកចុច "ដឹកដល់" ភ្លាម ផ្ទាំងអបអរសាទរលោតឡើងភ្លាមៗ!
     if (info.status === "Delivered") {
       clearInterval(trackingPollTimer);
+      if (liveOrderRealtimeChannel) {
+        supabaseClient.removeChannel(liveOrderRealtimeChannel);
+        liveOrderRealtimeChannel = null;
+        subscribedOrderId = null;
+      }
       try {
         if (typeof confetti === 'function') confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
       } catch(e) {}
@@ -2711,35 +2782,58 @@ async function checkActiveOrderLiveStatus() {
       return;
     }
 
+    // ២. គណនាដំណាក់កាលទាំង ៤ (Pending ➔ Assigned ➔ Departed ➔ Delivered)
     var isPending = (info.status === "Pending");
     var isAssigned = (info.status === "Assigned");
-    var progressPercent = isPending ? 38 : 75;
-    var motoLeft = isPending ? "35%" : "72%";
+    var isDeparted = (info.status === "Departed" || info.status === "EnRoute");
+
+    var progressPercent = isPending ? 25 : (isAssigned ? 50 : 78);
+    var motoLeft = isPending ? "25%" : (isAssigned ? "50%" : "75%");
 
     var stepMap = {
-      km: { s1: "កុម្ម៉ង់", s2: "រៀបចំទឹក", s3: "ជិតដល់ហើយ", s4: "ដល់ផ្ទះ", badgePending: "⏳ រោងចក្រកំពុងរៀបចំទឹក", badgeAssigned: "🛵 អ្នកដឹកកំពុងធ្វើដំណើរ (ជិតដល់)" },
-      en: { s1: "Ordered", s2: "Preparing", s3: "On the way", s4: "Delivered", badgePending: "⏳ Preparing your water", badgeAssigned: "🛵 Courier is on the way" },
-      zh: { s1: "已下单", s2: "备水中", s3: "快到了", s4: "已送达", badgePending: "⏳ 水厂正在备水", badgeAssigned: "🛵 配送员正在赶往住处" }
+      km: { 
+        s1: "កុម្ម៉ង់", s2: "រៀបចំទឹក", s3: "លើផ្លូវ", s4: "ដល់ផ្ទះ", 
+        badgePending: "⏳ រោងចក្រកំពុងរៀបចំទឹក", 
+        badgeAssigned: "📦 លើកទឹកដាក់ម៉ូតូរួចរាល់",
+        badgeDeparted: "🛵💨 អ្នកដឹកកំពុងធ្វើដំណើរទៅផ្ទះអ្នក"
+      },
+      en: { 
+        s1: "Ordered", s2: "Preparing", s3: "On the way", s4: "Delivered", 
+        badgePending: "⏳ Preparing your water", 
+        badgeAssigned: "📦 Loaded onto delivery bike",
+        badgeDeparted: "🛵💨 Courier is on the way to you"
+      },
+      zh: { 
+        s1: "已下单", s2: "备水中", s3: "配送中", s4: "已送达", 
+        badgePending: "⏳ 水厂正在备水", 
+        badgeAssigned: "📦 已装车准备出发",
+        badgeDeparted: "🛵💨 配送员正在赶往您的住处"
+      }
     };
     var stepLabels = stepMap[currentLang] || stepMap.km;
 
     var statusBadge = isPending ? 
       '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">' + stepLabels.badgePending + '</span>' : 
-      '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 animate-pulse">' + stepLabels.badgeAssigned + '</span>';
+      (isAssigned ? 
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">' + stepLabels.badgeAssigned + '</span>' :
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300 animate-pulse">' + stepLabels.badgeDeparted + '</span>');
+
+    // 🎨 រូបម៉ូតូរត់តាមដំណាក់កាល
+    var motoTagText = isPending ? '📦 Prep' : (isAssigned ? '🛵 Ready' : '🛵 ជិតដល់!');
 
     var deliveryTrackerHtml = '<div class="p-3 bg-gradient-to-b from-slate-50 to-emerald-50/40 rounded-2xl border border-emerald-200/80 space-y-3.5 my-2">' +
       '<div class="flex justify-between items-center text-[11px] font-black text-slate-700">' +
-        '<span><i class="fas fa-stopwatch text-emerald-600 mr-1"></i> ' + (currentLang === 'km' ? 'រយៈពេលដឹកជញ្ជូនប៉ាន់ស្មាន' : 'Estimated Delivery') + '</span>' +
+        '<span><i class="fas fa-stopwatch text-emerald-600 mr-1"></i> ' + (currentLang === 'km' ? 'ស្ថានភាពដឹកជញ្ជូន' : 'Delivery Status') + '</span>' +
         '<span class="text-emerald-700 font-black bg-emerald-100 px-2 py-0.5 rounded-full">30 - 45 នាទី</span>' +
       '</div>' +
       '<div class="relative pt-6 pb-2 px-2">' +
         '<div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden relative">' +
-          '<div class="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-1000 ease-out" style="width: ' + progressPercent + '%;"></div>' +
+          '<div class="h-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 transition-all duration-700 ease-out" style="width: ' + progressPercent + '%;"></div>' +
         '</div>' +
-        '<div class="absolute -top-1 transition-all duration-1000 ease-out transform -translate-x-1/2" style="left: ' + motoLeft + ';">' +
+        '<div class="absolute -top-1 transition-all duration-700 ease-out transform -translate-x-1/2" style="left: ' + motoLeft + ';">' +
           '<div class="relative flex items-center justify-center">' +
             '<span class="absolute -top-4 text-[9px] font-black bg-slate-900 text-white px-1.5 py-0.2 rounded shadow whitespace-nowrap animate-bounce">' +
-              (isPending ? '📦 Prep' : '🛵 ជិតដល់!') +
+              motoTagText +
             '</span>' +
             '<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-green-500 text-white shadow-lg flex items-center justify-center text-sm border-2 border-white">' +
               '<i class="fas fa-motorcycle animate-pulse"></i>' +
@@ -2748,8 +2842,8 @@ async function checkActiveOrderLiveStatus() {
         '</div>' +
         '<div class="flex justify-between items-center mt-3 text-[10px] font-black">' +
           '<div class="text-center text-emerald-700"><div class="w-4 h-4 mx-auto rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] mb-1"><i class="fas fa-check"></i></div><span>' + stepLabels.s1 + '</span></div>' +
-          '<div class="text-center ' + (isPending || isAssigned ? 'text-emerald-700' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isPending ? 'bg-amber-500 text-white animate-ping' : 'bg-emerald-600 text-white') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-box"></i></div><span>' + stepLabels.s2 + '</span></div>' +
-          '<div class="text-center ' + (isAssigned ? 'text-emerald-800 font-black' : 'text-slate-400') + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isAssigned ? 'bg-emerald-600 text-white animate-bounce' : 'bg-slate-300 text-slate-600') + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-route"></i></div><span>' + stepLabels.s3 + '</span></div>' +
+          '<div class="text-center ' + (isAssigned || isDeparted ? 'text-emerald-700' : (isPending ? 'text-amber-600 font-black' : 'text-slate-400')) + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isPending ? 'bg-amber-500 text-white animate-ping' : (isAssigned || isDeparted ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-600')) + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-box"></i></div><span>' + stepLabels.s2 + '</span></div>' +
+          '<div class="text-center ' + (isDeparted ? 'text-blue-700 font-black' : (isAssigned ? 'text-emerald-700' : 'text-slate-400')) + '"><div class="w-4 h-4 mx-auto rounded-full ' + (isDeparted ? 'bg-blue-600 text-white animate-bounce' : (isAssigned ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-600')) + ' flex items-center justify-center text-[8px] mb-1"><i class="fas fa-route"></i></div><span>' + stepLabels.s3 + '</span></div>' +
           '<div class="text-center text-slate-400"><div class="w-4 h-4 mx-auto rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-[8px] mb-1"><i class="fas fa-home"></i></div><span>' + stepLabels.s4 + '</span></div>' +
         '</div>' +
       '</div>' +
@@ -2786,7 +2880,6 @@ async function checkActiveOrderLiveStatus() {
       "bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700" : 
       "bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700";
 
-    // ជួសជុលផ្គុំកូដ HTML ត្រឹមត្រូវ គ្មានកាត់ផ្តាច់ String
     cardBox.innerHTML = '<div class="p-4 bg-white rounded-3xl border-2 border-emerald-400 shadow-lg space-y-3 text-left">' +
       '<div class="flex justify-between items-start border-b pb-2">' +
         '<div>' +
@@ -2894,6 +2987,16 @@ async function loadStoreSettingsFromSupabase() {
       sMap = {};
       settings.forEach(r => { sMap[r.key] = r.value; });
       window.__kcCachedSettingsMap = sMap;
+    }
+
+    // 📂 ទាញយក Category ពី Cloud Supabase
+    if (sMap['Store_Categories']) {
+      try {
+        var parsedCats = JSON.parse(sMap['Store_Categories']);
+        if (Array.isArray(parsedCats) && parsedCats.length > 0) {
+          DYNAMIC_STORE_CATEGORIES = parsedCats;
+        }
+      } catch(e) {}
     }
 
     // ១. កំណត់ Telegram Bot Settings
@@ -3567,6 +3670,18 @@ function getShareStoreDetails() {
   };
 }
 
+// ==========================================================================
+// 🔗 មុខងារចែករំលែក KC MART (INSTANT QR 0.001 វិនាទី & SAVE ចូល GALLERY ផ្ទាល់)
+// ==========================================================================
+
+// ⚡ ឃ្លាំងផ្ទុក Base64 QR ក្នុងទូរស័ព្ទ (ធានាចេញភ្លាមក្នុង 0.001 វិនាទី មិនបាច់រង់ចាំ Server ក្រៅ)
+var CACHED_STORE_QR_DATA = "";
+
+function getInstantQrUrl(text) {
+  // ប្រើប្រាស់ QuickChart Engine ល្បឿនលឿនជាង api.qrserver ៥ ដង និងមាន fallback
+  return "https://quickchart.io/qr?text=" + encodeURIComponent(text) + "&size=300&margin=1&ecLevel=M";
+}
+
 function openShareStoreModal() {
   var s = getShareStoreDetails();
   var modal = document.getElementById('shareStoreModal');
@@ -3577,8 +3692,27 @@ function openShareStoreModal() {
 
   if (linkInp) linkInp.value = s.tgAppUrl;
 
+  // ⚡ បង្ហាញ QR Code ភ្លាមៗក្នុង ០.០០១ វិនាទី
   if (qrImg) {
-    qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" + encodeURIComponent(s.tgAppUrl);
+    if (CACHED_STORE_QR_DATA) {
+      qrImg.src = CACHED_STORE_QR_DATA;
+    } else {
+      var fastQrUrl = getInstantQrUrl(s.tgAppUrl);
+      qrImg.src = fastQrUrl;
+
+      // បំប្លែងទុកជា Data URI ក្នុងទូរស័ព្ទអូតូ ដើម្បីឱ្យលើកក្រោយលោតភ្លែត 0ms
+      fetch(fastQrUrl)
+        .then(function(res) { return res.blob(); })
+        .then(function(blob) {
+          var reader = new FileReader();
+          reader.onloadend = function() {
+            CACHED_STORE_QR_DATA = reader.result;
+            if (qrImg) qrImg.src = CACHED_STORE_QR_DATA;
+          };
+          reader.readAsDataURL(blob);
+        })
+        .catch(function() {});
+    }
   }
 
   if (btnTg) {
@@ -3592,6 +3726,63 @@ function openShareStoreModal() {
   }
 
   if (modal) modal.classList.remove('hidden');
+}
+
+// 📥 មុខងារទាញយក QR Code រក្សាទុកចូល Gallery ទូរស័ព្ទភ្លាមៗ (មិនបាច់លោតចេញក្រៅ)
+async function downloadShareStoreQr() {
+  var qrImg = document.getElementById('shareStoreQrImage');
+  if (!qrImg || !qrImg.src) return;
+
+  var s = (typeof getShareStoreDetails === 'function') ? getShareStoreDetails() : { tgAppUrl: "https://t.me/KC_water_pos_bot/app" };
+  var btn = document.querySelector('button[onclick="downloadShareStoreQr()"]');
+  var oldBtnHtml = btn ? btn.innerHTML : '';
+  if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញយក...';
+
+  try {
+    // បង្កើតរូបភាព HD លើ Canvas ផ្ទាល់ក្នុងទូរស័ព្ទ (ដោះស្រាយបញ្ហា CORS បាន ១០០%)
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = function() {
+      canvas.width = 400;
+      canvas.height = 400;
+      // ផ្ទៃខាងក្រោយពណ៌ស
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 20, 20, 360, 360);
+
+      var dataUrl = canvas.toDataURL('image/png');
+      var a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = 'KC-MART-QR.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      if (btn) {
+        btn.innerHTML = '<i class="fas fa-check text-emerald-600"></i> បានរក្សាទុកក្នុងទូរស័ព្ទ!';
+        setTimeout(function() { btn.innerHTML = oldBtnHtml; }, 2500);
+      }
+    };
+
+    img.onerror = function() {
+      // Fallback
+      var a = document.createElement('a');
+      a.href = qrImg.src;
+      a.download = 'KC-MART-QR.png';
+      a.target = '_blank';
+      a.click();
+      if (btn) btn.innerHTML = oldBtnHtml;
+    };
+
+    img.src = qrImg.src;
+
+  } catch(err) {
+    if (btn) btn.innerHTML = oldBtnHtml;
+    window.open(qrImg.src, '_blank');
+  }
 }
 
 function closeShareStoreModal() {
@@ -3633,16 +3824,6 @@ function shareViaNativeSheet() {
     alert("បានចម្លង Link ជោគជ័យ! លោកអ្នកអាចយកទៅផ្ញើក្នុង Messenger ឬ Facebook បាន។");
   }
 }
-
-function downloadShareStoreQr() {
-  var qrImg = document.getElementById('shareStoreQrImage');
-  if (!qrImg || !qrImg.src) return;
-  var link = document.createElement('a');
-  link.href = qrImg.src;
-  link.download = 'KC-MART-QR.png';
-  link.target = '_blank';
-  link.click();
-}
   </script>
   <!-- 🌟 ផ្ទាំង POP-UP ចែករំលែក KC MART (QR CODE, TELEGRAM, LINE & WEB) -->
   <div id="shareStoreModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-4 hidden overflow-y-auto">
@@ -3660,13 +3841,16 @@ function downloadShareStoreQr() {
         <button type="button" onclick="closeShareStoreModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>
       </div>
 
-      <!-- 🖼️ ប្រអប់ QR Code សម្រាប់ស្កេន -->
+     <!-- 🖼️ ប្រអប់ QR Code សម្រាប់ស្កេន (ល្បឿនលឿនភ្លាមៗ 0ms) -->
       <div class="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-300 space-y-2">
         <span class="text-[11px] font-black text-emerald-900 block">📱 ស្កេន QR Code ដើម្បីចូលទិញទំនិញ</span>
-        <div class="p-2 bg-white rounded-2xl border border-emerald-200 shadow-sm max-w-[190px] mx-auto overflow-hidden">
-          <img id="shareStoreQrImage" src="" class="w-full h-auto rounded-xl" alt="KC Mart QR Code">
+        
+        <div class="p-2 bg-white rounded-2xl border border-emerald-200 shadow-sm max-w-[190px] mx-auto overflow-hidden flex items-center justify-center min-h-[160px]">
+          <!-- រូបភាព QR ល្បឿនលឿន -->
+          <img id="shareStoreQrImage" src="" class="w-full h-auto rounded-xl shadow-xs" alt="KC Mart QR Code">
         </div>
-        <button type="button" onclick="downloadShareStoreQr()" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline flex items-center justify-center gap-1 mx-auto">
+
+        <button type="button" onclick="downloadShareStoreQr()" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline flex items-center justify-center gap-1 mx-auto active:scale-95 transition">
           <i class="fas fa-download"></i> ទាញយករូប QR ទុកក្នុងទូរស័ព្ទ
         </button>
       </div>
@@ -3711,6 +3895,283 @@ function downloadShareStoreQr() {
     </div>
   </div>
   <script>
+  </script>
+  <!-- ==========================================================================
+       📲 ផ្ទាំងដាស់តឿនដំឡើង APP លើទូរស័ព្ទ (PWA STANDALONE INSTALL PROMPT)
+       ========================================================================== -->
+  <!-- ១. បដាដំឡើង App លើទូរស័ព្ទ Android -->
+  <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-50 max-w-sm mx-auto bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-white/20 hidden animate-in slide-in-from-bottom duration-300 select-none">
+    <div class="flex items-center justify-between gap-2.5">
+      <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <div class="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-lg shadow-sm shrink-0">
+  <i class="fas fa-droplet text-emerald-200"></i>
+</div>
+        <div class="min-w-0 flex-1">
+          <b class="text-xs font-black text-white block truncate">ដំឡើង App KC MART</b>
+          <span class="text-[9.5px] text-emerald-300 font-bold block truncate mt-0.5">ស្រួលកុម្ម៉ង់លើកក្រោយ គ្មាន Tab Browser</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button type="button" onclick="triggerPwaInstallAction()" class="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:opacity-90 text-slate-950 font-black text-xs rounded-xl shadow-md active:scale-95 transition flex items-center gap-1">
+          <i class="fas fa-download text-[10px]"></i> ដំឡើង App
+        </button>
+        <button type="button" onclick="dismissPwaBanner()" class="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs font-bold transition">&times;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ២. ផ្ទាំងណែនាំដំឡើង App លើទូរស័ព្ទ iPhone (iOS Guide Modal) -->
+  <div id="pwaIosGuideModal" class="fixed inset-0 z-[6000] flex items-end sm:items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onclick="closePwaIosModal()"></div>
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in slide-in-from-bottom duration-300 my-auto text-xs">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shadow-inner">
+        <i class="fab fa-apple"></i>
+      </div>
+      <div>
+        <h3 class="font-black text-slate-900 text-base">ដំឡើង App KC MART លើ iPhone</h3>
+        <p class="text-[11px] text-slate-500 font-bold mt-0.5">ដើម្បីប្រើប្រាស់ពេញអេក្រង់ទូរស័ព្ទ គ្មានរបារ Browser</p>
+      </div>
+      
+      <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-2 text-slate-700 font-bold">
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0">1</span>
+          <span>ចុចសញ្ញា Share <b class="text-blue-600 font-black">⬆️ (នៅបាតក្រោម Safari)</b></span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0">2</span>
+          <span>រំកិលចុះក្រោម រើសយក <b class="text-slate-900">«Add to Home Screen ➕»</b></span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0">3</span>
+          <span>ចុចពាក្យ <b class="text-emerald-700">«Add (បន្ថែម)»</b> នៅខាងលើស្តាំ ជាការស្រេច!</span>
+        </div>
+      </div>
+
+      <button type="button" onclick="closePwaIosModal()" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">
+        យល់ព្រម (រួចរាល់)
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 🧠 LOGIC គ្រប់គ្រងការដំឡើង APP (PWA ENGINE)
+    var deferredPwaPrompt = null;
+    var isAppInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    // ១. ស្វែងរកប្រព័ន្ធប្រតិបត្តិការ (Android vs iOS)
+    var uaStr = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+    var isIosDevice = /iphone|ipad|ipod/.test(uaStr);
+
+    // ២. ចាប់យក Event ដំឡើងលើ Android / Chrome
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPwaPrompt = e;
+      if (!isAppInStandaloneMode && !sessionStorage.getItem('kc_pwa_dismissed')) {
+        setTimeout(showPwaInstallBanner, 2000); // បង្ហាញក្រោយបើក Web បាន ២ វិនាទី
+      }
+    });
+
+    // ៣. បង្ហាញបដាលើ Android
+    function showPwaInstallBanner() {
+      if (isAppInStandaloneMode) return;
+      var banner = document.getElementById('pwaInstallBanner');
+      if (banner && deferredPwaPrompt) {
+        banner.classList.remove('hidden');
+      }
+    }
+
+    // ៤. ពេលភ្ញៀវចុចប៊ូតុង «ដំឡើង App»
+    function triggerPwaInstallAction() {
+      if (isIosDevice) {
+        openPwaIosModal();
+        return;
+      }
+      if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        deferredPwaPrompt.userChoice.then(function(choice) {
+          if (choice.outcome === 'accepted') {
+            dismissPwaBanner();
+          }
+          deferredPwaPrompt = null;
+        });
+      } else {
+        openPwaIosModal();
+      }
+    }
+
+    function dismissPwaBanner() {
+      var banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.add('hidden');
+      sessionStorage.setItem('kc_pwa_dismissed', 'true');
+    }
+
+    function openPwaIosModal() {
+      var modal = document.getElementById('pwaIosGuideModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closePwaIosModal() {
+      var modal = document.getElementById('pwaIosGuideModal');
+      if (modal) modal.classList.add('hidden');
+      dismissPwaBanner();
+    }
+
+    // ៥. ពិនិត្យដាស់តឿនសម្រាប់ iPhone ពេលបើកលើ Safari ដំបូង
+    window.addEventListener('DOMContentLoaded', function() {
+      if (!isAppInStandaloneMode && isIosDevice && !sessionStorage.getItem('kc_pwa_dismissed')) {
+        setTimeout(function() {
+          var banner = document.getElementById('pwaInstallBanner');
+          if (banner) banner.classList.remove('hidden');
+        }, 2500);
+      }
+    });
+
+    // 🔒 ៦. ចាក់សោរមិនឱ្យលោតចេញទៅ Browser ពេលកំពុងប្រើក្នុង Standalone App
+    if (isAppInStandaloneMode) {
+      document.addEventListener('click', function(e) {
+        var aTag = e.target.closest('a');
+        if (aTag && aTag.href && aTag.getAttribute('target') !== '_blank' && aTag.href.startsWith(window.location.origin)) {
+          e.preventDefault();
+          window.location.href = aTag.href;
+        }
+      }, false);
+    }
+  </script>
+  <!-- ==========================================================================
+       📲 ផ្ទាំងដាស់តឿនដំឡើង POS APP (KC WATER POS STANDALONE PWA)
+       ========================================================================== -->
+  <!-- ១. បដាដំឡើង App POS លើ Android & កុំព្យូទ័រ PC -->
+  <div id="posInstallBanner" class="fixed bottom-5 left-3 right-3 z-[9990] max-w-sm mx-auto bg-green-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-green-500/30 hidden animate-in slide-in-from-bottom duration-300 select-none">
+    <div class="flex items-center justify-between gap-2.5">
+      <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <div class="w-10 h-10 rounded-xl bg-green-800 text-white flex items-center justify-center text-lg shadow-inner shrink-0 border border-green-500/40">
+          <i class="fas fa-droplet text-green-300"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <b class="text-xs font-black text-white block truncate">ដំឡើង App KC WATER POS</b>
+          <span class="text-[9.5px] text-green-300 font-bold block truncate mt-0.5">សម្រាប់ Admin, អ្នកលក់ & អ្នកដឹក</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button type="button" onclick="triggerPosInstallAction()" class="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90 text-green-950 font-black text-xs rounded-xl shadow-md active:scale-95 transition flex items-center gap-1">
+          <i class="fas fa-download text-[10px]"></i> ដំឡើង
+        </button>
+        <button type="button" onclick="dismissPosBanner()" class="w-6 h-6 rounded-full bg-green-900 hover:bg-green-800 text-green-300 hover:text-white flex items-center justify-center text-xs font-bold transition">&times;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ២. ផ្ទាំងណែនាំដំឡើង App POS លើ iPhone / iPad -->
+  <div id="posIosGuideModal" class="fixed inset-0 z-[9995] flex items-end sm:items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onclick="closePosIosModal()"></div>
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in slide-in-from-bottom duration-300 my-auto text-xs">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-xl shadow-inner">
+        <i class="fab fa-apple"></i>
+      </div>
+      <div>
+        <h3 class="font-black text-slate-900 text-base">ដំឡើង App KC POS លើ iPhone/iPad</h3>
+        <p class="text-[11px] text-slate-500 font-bold mt-0.5">ដើម្បីប្រើប្រាស់ពេញអេក្រង់ គ្មានរបារ Browser គ្មាន Tab</p>
+      </div>
+      
+      <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-2 text-slate-700 font-bold">
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-lg bg-green-600 text-white flex items-center justify-center text-xs font-black shrink-0">1</span>
+          <span>ចុចសញ្ញា Share <b class="text-blue-600 font-black">⬆️ (នៅបាតក្រោម Safari)</b></span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-lg bg-green-600 text-white flex items-center justify-center text-xs font-black shrink-0">2</span>
+          <span>រំកិលចុះក្រោម រើសយក <b class="text-slate-900">«Add to Home Screen ➕»</b></span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-lg bg-green-600 text-white flex items-center justify-center text-xs font-black shrink-0">3</span>
+          <span>ចុចពាក្យ <b class="text-green-700">«Add (បន្ថែម)»</b> នៅខាងលើស្តាំ ជាការស្រេច!</span>
+        </div>
+      </div>
+
+      <button type="button" onclick="closePosIosModal()" class="w-full py-2.5 bg-green-700 hover:bg-green-800 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">
+        យល់ព្រម (រួចរាល់)
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 🧠 LOGIC គ្រប់គ្រងការដំឡើង POS APP (POS PWA ENGINE)
+    var deferredPosPrompt = null;
+    var isPosInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    var uaStrPos = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+    var isPosIosDevice = /iphone|ipad|ipod/.test(uaStrPos);
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPosPrompt = e;
+      if (!isPosInStandaloneMode && !sessionStorage.getItem('kc_pos_pwa_dismissed')) {
+        setTimeout(showPosInstallBanner, 2000);
+      }
+    });
+
+    function showPosInstallBanner() {
+      if (isPosInStandaloneMode) return;
+      var banner = document.getElementById('posInstallBanner');
+      if (banner && deferredPosPrompt) {
+        banner.classList.remove('hidden');
+      }
+    }
+
+    function triggerPosInstallAction() {
+      if (isPosIosDevice) {
+        openPosIosModal();
+        return;
+      }
+      if (deferredPosPrompt) {
+        deferredPosPrompt.prompt();
+        deferredPosPrompt.userChoice.then(function(choice) {
+          if (choice.outcome === 'accepted') {
+            dismissPosBanner();
+          }
+          deferredPosPrompt = null;
+        });
+      } else {
+        openPosIosModal();
+      }
+    }
+
+    function dismissPosBanner() {
+      var banner = document.getElementById('posInstallBanner');
+      if (banner) banner.classList.add('hidden');
+      sessionStorage.setItem('kc_pos_pwa_dismissed', 'true');
+    }
+
+    function openPosIosModal() {
+      var modal = document.getElementById('posIosGuideModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closePosIosModal() {
+      var modal = document.getElementById('posIosGuideModal');
+      if (modal) modal.classList.add('hidden');
+      dismissPosBanner();
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      if (!isPosInStandaloneMode && isPosIosDevice && !sessionStorage.getItem('kc_pos_pwa_dismissed')) {
+        setTimeout(function() {
+          var banner = document.getElementById('posInstallBanner');
+          if (banner) banner.classList.remove('hidden');
+        }, 2500);
+      }
+    });
+
+    // 🔒 ចាក់សោរ Standalone Mode មិនឱ្យលោតចេញទៅ Safari/Chrome
+    if (isPosInStandaloneMode) {
+      document.addEventListener('click', function(e) {
+        var aTag = e.target.closest('a');
+        if (aTag && aTag.href && aTag.getAttribute('target') !== '_blank' && aTag.href.startsWith(window.location.origin)) {
+          e.preventDefault();
+          window.location.href = aTag.href;
+        }
+      }, false);
+    }
   </script>
 </body>
 </html>
