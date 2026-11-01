@@ -6,6 +6,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>KC WATER - POS System (Supabase Cloud)</title>
+
+  <!-- 📲 PWA & Standalone App Tags សម្រាប់ POS (បើកពេញអេក្រង់ទូរស័ព្ទ/PC គ្មាន Tab) -->
+  <link rel="manifest" href="pos-manifest.json">
+  <meta name="theme-color" content="#15803d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KC POS">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%2315803d'/%3E%3Cpath d='M256 80 C256 80 140 250 140 330 A116 116 0 0 0 372 330 C372 250 256 80 256 80 Z' fill='white'/%3E%3Ctext x='256' y='450' font-family='sans-serif' font-size='64' font-weight='900' fill='white' text-anchor='middle'%3EKC POS%3C/text%3E%3C/svg%3E">
   
   <!-- 📚 បណ្ណាល័យជំនួយ UI & ស្តង់ដារ -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -239,6 +248,136 @@
         p.type = 'password';
         icon.className = 'fas fa-eye text-gray-400';
       }
+    }
+  </script>
+  <!-- 📲 បដាដំឡើង App POS លើ Android & កុំព្យូទ័រ PC -->
+  <div id="posInstallBanner" class="fixed bottom-5 left-3 right-3 z-[9990] max-w-sm mx-auto bg-green-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-green-500/30 hidden animate-in slide-in-from-bottom duration-300 select-none">
+    <div class="flex items-center justify-between gap-2.5">
+      <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <div class="w-10 h-10 rounded-xl bg-green-800 text-white flex items-center justify-center text-lg shadow-inner shrink-0 border border-green-500/40">
+          <i class="fas fa-droplet text-green-300"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <b class="text-xs font-black text-white block truncate">ដំឡើង App KC WATER POS</b>
+          <span class="text-[9.5px] text-green-300 font-bold block truncate mt-0.5">សម្រាប់ Admin, អ្នកលក់ & អ្នកដឹក</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button type="button" onclick="triggerPosInstallAction()" class="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90 text-green-950 font-black text-xs rounded-xl shadow-md active:scale-95 transition flex items-center gap-1">
+          <i class="fas fa-download text-[10px]"></i> ដំឡើង
+        </button>
+        <button type="button" onclick="dismissPosBanner()" class="w-6 h-6 rounded-full bg-green-900 hover:bg-green-800 text-green-300 hover:text-white flex items-center justify-center text-xs font-bold transition">&times;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📲 ផ្ទាំងណែនាំដំឡើង App POS លើ iPhone / iPad -->
+  <div id="posIosGuideModal" class="fixed inset-0 z-[9995] flex items-end sm:items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onclick="closePosIosModal()"></div>
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in slide-in-from-bottom duration-300 my-auto text-xs">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-xl shadow-inner">
+        <i class="fab fa-apple"></i>
+      </div>
+      <div>
+        <h3 class="font-black text-slate-900 text-base">ដំឡើង App KC POS លើ iPhone/iPad</h3>
+        <p class="text-[11px] text-slate-500 font-bold mt-0.5">ដើម្បីប្រើប្រាស់ពេញអេក្រង់ គ្មានរបារ Browser គ្មាន Tab</p>
+      </div>
+      
+      <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-2 text-slate-700 font-bold">
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-lg bg-green-600 text-white flex items-center justify-center text-xs font-black shrink-0">1</span>
+          <span>ចុចសញ្ញា Share <b class="text-blue-600 font-black">⬆️ (នៅបាតក្រោម Safari)</b></span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-lg bg-green-600 text-white flex items-center justify-center text-xs font-black shrink-0">2</span>
+          <span>រំកិលចុះក្រោម រើសយក <b class="text-slate-900">«Add to Home Screen ➕»</b></span>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <span class="w-6 h-6 rounded-lg bg-green-600 text-white flex items-center justify-center text-xs font-black shrink-0">3</span>
+          <span>ចុចពាក្យ <b class="text-green-700">«Add (បន្ថែម)»</b> នៅខាងលើស្តាំ ជាការស្រេច!</span>
+        </div>
+      </div>
+
+      <button type="button" onclick="closePosIosModal()" class="w-full py-2.5 bg-green-700 hover:bg-green-800 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">
+        យល់ព្រម (រួចរាល់)
+      </button>
+    </div>
+  </div>
+
+  <script>
+    var deferredPosPrompt = null;
+    var isPosInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    var uaStrPos = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+    var isPosIosDevice = /iphone|ipad|ipod/.test(uaStrPos);
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPosPrompt = e;
+      if (!isPosInStandaloneMode && !sessionStorage.getItem('kc_pos_pwa_dismissed')) {
+        setTimeout(showPosInstallBanner, 2000);
+      }
+    });
+
+    function showPosInstallBanner() {
+      if (isPosInStandaloneMode) return;
+      var banner = document.getElementById('posInstallBanner');
+      if (banner && deferredPosPrompt) {
+        banner.classList.remove('hidden');
+      }
+    }
+
+    function triggerPosInstallAction() {
+      if (isPosIosDevice) {
+        openPosIosModal();
+        return;
+      }
+      if (deferredPosPrompt) {
+        deferredPosPrompt.prompt();
+        deferredPosPrompt.userChoice.then(function(choice) {
+          if (choice.outcome === 'accepted') {
+            dismissPosBanner();
+          }
+          deferredPosPrompt = null;
+        });
+      } else {
+        openPosIosModal();
+      }
+    }
+
+    function dismissPosBanner() {
+      var banner = document.getElementById('posInstallBanner');
+      if (banner) banner.classList.add('hidden');
+      sessionStorage.setItem('kc_pos_pwa_dismissed', 'true');
+    }
+
+    function openPosIosModal() {
+      var modal = document.getElementById('posIosGuideModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closePosIosModal() {
+      var modal = document.getElementById('posIosGuideModal');
+      if (modal) modal.classList.add('hidden');
+      dismissPosBanner();
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      if (!isPosInStandaloneMode && isPosIosDevice && !sessionStorage.getItem('kc_pos_pwa_dismissed')) {
+        setTimeout(function() {
+          var banner = document.getElementById('posInstallBanner');
+          if (banner) banner.classList.remove('hidden');
+        }, 2500);
+      }
+    });
+
+    if (isPosInStandaloneMode) {
+      document.addEventListener('click', function(e) {
+        var aTag = e.target.closest('a');
+        if (aTag && aTag.href && aTag.getAttribute('target') !== '_blank' && aTag.href.startsWith(window.location.origin)) {
+          e.preventDefault();
+          window.location.href = aTag.href;
+        }
+      }, false);
     }
   </script>
 </body>
