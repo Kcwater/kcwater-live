@@ -220,26 +220,95 @@ function switchAdminOnlineTab(tab) {
   renderAdminOnlineOrdersUI();
 }
 
-// 📋 មុខងារបង្ហាញបញ្ជីកុម្ម៉ង់ Online លើផ្ទាំង Admin (បង្ហាញទីតាំង និងចំណាំពេញលេញ)
+// ==========================================================================
+// 🧠 មុខងារជំនួយបំបែកព័ត៌មានទីតាំង (GPS, ម៉ោងដឹក, អគារ និងចំណាំផ្ទះ)
+// ==========================================================================
+function parseOrderLocationDetails(raw) {
+  if (!raw) return { mapUrl: '', timeText: '', buildingText: '', noteText: '' };
+  var str = String(raw).trim();
+
+  // ១. ស្រង់យកតែ Link ផែនទី Google Maps សុទ្ធ
+  var mapMatch = str.match(/https?:\/\/[^\s|\[\]]+/);
+  var mapUrl = mapMatch ? mapMatch[0] : '';
+
+  // លុប Link ចេញសិនដើម្បីងាយស្រួលញែកផ្នែកផ្សេងៗ
+  var workingStr = mapUrl ? str.replace(mapUrl, '').trim() : str;
+  if (workingStr.startsWith('|')) workingStr = workingStr.substring(1).trim();
+
+  var timeText = '';
+  var buildingText = '';
+
+  // ២. ស្រង់យកទិន្នន័យក្នុងវង់ក្រចក [...] (ម៉ោង & ប្រភេទអគារ)
+  var bracketMatches = workingStr.match(/\[(.*?)\]/g) || [];
+  bracketMatches.forEach(function(b) {
+    var content = b.replace(/^\[/, '').replace(/\]$/, '').trim();
+    if (content.includes('⚡') || content.includes('⏰') || content.includes('ដឹកភ្លាម') || content.includes('វេនដឹក') || content.includes('ម៉ោង')) {
+      timeText = content;
+    } else if (content.includes('🏠') || content.includes('🏢') || content.includes('ជាន់') || content.includes('ផ្ទាល់ដី')) {
+      buildingText = content;
+    }
+  });
+
+  // ៣. ស្រង់យកតែចំណាំផ្ទះសុទ្ធ (ដក Link និងវង់ក្រចកចេញទាំងអស់)
+  var cleanStr = workingStr;
+  bracketMatches.forEach(function(b) {
+    cleanStr = cleanStr.replace(b, '');
+  });
+  cleanStr = cleanStr.replace(/\|\s*ចំណាំ:?/gi, '').replace(/^ចំណាំ:?/gi, '').trim();
+
+  return {
+    mapUrl: mapUrl,
+    timeText: timeText,
+    buildingText: buildingText,
+    noteText: cleanStr
+  };
+}
+
+// 🎨 បង្កើតប្លុក Badges ព័ត៌មានទីតាំងស្អាតៗ
+function formatOrderLocationBadgeHTML(rawLocation) {
+  var loc = parseOrderLocationDetails(rawLocation);
+  var html = '';
+
+  // បង្ហាញផ្លាក Badges ម៉ោង និងអគារ
+  if (loc.timeText || loc.buildingText) {
+    html += '<div class="flex flex-wrap items-center gap-1.5 pt-1">';
+    if (loc.timeText) {
+      html += '<span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 font-black text-[10px] flex items-center gap-1"><i class="fas fa-clock text-emerald-600"></i> ' + loc.timeText + '</span>';
+    }
+    if (loc.buildingText) {
+      html += '<span class="px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 border border-blue-300 font-black text-[10px] flex items-center gap-1"><i class="fas fa-building text-blue-600"></i> ' + loc.buildingText + '</span>';
+    }
+    html += '</div>';
+  }
+
+  // បង្ហាញចំណាំទីតាំងផ្ទះសុទ្ធ
+  if (loc.noteText) {
+    html += '<div class="flex items-start gap-1.5 pt-1 text-[11px] text-slate-800 font-bold">' +
+      '<span class="text-slate-400 whitespace-nowrap"><i class="fas fa-location-dot text-rose-500 mr-1"></i>ចំណាំផ្ទះ៖</span>' +
+      '<span class="leading-snug break-words">' + loc.noteText + '</span>' +
+    '</div>';
+  }
+
+  return html;
+}
+
+// 📋 មុខងារបង្ហាញបញ្ជីកុម្ម៉ង់ Online លើផ្ទាំង Admin (កាតរៀបរយ ស្រួលមើល មិនរញ៉េរញ៉ៃ)
 function renderAdminOnlineOrdersUI() {
   var container = document.getElementById('onlineOrdersAdminListContainer');
   if (!container) return;
 
   var list = adminOnlineOrdersCache || [];
 
-  // ១. គណនាចំនួនតាមប្រភេទ
   var pendingCount = 0;
   var assignedCount = 0;
   var deliveredCount = 0;
-  var totalAmountToCollect = 0;
 
   list.forEach(function(o) {
-    if (o.status === 'Pending') { pendingCount++; totalAmountToCollect += parseFloat(o.total || 0); }
-    if (o.status === 'Assigned') { assignedCount++; totalAmountToCollect += parseFloat(o.total || 0); }
-    if (o.status === 'Delivered') { deliveredCount++; }
+    if (o.status === 'Pending') pendingCount++;
+    if (o.status === 'Assigned') assignedCount++;
+    if (o.status === 'Delivered') deliveredCount++;
   });
 
-  // ២. របារប៊ូតុងតម្រង (Filter Tabs)
   var tabsHtml = '<div class="flex flex-wrap gap-1 p-1 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs mb-3 font-bold">' +
     '<button type="button" onclick="switchAdminOnlineTab(\'ACTIVE\')" class="flex-1 py-1.5 px-2 rounded-xl transition ' + (activeAdminOnlineTab === 'ACTIVE' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white') + '">🔥 កំពុងដំណើរការ (' + (pendingCount + assignedCount) + ')</button>' +
     '<button type="button" onclick="switchAdminOnlineTab(\'PENDING\')" class="py-1.5 px-2.5 rounded-xl transition ' + (activeAdminOnlineTab === 'PENDING' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-600 hover:bg-white') + '">⏳ រង់ចាំ (' + pendingCount + ')</button>' +
@@ -247,7 +316,6 @@ function renderAdminOnlineOrdersUI() {
     '<button type="button" onclick="switchAdminOnlineTab(\'DELIVERED\')" class="py-1.5 px-2.5 rounded-xl transition ' + (activeAdminOnlineTab === 'DELIVERED' ? 'bg-emerald-600 text-white shadow-xs' : 'text-emerald-800 hover:bg-white') + '">✅ ដឹកដល់ថ្ងៃនេះ (' + deliveredCount + ')</button>' +
   '</div>';
 
-  // ៣. ចម្រាញ់ទិន្នន័យតាម Tab
   var filteredList = list.filter(function(o) {
     if (activeAdminOnlineTab === 'ACTIVE') return o.status === 'Pending' || o.status === 'Assigned';
     if (activeAdminOnlineTab === 'PENDING') return o.status === 'Pending';
@@ -264,7 +332,6 @@ function renderAdminOnlineOrdersUI() {
     return;
   }
 
-  // ៤. ស្រង់តែអ្នកដឹកជញ្ជូនរោងចក្រ KC WATER ប៉ុណ្ណោះ
   var companyDrivers = allCustomers.filter(function(c) {
     return (c.type === 'CompanyDriver' || c.linked_boss === 'KC WATER');
   });
@@ -283,13 +350,12 @@ function renderAdminOnlineOrdersUI() {
     var cleanPhone = String(o.phone || '').replace(/[^0-9]/g, '');
     var safeName = String(o.customer_name || '').replace(/'/g, "\\'");
     var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
-    var locationDisplay = (o.location_url || o.address || '').trim();
+    var rawLoc = (o.location_url || o.address || '').trim();
 
     var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
     var tgChatLink = "https://t.me/+" + intlPhone;
     var waChatLink = "https://wa.me/" + intlPhone;
 
-    // បង្កើតបញ្ជីអ្នកដឹកសម្រាប់ Order នេះ (ជ្រើសរើសឈ្មោះដែលបានចាត់ចែងស្រាប់)
     var driverOptions = '<option value="">-- រើសអ្នកដឹករបស់រោងចក្រ --</option>';
     companyDrivers.forEach(function(c) {
       var dPhone = c.phone ? (' (' + c.phone + ')') : '';
@@ -297,7 +363,6 @@ function renderAdminOnlineOrdersUI() {
       driverOptions += '<option value="' + c.full_name + '" data-phone="' + (c.phone || '') + '" ' + isSelected + '>' + c.full_name + dPhone + '</option>';
     });
 
-    // ប៊ូតុងចាត់ចែងអ្នកដឹក
     var assignDriverHtml = isDelivered ? 
       ('<div class="p-2 bg-emerald-50 rounded-xl border border-emerald-200 text-xs flex justify-between items-center text-emerald-950 font-bold">' +
         '<span>🛵 អ្នកដឹកជញ្ជូន៖ <b>' + (o.driver_name || 'KC WATER') + '</b></span>' +
@@ -315,7 +380,6 @@ function renderAdminOnlineOrdersUI() {
         '</div>' +
       '</div>');
 
-    // ជួរប៊ូតុងសកម្មភាព (ខល, Telegram, WhatsApp, ផែនទី, រូបផ្ទះ, ដឹកដល់)
     var actionButtonsHtml = '<div class="flex flex-wrap items-center justify-end gap-1.5 pt-0.5 text-xs">' +
       (cleanPhone ? 
       '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-800 rounded-xl font-bold border border-green-200 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
@@ -326,14 +390,14 @@ function renderAdminOnlineOrdersUI() {
       '<a href="' + tgChatLink + '" target="_blank" class="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl font-bold border border-sky-300 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
         '<i class="fab fa-telegram text-xs text-sky-600"></i> Telegram' +
       '</a>' : '') +
-      
+
       (cleanPhone ? 
       '<a href="' + waChatLink + '" target="_blank" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 rounded-xl font-bold border border-emerald-300 shadow-2xs flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
         '<i class="fab fa-whatsapp text-xs text-emerald-600"></i> WhatsApp' +
       '</a>' : '') +
 
-      (locationDisplay ? 
-      '<button type="button" onclick="openOrderMap(\'' + locationDisplay.replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+      (rawLoc ? 
+      '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> ផែនទី' +
       '</button>' : '');
 
@@ -343,6 +407,11 @@ function renderAdminOnlineOrdersUI() {
         '<i class="fas fa-camera text-xs text-amber-600"></i> រូបផ្ទះ' +
       '</button>';
     }
+
+    // 🌟 បន្ថែមប៊ូតុងមើលបញ្ជីដេប៉ូសម្រាប់ Admin
+    actionButtonsHtml += '<button type="button" onclick="openOrderPickupManifestModal(\'' + o.order_id + '\')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-900 rounded-xl font-bold border border-rose-300 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+      '<i class="fas fa-boxes-packing text-xs text-rose-600"></i> បញ្ជីដេប៉ូ' +
+    '</button>';
 
     if (!isDelivered) {
       actionButtonsHtml += '<button type="button" onclick="cancelOnlineOrder(\'' + o.order_id + '\', \'' + safeName + '\')" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-bold border border-red-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
@@ -370,7 +439,8 @@ function renderAdminOnlineOrdersUI() {
         '</div>' +
       '</div>' +
 
-      '<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1 text-xs text-gray-700">' +
+      // 📦 ប្លុកព័ត៌មានទំនិញ & Badges ទីតាំងថ្មី (គ្មាន Link ឆៅរញ៉េរញ៉ៃ)
+      '<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1.5 text-xs text-gray-700">' +
         '<div class="flex items-start gap-1.5">' +
           '<span class="text-gray-400 font-bold whitespace-nowrap">📦 ទំនិញ៖</span>' +
           '<b class="text-slate-900">' + o.items + '</b>' +
@@ -379,11 +449,7 @@ function renderAdminOnlineOrdersUI() {
           '<span class="text-gray-400 font-bold whitespace-nowrap">🛢️ សំបកធុង៖</span>' +
           '<span class="font-bold text-emerald-700">' + (o.barrel_swap || 'មានសំបកដូរ') + '</span>' +
         '</div>' +
-        (locationDisplay ? 
-        '<div class="flex items-start gap-1.5 pt-0.5">' +
-          '<span class="text-gray-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
-          '<span class="text-slate-800 font-bold text-[11px] leading-snug break-words">' + locationDisplay + '</span>' +
-        '</div>' : '') +
+        formatOrderLocationBadgeHTML(rawLoc) +
       '</div>' +
 
       assignDriverHtml +
@@ -393,6 +459,7 @@ function renderAdminOnlineOrdersUI() {
 
   container.innerHTML = html;
 }
+
 
 function closeOnlineOrdersModal() {
   var modal = document.getElementById('onlineOrdersAdminModal');
@@ -522,6 +589,82 @@ async function assignDriverToOnlineOrder(orderId, custName) {
       await kcAlert({ title: "កំហុសចាត់ចែង", message: err.message, type: "danger" });
     } else {
       showToast("កំហុសចាត់ចែង៖ " + err.message, "error");
+    }
+  }
+}
+
+// ==========================================================================
+// 🚀 មុខងារអ្នកដឹកចុច "ចេញដំណើរទៅហើយ" (DEPARTED / EN ROUTE)
+// ==========================================================================
+async function markOrderAsDeparted(orderId, custName) {
+  var ok = true;
+  if (typeof kcConfirm === 'function') {
+    ok = await kcConfirm({
+      title: "ចេញដំណើរដឹកទឹក",
+      message: "តើអ្នកពិតជាបានរៀបចំទឹកលើម៉ូតូរួចរាល់ ហើយចាប់ផ្តើមចេញដំណើរទៅផ្ទះរបស់ [" + custName + "] មែនទេ?",
+      type: "info",
+      confirmText: "🚀 ចេញដំណើរឥឡូវនេះ"
+    });
+  }
+
+  if (!ok) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('orders')
+      .update({ status: 'Departed' })
+      .eq('order_id', orderId);
+
+    if (error) throw error;
+
+    // សំឡេង Chime និងញ័រទូរស័ព្ទបញ្ជាក់
+    if (typeof playOrderChime === 'function') playOrderChime();
+    if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ចេញដំណើរជោគជ័យ! 🛵💨",
+        message: "ប្រព័ន្ធបានជូនដំណឹងទៅកាន់ភ្ញៀវ [" + custName + "] ថាអ្នកកំពុងធ្វើដំណើរទៅហើយ។ សូមបើកបរដោយសុវត្ថិភាព!",
+        type: "success"
+      });
+    } else {
+      showToast("🚀 កំពុងធ្វើដំណើរទៅផ្ទះភ្ញៀវ...", "success");
+    }
+
+    // 🔔 ផ្ញើ Telegram Alert ទៅកាន់ក្រុម
+    try {
+      var timeKhNow = new Date().toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
+      var tgMsg = "🛵💨 <b>[KC WATER - អ្នកដឹកបានចេញដំណើរហើយ]</b>\n\n" +
+                  "🆔 <b>កូដកុម្ម៉ង់៖</b> <code>" + orderId + "</code>\n" +
+                  "👤 <b>អតិថិជន៖</b> " + custName + "\n" +
+                  "🛵 <b>អ្នកដឹក៖</b> " + (currentUser.fullName || "អ្នកដឹក KC") + "\n" +
+                  "🕒 <b>ម៉ោងចេញដំណើរ៖</b> " + timeKhNow;
+
+      var targetChatId = (telegramConfig && telegramConfig.driverChatId) ? telegramConfig.driverChatId : ((telegramConfig && telegramConfig.chatId) ? telegramConfig.chatId : '');
+      if (typeof sendTelegramAlert === 'function') {
+        sendTelegramAlert(tgMsg, targetChatId);
+      }
+    } catch(tgE) {}
+
+    // Refresh ផ្ទាំងអ្នកដឹកឡើងវិញភ្លាមៗ
+    if (typeof renderCompanyDeliveriesModule === 'function') {
+      renderCompanyDeliveriesModule(false);
+    }
+    var adminModal = document.getElementById('onlineOrdersAdminModal');
+    if (adminModal && !adminModal.classList.contains('hidden')) {
+      openOnlineOrdersModal();
+    }
+
+  } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
     }
   }
 }
@@ -708,7 +851,7 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
   document.getElementById('completeDeliveryModal').classList.remove('hidden');
 }
 
-// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ ចេញវិក្កយបត្រ & កាត់ស្តុក (កែសម្រួលរួចរាល់)
+// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ ចេញវិក្កយបត្រ & បែងចែកថ្លៃដឹកច្បាស់ៗ
 async function executeFinalCompleteDelivery() {
   if (!activeDeliveryTaskData) return;
 
@@ -762,14 +905,12 @@ async function executeFinalCompleteDelivery() {
 
       // 🎁 ឆែកមើលថាតើជាទំនិញថែម Promotion Free ដែរឬទេ
       var isFreeGift = rawName.includes('[Free]') || rawName.includes('🎁') || rawName.includes('កាដូ');
-      // សម្អាតស្លាក [Free] ចេញ ដើម្បីយកឈ្មោះទំនិញសុទ្ធទៅកាត់ស្តុក
       var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').replace(/\[កាដូថែម Free\]/gi, '').trim();
 
       var matchedProd = allProducts.find(function(p) {
         return p.name.trim().toLowerCase() === cleanName.toLowerCase();
       });
 
-      // បើជាទំនិញ Free គឺតម្លៃ = 0៛ បើជាទំនិញទិញធម្មតា គឺយកតម្លៃលក់
       var unitPrice = isFreeGift ? 0 : (matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0);
       var lineTotal = unitPrice * qty;
       totalAllocated += lineTotal;
@@ -778,7 +919,7 @@ async function executeFinalCompleteDelivery() {
         transaction_id: tid,
         customer_name: custName,
         product_name: isFreeGift ? ("🎁 [Free] " + (matchedProd ? matchedProd.name : cleanName)) : (matchedProd ? matchedProd.name : rawName),
-        clean_product_name: matchedProd ? matchedProd.name : cleanName, // សម្រាប់កាត់ស្តុក
+        clean_product_name: matchedProd ? matchedProd.name : cleanName,
         qty: qty,
         price: unitPrice,
         currency: "KHR",
@@ -790,13 +931,16 @@ async function executeFinalCompleteDelivery() {
       });
     });
 
-    // បើនៅសល់ប្រាក់ថ្លៃដឹក ឬទំនិញដទៃ ផ្គុំចូលជាជួរថ្លៃដឹកជញ្ជូន
+    // 🚚 បែងចែកច្បាស់ៗរវាង «សេវាដឹកជញ្ជូន» និង «ថ្លៃទិញសំបកធុង»
     var diff = total - totalAllocated;
     if (diff > 0) {
+      var isBarrelDeposit = (task.barrel_swap && task.barrel_swap.includes('ទិញសំបក'));
+      var lineLabel = isBarrelDeposit ? "ថ្លៃទិញសំបកធុងថ្មី (Barrel Deposit)" : "សេវាដឹកជញ្ជូនដល់ផ្ទះ (Delivery Fee)";
+
       rowsToInsert.push({
         transaction_id: tid,
         customer_name: custName,
-        product_name: "សេវាដឹកជញ្ជូន / សំបកធុង",
+        product_name: lineLabel,
         clean_product_name: "",
         qty: 1,
         price: diff,
@@ -813,13 +957,13 @@ async function executeFinalCompleteDelivery() {
     if (rowsToInsert.length > 0) {
       var rowsForDb = rowsToInsert.map(function(r) {
         var copy = Object.assign({}, r);
-        delete copy.clean_product_name; // ដក Field បណ្តោះអាសន្នចេញមុន Save
+        delete copy.clean_product_name;
         return copy;
       });
       await supabaseClient.from('transactions').insert(rowsForDb);
     }
 
-    // ៤. កាត់ស្តុកទំនិញទិញគេ (កាត់ទាំងទំនិញលក់ធម្មតា និងទំនិញ Promotion Free ត្រឹមត្រូវ ១០០%)
+    // ៤. កាត់ស្តុកទំនិញទិញគេ
     for (var i = 0; i < rowsToInsert.length; i++) {
       var row = rowsToInsert[i];
       var targetSearchName = (row.clean_product_name || row.product_name).toLowerCase();
@@ -838,7 +982,7 @@ async function executeFinalCompleteDelivery() {
     closeCompleteDeliveryModal();
     showToast("បានកត់ត្រាការដឹកដល់ និងប្រមូលប្រាក់ជោគជ័យ!", "success");
 
-    // ៦. 🧾 បង្កើតវិក្កយបត្រឌីជីថល Pop-up ភ្លាមៗ (Digital Receipt)
+    // ៦. 🧾 បង្កើតវិក្កយបត្រឌីជីថល Pop-up ភ្លាមៗ
     if (typeof generateReceiptImage === 'function') {
       try {
         generateReceiptImage(tid, custName, total, total, rowsToInsert, "វិក្កយបត្រដឹកជញ្ជូន (DELIVERY RECEIPT)");
@@ -851,7 +995,7 @@ async function executeFinalCompleteDelivery() {
     if (typeof playOrderChime === 'function') playOrderChime();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80 });
 
-    // ៨. 🔄 បញ្ជា Refresh ផ្ទាំង Admin + អ្នកដឹកភ្លាមៗ ដោយមិនបាច់ចុច Refresh លើ Browser
+    // ៨. 🔄 Refresh ផ្ទាំង Admin + អ្នកដឹកភ្លាមៗ
     if (currentUser && currentUser.type === 'CompanyDriver') {
       if (typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
     }
@@ -946,7 +1090,7 @@ function openDriverDirectQr(amount, custName) {
   }
 }
 
-// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (Refresh ស្ងាត់ៗ មិនលោតកន្ត្រាក់ឡើយ)
+// 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (មានប៊ូតុង "ចេញដំណើរ" ទំនើប)
 async function renderCompanyDeliveriesModule(isSilentRefresh) {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -984,22 +1128,20 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
     var todayStr = getCambodiaToday();
     var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
-    // ១. ទាញការងារកំពុងដឹក (Assigned) របស់អ្នកដឹកនេះ
+    // ១. ទាញការងារ Assigned និង Departed របស់អ្នកដឹកនេះ
     const { data: list, error } = await supabaseClient
       .from('orders')
       .select('*')
-      .eq('status', 'Assigned')
+      .in('status', ['Assigned', 'Departed'])
       .ilike('driver_name', driverName.trim())
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // ២. ទាញការងារដែលបានដឹកជោគជ័យថ្ងៃនេះ
     var deliveredCount = 0;
     var cashToHandover = 0;
     var abaCollected = 0;
 
-    // ទាញយកប្រតិបត្តិការលក់ដែលអ្នកដឹកបានប្រគល់ទឹកថ្ងៃនេះពីតារាង transactions
     const { data: driverTransToday } = await supabaseClient
       .from('transactions')
       .select('*')
@@ -1012,7 +1154,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
         var tid = t.transaction_id || t.id;
         if (!countedTransIds.has(tid)) {
           countedTransIds.add(tid);
-          deliveredCount++; // រាប់ចំនួនជើងដែលបានដឹកជោគជ័យថ្ងៃនេះ
+          deliveredCount++;
         }
         var amt = parseFloat(t.paid_khr || t.total || 0);
         if (t.payment_method === 'ABA') {
@@ -1022,6 +1164,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
         }
       }
     });
+
     if (summaryBox) {
       summaryBox.innerHTML = '<div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-2xs">' +
         '<span class="text-[10px] text-emerald-700 font-bold block">💵 លុយសុទ្ធក្នុងដៃ</span>' +
@@ -1052,9 +1195,10 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
 
     var html = '';
     list.forEach(function(task) {
+      var isDeparted = (task.status === 'Departed');
       var cleanPhone = String(task.phone || '').replace(/[^0-9]/g, '');
       var safeName = String(task.customer_name || '').replace(/'/g, "\\'");
-      var mapTarget = task.location_url || task.address || '';
+      var rawLoc = (task.location_url || task.address || '').trim();
       var timeStr = new Date(task.created_at).toLocaleString('km-KH', { 
         timeZone: 'Asia/Phnom_Penh', 
         dateStyle: 'short', 
@@ -1067,14 +1211,27 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
 
       var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
       var tgChatLink = "https://t.me/+" + intlPhone;
-      var waChatLink = "https://wa.me/" + intlPhone;
 
-      html += '<div class="bg-white p-4 rounded-3xl border-2 border-emerald-400 shadow-md space-y-3 animate-in zoom-in duration-200">' +
+      // 🔘 ប៊ូតុងដំណាក់កាល "ចេញដំណើរ" vs "កំពុងធ្វើដំណើរ"
+      var departActionHtml = '';
+      if (!isDeparted) {
+        departActionHtml = '<button type="button" onclick="markOrderAsDeparted(\'' + task.order_id + '\', \'' + safeName + '\')" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:opacity-95 text-white rounded-2xl font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+          '<i class="fas fa-motorcycle text-sm"></i> 🚀 ចុចចេញដំណើរ (Start Delivery)' +
+        '</button>';
+      } else {
+        departActionHtml = '<div class="p-2 bg-blue-50 border border-blue-200 rounded-xl text-center text-blue-900 font-black text-xs flex items-center justify-center gap-1.5">' +
+          '<i class="fas fa-route text-blue-600 animate-pulse"></i> 🛵💨 កំពុងធ្វើដំណើរទៅផ្ទះភ្ញៀវ...' +
+        '</div>';
+      }
+
+      html += '<div class="bg-white p-4 rounded-3xl border-2 ' + (isDeparted ? 'border-blue-400 bg-blue-50/10' : 'border-emerald-400') + ' shadow-md space-y-3 animate-in zoom-in duration-200">' +
         '<div class="flex justify-between items-start border-b border-slate-100 pb-2.5">' +
           '<div>' +
             '<div class="flex items-center gap-1.5">' +
               '<b class="text-sm font-black text-slate-900"><i class="fas fa-user-circle text-emerald-600 mr-1"></i>' + task.customer_name + '</b>' +
-              '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">🚚 កំពុងដឹក</span>' +
+              (isDeparted ? 
+                '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200 animate-pulse">🛵 កំពុងធ្វើដំណើរ</span>' : 
+                '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-200">📦 រៀបចំរួចរាល់</span>') +
             '</div>' +
             '<div class="text-[10px] text-slate-400 font-mono mt-0.5">កូដ៖ ' + task.order_id + ' | ម៉ោង៖ ' + timeStr + '</div>' +
           '</div>' +
@@ -1093,40 +1250,41 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
             '<span class="text-slate-400 font-bold whitespace-nowrap">🛢️ សំបកធុង៖</span>' +
             '<span class="font-bold text-emerald-700">' + (task.barrel_swap || 'មានសំបកដូរ') + '</span>' +
           '</div>' +
-          (task.location_url ? 
-          '<div class="flex items-start gap-1.5 pt-0.5">' +
-            '<span class="text-slate-400 font-bold whitespace-nowrap">📍 ទីតាំង & ចំណាំ៖</span>' +
-            '<span class="text-slate-800 font-bold text-[11px] leading-snug break-words">' + task.location_url + '</span>' +
-          '</div>' : '') +
+          formatOrderLocationBadgeHTML(rawLoc) +
         '</div>' +
 
-        '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-xs">' +
+        '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 text-xs">' +
+          // 🌟 ប៊ូតុងថ្មី៖ បើកមើលបញ្ជីដេប៉ូដែលត្រូវទៅយកអីវ៉ាន់
+          '<button type="button" onclick="openOrderPickupManifestModal(\'' + task.order_id + '\')" class="py-2 px-2 bg-rose-50 hover:bg-rose-100 text-rose-900 rounded-xl font-black border border-rose-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-boxes-packing text-rose-600"></i> យកអីវ៉ាន់' +
+          '</button>' +
+
           (cleanPhone ? 
-          '<a href="tel:' + cleanPhone + '" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
-            '<i class="fas fa-phone text-blue-600"></i> ខល ' + task.phone +
+          '<a href="tel:' + cleanPhone + '" class="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
+            '<i class="fas fa-phone text-blue-600"></i> ខល' +
           '</a>' : '') +
 
           (cleanPhone ? 
-          '<a href="' + tgChatLink + '" target="_blank" class="py-2 px-2.5 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl font-bold border border-sky-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
+          '<a href="' + tgChatLink + '" target="_blank" class="py-2 px-2 bg-sky-50 hover:bg-sky-100 text-sky-900 rounded-xl font-bold border border-sky-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition" style="text-decoration:none;">' +
             '<i class="fab fa-telegram text-sky-600"></i> Telegram' +
           '</a>' : '') +
 
-          (mapTarget ? 
-          '<button type="button" onclick="openOrderMap(\'' + mapTarget.replace(/'/g, "\\'") + '\')" class="py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+          (rawLoc ? 
+          '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
 
           (task.photo_url ? 
-          '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')" class="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
-            '<i class="fas fa-camera text-amber-600"></i> រូបមុខផ្ទះ' +
+          '<button type="button" onclick="viewOrderHousePhotoById(\'' + task.order_id + '\')" class="py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold border border-amber-300 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+            '<i class="fas fa-camera text-amber-600"></i> រូបផ្ទះ' +
           '</button>' : '') +
-
-          '<button type="button" onclick="openDriverDirectQr(' + (task.total || 0) + ', \'' + safeName + '\')" class="col-span-2 sm:col-span-1 py-2 px-2.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-black border border-red-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
-            '<i class="fas fa-qrcode text-red-600"></i> ស្កេន ABA' +
-          '</button>' +
         '</div>' +
 
-        '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeName + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
+        // ១. ប៊ូតុងចេញដំណើរ
+        departActionHtml +
+
+        // ២. ប៊ូតុងដឹកដល់ហើយ
+        '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeName + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
           '<i class="fas fa-check-circle text-base"></i> ដឹកដល់ហើយ & ប្រមូលលុយរួច' +
         '</button>' +
       '</div>';
@@ -1213,7 +1371,7 @@ function switchOnlineHubTab(tab) {
 }
 
 // ==========================================
-// 📦 TAB ១៖ បញ្ជីកុម្ម៉ង់បច្ចុប្បន្ន
+// 📦 TAB ១៖ បញ្ជីកុម្ម៉ង់បច្ចុប្បន្ន (ជួសជុលបញ្ហា Error អថេររួចរាល់)
 // ==========================================
 async function loadOnlineHubOrdersTab() {
   var area = document.getElementById('hubTabContent_ORDERS');
@@ -1224,17 +1382,20 @@ async function loadOnlineHubOrdersTab() {
   '</div>';
 
   try {
-    const { data: list, error } = await supabaseClient
+    // ⚡ ទាញយកទាំង Order កំពុងរង់ចាំ, កំពុងចាត់ចែង និងកំពុងធ្វើដំណើរលើផ្លូវ
+    const { data: activeList, error: actErr } = await supabaseClient
       .from('orders')
       .select('*')
-      .in('status', ['Pending', 'Assigned'])
+      .in('status', ['Pending', 'Assigned', 'Departed'])
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (actErr) throw actErr;
 
-    if (!list || list.length === 0) {
+    var list = activeList || [];
+
+    if (list.length === 0) {
       area.innerHTML = '<div class="card p-8 border-t-4 border-emerald-500 shadow-md mb-0 text-center space-y-2 bg-white">' +
-        '<div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl"><i class="fas fa-check"></i></div>' +
+        '<div class="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shadow-inner"><i class="fas fa-check"></i></div>' +
         '<b class="text-slate-800 text-sm block">បច្ចុប្បន្នគ្មានការកុម្ម៉ង់ដែលរង់ចាំដឹកជញ្ជូនឡើយ!</b>' +
         '<p class="text-xs text-slate-400">រាល់ពេលភ្ញៀវកុម្ម៉ង់លើ Web វានឹងលោតមកទីនេះភ្លាមៗ។</p>' +
       '</div>';
@@ -1244,15 +1405,22 @@ async function loadOnlineHubOrdersTab() {
     var html = '<div class="space-y-3">';
     list.forEach(function(o) {
       var isPending = (o.status === 'Pending');
+      var isDeparted = (o.status === 'Departed');
+
       var statusBadge = isPending ? 
         '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ រង់ចាំចាត់ចែង</span>' : 
-        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">🚚 កំពុងដឹក (' + (o.driver_name || 'អ្នកដឹក') + ')</span>';
+        (isDeparted ? 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300 animate-pulse">🛵💨 កំពុងធ្វើដំណើរ (' + (o.driver_name || 'អ្នកដឹក') + ')</span>' : 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">📦 បានចាត់ចែង (' + (o.driver_name || 'អ្នកដឹក') + ')</span>');
 
-      html += '<div class="card p-4 border-l-4 ' + (isPending ? 'border-amber-500' : 'border-blue-500') + ' shadow-md mb-0 space-y-2 hover:shadow-lg transition">' +
+      var rawLoc = (o.location_url || o.address || '').trim();
+      var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+
+      html += '<div class="card p-4 border-l-4 ' + (isPending ? 'border-amber-500' : 'border-blue-500') + ' shadow-md mb-0 space-y-2.5 hover:shadow-lg transition bg-white">' +
         '<div class="flex justify-between items-start border-b pb-2">' +
           '<div>' +
             '<b class="text-sm font-black text-slate-900">' + o.customer_name + '</b>' +
-            '<div class="text-[10px] text-slate-400 mt-0.5">កូដ៖ <code>' + o.order_id + '</code> | ទូរស័ព្ទ៖ ' + (o.phone || '-') + '</div>' +
+            '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ <code>' + o.order_id + '</code> | ម៉ោង៖ ' + dateStr + '</div>' +
           '</div>' +
           '<div class="text-right">' +
             '<b class="text-emerald-700 text-sm font-black">៛ ' + Number(o.total || 0).toLocaleString() + '</b>' +
@@ -1260,11 +1428,12 @@ async function loadOnlineHubOrdersTab() {
           '</div>' +
         '</div>' +
         '<div class="text-xs text-slate-700 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">' +
+          '<div><b>📞 ទូរស័ព្ទ៖</b> <span class="text-emerald-700 font-bold">' + (o.phone || '-') + '</span></div>' +
           '<div><b>📦 ទំនិញ៖</b> ' + o.items + '</div>' +
-          (o.address ? '<div><b>📍 ទីតាំង៖</b> ' + o.address + '</div>' : '') +
+          (typeof formatOrderLocationBadgeHTML === 'function' ? formatOrderLocationBadgeHTML(rawLoc) : (rawLoc ? '<div><b>📍 ទីតាំង៖</b> ' + rawLoc + '</div>' : '')) +
         '</div>' +
         '<div class="flex justify-end pt-1">' +
-          '<button type="button" onclick="openOnlineOrdersModal()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1">' +
+          '<button type="button" onclick="openOnlineOrdersModal()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
             '<i class="fas fa-sliders text-[10px]"></i> បើកផ្ទាំងចាត់ចែងអ្នកដឹក' +
           '</button>' +
         '</div>' +
@@ -1279,24 +1448,47 @@ async function loadOnlineHubOrdersTab() {
 }
 
 // ==========================================
-// 🔍 TAB ២៖ ប្រវត្តិលក់ & ដោះស្រាយវិវាទ (ពេលគិតលុយខុស)
+// 🔍 TAB ២៖ ប្រវត្តិលក់ & ដោះស្រាយវិវាទ (មាន Dropdown កំណត់ជួរដេក ២០ ដល់ ១,០០០ ជួរ)
 // ==========================================
+var currentAuditRowLimit = 50;
+var cachedAuditOrders = [];
+
 async function loadOnlineHubAuditTab() {
   var area = document.getElementById('hubTabContent_AUDIT');
   if (!area) return;
 
   area.innerHTML = '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0 space-y-3">' +
-    '<div class="flex justify-between items-center">' +
-      '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
-        '<i class="fas fa-receipt text-blue-600"></i>ប្រវត្តិលក់ Online & ផ្ទៀងផ្ទាត់វិក្កយបត្រ' +
-      '</h3>' +
-      '<span class="text-[10px] text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full font-bold">ដោះស្រាយវិវាទ / Refund</span>' +
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">' +
+      '<div>' +
+        '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+          '<i class="fas fa-receipt text-blue-600"></i>ប្រវត្តិលក់ Online & ផ្ទៀងផ្ទាត់វិក្កយបត្រ' +
+        '</h3>' +
+        '<p class="text-[10.5px] text-slate-500 font-bold mt-0.5">ស្វែងរកភស្តុតាង និងដោះស្រាយវិវាទ / Refund</p>' +
+      '</div>' +
+      '<span id="auditRowsCountBadge" class="text-[10px] text-blue-900 bg-blue-100 border border-blue-200 px-2.5 py-0.5 rounded-full font-black">កំពុងទាញទិន្នន័យ...</span>' +
     '</div>' +
-    // ប្រអប់ Search រកតាមលេខទូរស័ព្ទ ឬកូដកុម្ម៉ង់ភ្លាមៗ
-    '<div class="relative">' +
-      '<input type="text" id="inpOnlineAuditSearch" oninput="onOnlineAuditSearch(this.value)" placeholder="🔍 វាយលេខទូរស័ព្ទភ្ញៀវ, ឈ្មោះ ឬកូដកុម្ម៉ង់ (ORD-...) ដើម្បីឆែកមើលភស្តុតាង..." class="w-full border-2 border-blue-200 focus:border-blue-600 rounded-2xl p-3 pl-10 font-bold text-xs outline-none bg-slate-50 focus:bg-white">' +
-      '<i class="fas fa-search absolute left-3.5 top-3.5 text-slate-400 text-xs pointer-events-none"></i>' +
+
+    // 🔍 ប្រអប់ Search រកតាមលេខទូរស័ព្ទ & 🔢 Dropdown កំណត់ចំនួនជួរដេក
+    '<div class="flex flex-col sm:flex-row gap-2">' +
+      '<div class="relative flex-1">' +
+        '<input type="text" id="inpOnlineAuditSearch" oninput="onOnlineAuditSearch(this.value)" placeholder="🔍 វាយលេខទូរស័ព្ទភ្ញៀវ, ឈ្មោះ ឬកូដកុម្ម៉ង់ (ORD-...) ដើម្បីឆែកមើលភស្តុតាង..." class="w-full border-2 border-blue-200 focus:border-blue-600 rounded-2xl p-2.5 pl-9 font-bold text-xs outline-none bg-slate-50 focus:bg-white">' +
+        '<i class="fas fa-search absolute left-3 top-3.5 text-slate-400 text-xs pointer-events-none"></i>' +
+      '</div>' +
+      '<div class="flex items-center gap-1.5 shrink-0 bg-slate-50 p-1 rounded-2xl border border-slate-200">' +
+        '<label for="selAuditRowLimit" class="text-[10px] font-black text-slate-600 uppercase pl-1.5 whitespace-nowrap">' +
+          '<i class="fas fa-list-ol text-blue-600 mr-1"></i>កំណត់ជួរដេក៖' +
+        '</label>' +
+        '<select id="selAuditRowLimit" onchange="changeAuditRowLimit(this.value)" class="text-xs font-black bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-blue-950 outline-none focus:border-blue-500 cursor-pointer shadow-2xs">' +
+          '<option value="20"' + (currentAuditRowLimit === 20 ? ' selected' : '') + '>20 ជួរ</option>' +
+          '<option value="50"' + (currentAuditRowLimit === 50 ? ' selected' : '') + '>50 ជួរ</option>' +
+          '<option value="100"' + (currentAuditRowLimit === 100 ? ' selected' : '') + '>100 ជួរ</option>' +
+          '<option value="200"' + (currentAuditRowLimit === 200 ? ' selected' : '') + '>200 ជួរ</option>' +
+          '<option value="500"' + (currentAuditRowLimit === 500 ? ' selected' : '') + '>500 ជួរ</option>' +
+          '<option value="1000"' + (currentAuditRowLimit === 1000 ? ' selected' : '') + '>1,000 ជួរ</option>' +
+        '</select>' +
+      '</div>' +
     '</div>' +
+
     '<div id="onlineAuditResultsArea" class="space-y-3 pt-1">' +
       '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញប្រវត្តិលក់ Online...</div>' +
     '</div>' +
@@ -1305,22 +1497,33 @@ async function loadOnlineHubAuditTab() {
   fetchOnlineAuditOrders();
 }
 
-var cachedAuditOrders = [];
+function changeAuditRowLimit(val) {
+  currentAuditRowLimit = parseInt(val) || 50;
+  fetchOnlineAuditOrders();
+}
 
-// 🔍 មុខងារទាញប្រវត្តិលក់ Online (កែសម្រួលតម្រៀបតាម created_at ធានាដំណើរការ Search ឃើញ ១០០%)
+// 🔍 មុខងារទាញប្រវត្តិលក់ Online តាមចំនួនជួរដេកដែលបានកំណត់ (២០ ដល់ ១,០០០ ជួរ)
 async function fetchOnlineAuditOrders() {
   var resArea = document.getElementById('onlineAuditResultsArea');
+  var badge = document.getElementById('auditRowsCountBadge');
   if (!resArea) return;
+
+  var limitVal = parseInt(currentAuditRowLimit) || 50;
 
   try {
     const { data: list, error } = await supabaseClient
       .from('orders')
       .select('*')
-      .order('created_at', { ascending: false }) // ✅ ប្រើ created_at (គ្មាន Error ទៀតឡើយ)
-      .limit(80);
+      .order('created_at', { ascending: false })
+      .limit(limitVal);
 
     if (error) throw error;
     cachedAuditOrders = list || [];
+
+    if (badge) {
+      badge.innerText = 'បង្ហាញ ' + cachedAuditOrders.length + ' ជួរ (កំណត់ ' + limitVal + ')';
+    }
+
     renderOnlineAuditResultsList();
   } catch(e) {
     if (resArea) resArea.innerHTML = '<div class="text-center py-4 text-red-500 font-bold text-xs">កំហុសទាញទិន្នន័យ៖ ' + e.message + '</div>';
@@ -1497,7 +1700,7 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
 }
 
 // ==========================================
-// 🌐 TAB ៣៖ ទំនិញកំពុងបង្ហាញលើ WEB (ONLINE SHOWCASE)
+// 🌐 TAB ៣៖ ទំនិញកំពុងបង្ហាញលើ WEB (បង្ហាញតម្លៃ ៣ រូបិយប័ណ្ណ ៛, ฿, $)
 // ==========================================
 async function loadOnlineHubProductsTab() {
   var area = document.getElementById('hubTabContent_PRODUCTS');
@@ -1507,6 +1710,9 @@ async function loadOnlineHubProductsTab() {
     var ch = String(p.channel || 'ALL').toUpperCase();
     return ch === 'ALL' || ch === 'ONLINE';
   });
+
+  var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
   var html = '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3">' +
     '<div class="flex justify-between items-center">' +
@@ -1521,18 +1727,278 @@ async function loadOnlineHubProductsTab() {
 
   onlineProds.forEach(function(p) {
     var imgUrl = p.img || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
-    var onlinePr = Number(p.online_price || p.price || 0).toLocaleString() + ' ៛';
+    var rawCurr = (p.currency || 'KHR').toUpperCase();
+    var onlinePrice = parseFloat(p.online_price || p.price || 0);
+
+    // 🪙 គណនាបំប្លែងតម្លៃជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
+    var khrVal = 0, thbVal = 0, usdVal = 0;
+    if (rawCurr === 'USD') {
+      khrVal = Math.round(onlinePrice * rateUSD);
+      usdVal = onlinePrice;
+      thbVal = Math.round(khrVal / rateTHB);
+    } else if (rawCurr === 'THB') {
+      khrVal = Math.round(onlinePrice * rateTHB);
+      thbVal = onlinePrice;
+      usdVal = parseFloat((khrVal / rateUSD).toFixed(2));
+    } else {
+      khrVal = Math.round(onlinePrice);
+      thbVal = Math.round(onlinePrice / rateTHB);
+      usdVal = parseFloat((onlinePrice / rateUSD).toFixed(2));
+    }
+
+    var khrText = '៛ ' + Number(khrVal).toLocaleString();
+    var thbText = '฿ ' + Number(thbVal).toLocaleString();
+    var usdText = '$ ' + Number(usdVal).toFixed(2);
+
+    var priceDisplay = '<div class="space-y-0.5 text-center my-1 leading-tight">' +
+      '<div class="text-xs font-black text-emerald-700 leading-tight">' + khrText + '</div>' +
+      '<div class="text-[10px] font-black text-amber-700 leading-tight">' + thbText + '</div>' +
+      '<div class="text-[10px] font-black text-blue-700 leading-tight">' + usdText + '</div>' +
+    '</div>';
+
     var isOutOfStock = (p.type === 'ទិញគេ' && parseFloat(p.stock || 0) <= 0);
 
-    html += '<div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center space-y-1 relative shadow-2xs">' +
+    html += '<div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-center space-y-1 relative shadow-2xs hover:shadow-md transition">' +
       (isOutOfStock ? '<span class="absolute top-2 left-2 bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-red-300">អស់ស្តុក</span>' : '') +
       '<div class="w-16 h-16 mx-auto flex items-center justify-center p-1"><img src="' + imgUrl + '" class="max-w-full max-h-full object-contain"></div>' +
       '<b class="text-xs text-slate-800 line-clamp-1 block">' + p.name + '</b>' +
-      '<div class="text-xs font-black text-emerald-700">🌐 ' + onlinePr + '</div>' +
+      priceDisplay +
       '<span class="text-[10px] text-slate-400 font-bold block">' + (p.type === 'ផលិតឯង' ? 'ផលិតឯង' : ('សល់ ' + p.stock)) + '</span>' +
     '</div>';
   });
 
   html += '</div></div>';
   area.innerHTML = html;
+}
+
+// ==========================================================================
+// 📦 មុខងារបង្ហាញបញ្ជីទីតាំងត្រូវទៅយកអីវ៉ាន់តាមដេប៉ូ (លាក់ផលចំណេញរោងចក្រ)
+// ==========================================================================
+async function openOrderPickupManifestModal(orderId) {
+  if (!orderId) return;
+
+  var existing = document.getElementById('orderPickupManifestModal');
+  if (existing) existing.remove();
+
+  var modalHtml = '<div id="orderPickupManifestModal" class="fixed inset-0 z-[8000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onclick="closeOrderPickupManifestModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-boxes-packing text-rose-600"></i> បញ្ជីទីតាំងទៅយកអីវ៉ាន់ (Pick-up Route)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-mono mt-0.5" id="pmOrderCodeLabel">កូដ៖ ' + orderId + '</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeOrderPickupManifestModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+      '<div id="pickupManifestContentArea" class="flex-1 overflow-y-auto space-y-2.5 text-left text-xs pr-1">' +
+        '<div class="text-center py-8 text-slate-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1 text-rose-600"></i> កំពុងរៀបចំផ្លូវទៅយកអីវ៉ាន់...</div>' +
+      '</div>' +
+      '<div id="pickupManifestSummaryFooter" class="pt-2 border-t text-left"></div>' +
+      '<button type="button" onclick="closeOrderPickupManifestModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">' +
+        'យល់ព្រម (បិទ)' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  try {
+    const { data: order, error: ordErr } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .eq('order_id', orderId)
+      .maybeSingle();
+
+    if (ordErr || !order) throw new Error("រកមិនឃើញទិន្នន័យនៃការកុម្ម៉ង់នេះឡើយ");
+
+    if (typeof loadDepotsFromSupabase === 'function') {
+      await loadDepotsFromSupabase();
+    }
+    const { data: depotSettings } = await supabaseClient
+      .from('settings')
+      .select('key, value')
+      .like('key', 'DEPOT_%');
+
+    var prodDepotMap = {};
+    (depotSettings || []).forEach(function(r) {
+      var pId = r.key.replace('DEPOT_', '');
+      prodDepotMap[pId] = r.value;
+    });
+
+    if (!allProducts || allProducts.length === 0) {
+      const { data: prods } = await supabaseClient.from('products').select('*');
+      if (prods) allProducts = prods;
+    }
+
+    var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+    var depotGroups = {};
+    var totalCashToPayDepots = 0;
+    var totalCreditWithDepots = 0;
+
+    var rawItemsText = order.items || '';
+    var itemParts = rawItemsText.split(',');
+
+    itemParts.forEach(function(partStr) {
+      var str = partStr.trim();
+      if (!str) return;
+
+      var seg = str.split('x');
+      var rawName = seg[0] ? seg[0].trim() : str;
+      var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+      if (isNaN(qty) || qty <= 0) qty = 1;
+
+      var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+
+      var matchedProd = (allProducts || []).find(function(p) {
+        return p.name.trim().toLowerCase() === cleanName.toLowerCase();
+      });
+
+      var depotId = 'DEPOT_KC';
+      if (matchedProd && matchedProd.id && prodDepotMap[matchedProd.id]) {
+        depotId = prodDepotMap[matchedProd.id];
+      }
+
+      var depotObj = (activePartnerDepots || []).find(d => d.id === depotId) || {
+        id: depotId,
+        name: (depotId === 'DEPOT_KC' ? 'រោងចក្រទឹក KC WATER (ឃ្លាំងផ្ទាល់)' : 'ដេប៉ូដៃគូ'),
+        phone: '077 934 748',
+        location: '',
+        mapUrl: '',
+        payTerms: 'CASH',
+        isInternal: (depotId === 'DEPOT_KC')
+      };
+
+      var rawCost = matchedProd ? parseFloat(matchedProd.cost || 0) : 0;
+      var costCurr = matchedProd ? (matchedProd.currency || 'KHR').toUpperCase() : 'KHR';
+      var costKhr = rawCost;
+      if (costCurr === 'USD') costKhr = Math.round(rawCost * rateUSD);
+      else if (costCurr === 'THB') costKhr = Math.round(rawCost * rateTHB);
+
+      var lineTotalCost = costKhr * qty;
+
+      if (!depotGroups[depotId]) {
+        depotGroups[depotId] = {
+          depot: depotObj,
+          items: [],
+          totalCost: 0
+        };
+      }
+
+      depotGroups[depotId].items.push({
+        name: cleanName,
+        qty: qty,
+        unitCostKhr: costKhr,
+        totalCostKhr: lineTotalCost,
+        isFreeGift: rawName.includes('Free') || rawName.includes('🎁')
+      });
+      depotGroups[depotId].totalCost += lineTotalCost;
+
+      if (!depotObj.isInternal) {
+        if (depotObj.payTerms === 'CASH') {
+          totalCashToPayDepots += lineTotalCost;
+        } else {
+          totalCreditWithDepots += lineTotalCost;
+        }
+      }
+    });
+
+    var contentArea = document.getElementById('pickupManifestContentArea');
+    var footerArea = document.getElementById('pickupManifestSummaryFooter');
+    if (!contentArea) return;
+
+    var html = '';
+    var groupKeys = Object.keys(depotGroups);
+
+    if (groupKeys.length === 0) {
+      contentArea.innerHTML = '<div class="text-center py-6 text-slate-400 italic">មិនមានទំនិញក្នុង Order នេះឡើយ</div>';
+      return;
+    }
+
+    var stepIndex = 1;
+    groupKeys.forEach(function(dId) {
+      var grp = depotGroups[dId];
+      var d = grp.depot;
+      var isInternal = (d.isInternal === true || d.id === 'DEPOT_KC');
+
+      var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
+      var payTermsBadge = isInternal ? 
+        '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">💧 លើកចេញពីរោងចក្រ</span>' : 
+        (d.payTerms === 'CASH' ? 
+          '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">💵 បង់លុយសុទ្ធ ៛ ' + grp.totalCost.toLocaleString() + '</span>' : 
+          '<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">📝 កត់ជំពាក់ដេប៉ូ ៛ ' + grp.totalCost.toLocaleString() + '</span>');
+
+      var itemsListHtml = '';
+      grp.items.forEach(function(itm) {
+        itemsListHtml += '<div class="flex justify-between items-center text-xs py-1 border-b border-slate-100 last:border-none">' +
+          '<div class="flex items-center gap-1.5">' +
+            '<span class="w-1.5 h-1.5 rounded-full ' + (isInternal ? 'bg-blue-500' : 'bg-rose-500') + '"></span>' +
+            '<b class="text-slate-800">' + itm.name + '</b>' +
+            (itm.isFreeGift ? '<span class="text-[9px] font-black bg-amber-100 text-amber-900 px-1.5 rounded">Free</span>' : '') +
+          '</div>' +
+          '<div class="text-right">' +
+            '<b class="text-blue-700 font-mono text-xs">x ' + itm.qty + '</b>' +
+            (!isInternal && itm.totalCostKhr > 0 ? ('<span class="text-[10px] text-slate-400 block font-normal">ដើម: ៛ ' + itm.totalCostKhr.toLocaleString() + '</span>') : '') +
+          '</div>' +
+        '</div>';
+      });
+
+      html += '<div class="p-3 bg-slate-50 rounded-2xl border-2 ' + (isInternal ? 'border-blue-200 bg-blue-50/20' : 'border-rose-200 bg-rose-50/20') + ' space-y-2">' +
+        '<div class="flex justify-between items-start gap-1">' +
+          '<div class="flex items-center gap-2 min-w-0 flex-1">' +
+            '<div class="w-6 h-6 rounded-lg ' + (isInternal ? 'bg-blue-600 text-white' : 'bg-rose-600 text-white') + ' flex items-center justify-center font-black text-xs shrink-0">' +
+              stepIndex +
+            '</div>' +
+            '<div class="min-w-0 flex-1">' +
+              '<b class="text-slate-900 block truncate text-xs">' + d.name + '</b>' +
+              (d.phone ? '<span class="text-[10px] text-emerald-800 font-bold font-mono">📞 ' + d.phone + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="shrink-0">' + payTermsBadge + '</div>' +
+        '</div>' +
+
+        (d.location ? '<div class="text-[10.5px] text-slate-600 font-medium"><i class="fas fa-location-dot text-rose-500 mr-1"></i>' + d.location + '</div>' : '') +
+
+        '<div class="bg-white p-2 rounded-xl border border-slate-200 space-y-0.5">' +
+          itemsListHtml +
+        '</div>' +
+
+        (!isInternal ? 
+        ('<div class="flex items-center justify-end gap-1.5 pt-0.5">' +
+          (cleanPhone ? '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-green-800 border border-green-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-phone text-green-600"></i> ខលដេប៉ូ</a>' : '') +
+          (d.mapUrl ? '<a href="' + d.mapUrl + '" target="_blank" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg font-bold text-[10px] flex items-center gap-1 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-map-location-dot text-blue-600"></i> ផែនទីដេប៉ូ</a>' : '') +
+        '</div>') : '') +
+      '</div>';
+
+      stepIndex++;
+    });
+
+    contentArea.innerHTML = html;
+
+    // 🔒 សង្ខេបទឹកប្រាក់ (បង្ហាញតែលុយដែលត្រូវទូទាត់ និងប្រមូល មិនបង្ហាញផលចំណេញរោងចក្រឡើយ)
+    var revenue = parseFloat(order.total || 0);
+
+    if (footerArea) {
+      footerArea.innerHTML = '<div class="p-3 bg-slate-100 rounded-2xl border border-slate-200 space-y-1.5 text-xs font-bold">' +
+        (totalCashToPayDepots > 0 ? 
+        '<div class="flex justify-between text-rose-900"><span>💵 លុយសុទ្ធអ្នកដឹកត្រូវកាន់ទៅបើកអីវ៉ាន់៖</span><b class="font-black text-rose-700">៛ ' + totalCashToPayDepots.toLocaleString() + '</b></div>' : '') +
+        (totalCreditWithDepots > 0 ? 
+        '<div class="flex justify-between text-amber-900"><span>📝 កត់ជំពាក់ដេប៉ូដៃគូសរុប (Credit)៖</span><b class="font-black text-amber-700">៛ ' + totalCreditWithDepots.toLocaleString() + '</b></div>' : '') +
+        '<div class="flex justify-between text-emerald-950 border-t border-slate-300 pt-1.5"><span>💰 ប្រាក់ត្រូវប្រមូលពីភ្ញៀវសរុប៖</span><b class="font-black text-emerald-700 text-sm">៛ ' + revenue.toLocaleString() + '</b></div>' +
+      '</div>';
+    }
+
+  } catch(err) {
+    var contentArea = document.getElementById('pickupManifestContentArea');
+    if (contentArea) {
+      contentArea.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុសទាញទិន្នន័យ៖ ' + err.message + '</div>';
+    }
+  }
+}
+
+function closeOrderPickupManifestModal() {
+  var modal = document.getElementById('orderPickupManifestModal');
+  if (modal) modal.remove();
 }
