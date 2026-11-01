@@ -622,26 +622,96 @@ function executePdfGeneration() {
 }
 
 // ==========================================
-// 📉 ២. របាយការណ៍បញ្ជីអ្នកជំពាក់សរុប (DEBTORS REPORT)
+// 📉 ២. របាយការណ៍បញ្ជីជំពាក់ (DEBTORS REPORT - ម៉ូយជំពាក់ & យើងជំពាក់ដេប៉ូ)
 // ==========================================
+var activeDebtorsTab = 'CUSTOMERS'; // 'CUSTOMERS' ឬ 'DEPOTS'
+
 async function renderDebtorsReportModule() {
   var area = document.getElementById('contentArea');
+  if (!area) return;
+
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
-    '<div class="card border-t-4 border-red-600 shadow-xl p-5 mb-0">' +
-      '<div class="flex justify-between items-center mb-3">' +
-        '<h2 class="font-extrabold text-red-800 text-base flex items-center gap-2"><i class="fas fa-hand-holding-dollar text-red-600"></i>បញ្ជីអ្នកជំពាក់ប្រាក់សរុប (Debtors Report)</h2>' +
-        '<button onclick="renderDebtorsReportModule()" class="px-3 py-1.5 bg-red-50 text-red-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1"><i class="fas fa-sync-alt"></i> Refresh</button>' +
+    // ក្បាលទំព័រ
+    '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
+      '<div>' +
+        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+          '<i class="fas fa-hand-holding-dollar text-red-600"></i>' +
+          '<span>របាយការណ៍បំណុលជំពាក់ (Debts & Payables)</span>' +
+        '</h2>' +
+        '<p class="text-xs text-slate-500 mt-0.5">គ្រប់គ្រងបំណុលម៉ូយជំពាក់យើង & បំណុលយើងជំពាក់ដេប៉ូដៃគូ</p>' +
       '</div>' +
-      '<div class="bg-red-50 p-3.5 rounded-2xl border border-red-200 text-center mb-3">' +
-        '<div class="text-[11px] font-bold text-red-700 uppercase mb-1">ទឹកប្រាក់ដែលគេជំពាក់សរុបទាំងអស់</div>' +
-        '<div id="debtorsGrandTotalText" class="text-xl font-black text-red-800">0 ៛</div>' +
-      '</div>' +
-      '<input type="text" id="debtorSearchInp" onkeyup="filterDebtorsCards()" placeholder="🔍 វាយឈ្មោះម៉ូយដើម្បីស្វែងរក..." class="font-bold border p-2.5 rounded-xl w-full text-xs">' +
+      '<button onclick="renderDebtorsReportModule()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1.5 shadow-2xs">' +
+        '<i class="fas fa-sync-alt"></i> Refresh' +
+      '</button>' +
     '</div>' +
-    '<div class="space-y-2.5" id="debtorsCardsContainer"><div class="card text-center py-8 italic text-gray-400">កំពុងទាញទិន្នន័យ...</div></div>' +
+
+    // របារប្តូរផ្ទាំង ២ (Tabs: ម៉ូយជំពាក់យើង vs យើងជំពាក់ដេប៉ូ)
+    '<div class="flex bg-white p-1.5 rounded-2xl border shadow-xs gap-1.5 text-xs font-bold">' +
+      '<button type="button" id="tabBtnDebtorCust" onclick="switchDebtorsTab(\'CUSTOMERS\')" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-red-600 text-white shadow">' +
+        '<i class="fas fa-users text-sm"></i> ១. ម៉ូយជំពាក់យើង (Receivables)' +
+      '</button>' +
+      '<button type="button" id="tabBtnDebtorDepot" onclick="switchDebtorsTab(\'DEPOTS\')" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200">' +
+        '<i class="fas fa-shop-lock text-sm text-rose-600"></i> ២. យើងជំពាក់ដេប៉ូ (Payables)' +
+      '</button>' +
+    '</div>' +
+
+    // ផ្នែកទី ១៖ ម៉ូយជំពាក់យើង (Customers Debt Section)
+    '<div id="secDebtorsCustomers" class="space-y-3">' +
+      '<div class="card border-t-4 border-red-600 shadow-xl p-5 mb-0 space-y-3">' +
+        '<div class="bg-red-50 p-3.5 rounded-2xl border border-red-200 text-center">' +
+          '<div class="text-[11px] font-bold text-red-700 uppercase mb-1">ទឹកប្រាក់ដែលម៉ូយជំពាក់រោងចក្រសរុប</div>' +
+          '<div id="debtorsGrandTotalText" class="text-xl font-black text-red-800">0 ៛</div>' +
+        '</div>' +
+        '<input type="text" id="debtorSearchInp" onkeyup="filterDebtorsCards()" placeholder="🔍 វាយឈ្មោះម៉ូយដើម្បីស្វែងរក..." class="font-bold border p-2.5 rounded-xl w-full text-xs outline-none focus:border-red-500 bg-slate-50 focus:bg-white">' +
+      '</div>' +
+      '<div class="space-y-2.5" id="debtorsCardsContainer">' +
+        '<div class="card text-center py-8 italic text-slate-400 text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញទិន្នន័យ...</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ផ្នែកទី ២៖ យើងជំពាក់ដេប៉ូដៃគូ (Partner Depots Debt Section)
+    '<div id="secDebtorsDepots" class="space-y-3 hidden">' +
+      '<div class="card border-t-4 border-rose-600 shadow-xl p-5 mb-0 space-y-3">' +
+        '<div class="bg-rose-50 p-3.5 rounded-2xl border border-rose-200 text-center">' +
+          '<div class="text-[11px] font-bold text-rose-800 uppercase mb-1">ថ្លៃដើមដែលយើងត្រូវទូទាត់សងដេប៉ូដៃគូសរុប</div>' +
+          '<div id="depotDebtsGrandTotalText" class="text-xl font-black text-rose-800">0 ៛</div>' +
+        '</div>' +
+        '<p class="text-[11px] text-slate-500 italic text-center">*គណនាពីទំនិញដែលបានដកពីដេប៉ូនានាដោយ «កត់ជំពាក់» ដែលមិនទាន់បានទូទាត់សង</p>' +
+      '</div>' +
+      '<div class="space-y-2.5" id="depotDebtsCardsContainer">' +
+        '<div class="card text-center py-8 italic text-slate-400 text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងគណនាបំណុលដេប៉ូ...</div>' +
+      '</div>' +
+    '</div>' +
+
   '</div>';
 
   await fetchDebtorsListFromSupabase();
+}
+
+function switchDebtorsTab(tab) {
+  activeDebtorsTab = tab;
+  var btnCust = document.getElementById('tabBtnDebtorCust');
+  var btnDepot = document.getElementById('tabBtnDebtorDepot');
+  var secCust = document.getElementById('secDebtorsCustomers');
+  var secDepot = document.getElementById('secDebtorsDepots');
+
+  if (!btnCust || !btnDepot || !secCust || !secDepot) return;
+
+  if (tab === 'CUSTOMERS') {
+    btnCust.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-red-600 text-white shadow";
+    btnDepot.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200";
+    secCust.classList.remove('hidden');
+    secDepot.classList.add('hidden');
+    fetchDebtorsListFromSupabase();
+  } else {
+    btnDepot.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-rose-600 text-white shadow";
+    btnCust.className = "flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200";
+    secDepot.classList.remove('hidden');
+    secCust.classList.add('hidden');
+    if (typeof fetchPartnerDepotDebts === 'function') {
+      fetchPartnerDepotDebts();
+    }
+  }
 }
 
 async function fetchDebtorsListFromSupabase() {
@@ -796,5 +866,348 @@ async function loadStockRepDataFromSupabase() {
 
   } catch(e) {
     console.error("Stock rep error:", e);
+  }
+}
+
+// ==========================================================================
+// 🏬 មុខងារគ្រប់គ្រងបំណុលជំពាក់ដេប៉ូដៃគូ (PARTNER DEPOT PAYABLES & SETTLEMENT)
+// ==========================================================================
+
+var cachedDepotDebtsBreakdown = {};
+
+// 📥 ១. ទាញយក និងគណនាបំណុលដែលយើងជំពាក់ដេប៉ូនីមួយៗ
+async function fetchPartnerDepotDebts() {
+  var container = document.getElementById('depotDebtsCardsContainer');
+  var grandTotalEl = document.getElementById('depotDebtsGrandTotalText');
+  if (!container) return;
+
+  container.innerHTML = '<div class="card text-center py-8 italic text-slate-400 text-xs"><i class="fas fa-spinner fa-spin mr-1 text-rose-600"></i> កំពុងគណនាបំណុលជំពាក់ដេប៉ូដៃគូ...</div>';
+
+  try {
+    // ក. ធានាថាមានទិន្នន័យដេប៉ូ & ទំនិញក្នុង Memory
+    if (typeof loadDepotsFromSupabase === 'function') {
+      await loadDepotsFromSupabase();
+    }
+    if (!allProducts || allProducts.length === 0) {
+      const { data: prods } = await supabaseClient.from('products').select('*');
+      if (prods) allProducts = prods;
+    }
+
+    // ខ. ទាញយកការភ្ជាប់ដេប៉ូជាមួយទំនិញ (DEPOT_...)
+    const { data: depotSettings } = await supabaseClient
+      .from('settings')
+      .select('key, value')
+      .like('key', 'DEPOT_%');
+
+    var prodDepotMap = {};
+    (depotSettings || []).forEach(function(r) {
+      prodDepotMap[r.key.replace('DEPOT_', '')] = r.value;
+    });
+
+    // គ. ទាញយកការកុម្ម៉ង់ដែលបានដឹកដល់ (Delivered Orders)
+    const { data: deliveredOrders, error: ordErr } = await supabaseClient
+      .from('orders')
+      .select('order_id, items, customer_name, created_at')
+      .eq('status', 'Delivered');
+
+    if (ordErr) throw ordErr;
+
+    // ឃ. ទាញយកប្រវត្តិដែលយើងធ្លាប់បានសងដេប៉ូនានា (ពីតារាង Expenses)
+    const { data: depotExpenses, error: expErr } = await supabaseClient
+      .from('expenses')
+      .select('amount, note, currency, created_at')
+      .eq('category', 'ទូទាត់ថ្លៃដើមដេប៉ូដៃគូ');
+
+    if (expErr) throw expErr;
+
+    var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+    // ង. គណនាថ្លៃដើមដែលបានដកពីដេប៉ូប្រភេទ «កត់ជំពាក់»
+    var depotDebtTotals = {};
+    cachedDepotDebtsBreakdown = {};
+
+    (deliveredOrders || []).forEach(function(ord) {
+      var itemParts = String(ord.items || '').split(',');
+      itemParts.forEach(function(partStr) {
+        var str = partStr.trim();
+        if (!str) return;
+
+        var seg = str.split('x');
+        var rawName = seg[0] ? seg[0].trim() : str;
+        var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+        if (isNaN(qty) || qty <= 0) qty = 1;
+
+        var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+
+        var matchedProd = (allProducts || []).find(function(p) {
+          return p.name.trim().toLowerCase() === cleanName.toLowerCase();
+        });
+
+        if (matchedProd) {
+          var depotId = prodDepotMap[matchedProd.id] || 'DEPOT_KC';
+          var depotObj = (activePartnerDepots || []).find(d => d.id === depotId);
+
+          // គិតតែដេប៉ូដៃគូណាដែលជាប្រភេទ «កត់ជំពាក់ (CREDIT)» ប៉ុណ្ណោះ
+          if (depotObj && !depotObj.isInternal && depotObj.payTerms === 'CREDIT') {
+            var rawCost = parseFloat(matchedProd.cost || 0);
+            var costCurr = (matchedProd.currency || 'KHR').toUpperCase();
+            var costKhr = rawCost;
+            if (costCurr === 'USD') costKhr = Math.round(rawCost * rateUSD);
+            else if (costCurr === 'THB') costKhr = Math.round(rawCost * rateTHB);
+
+            var lineCost = costKhr * qty;
+
+            depotDebtTotals[depotId] = (depotDebtTotals[depotId] || 0) + lineCost;
+
+            if (!cachedDepotDebtsBreakdown[depotId]) {
+              cachedDepotDebtsBreakdown[depotId] = {
+                depot: depotObj,
+                items: [],
+                totalSourced: 0,
+                totalPaid: 0,
+                netDebt: 0
+              };
+            }
+
+            cachedDepotDebtsBreakdown[depotId].items.push({
+              orderId: ord.order_id,
+              custName: ord.customer_name,
+              productName: cleanName,
+              qty: qty,
+              costKhr: lineCost,
+              date: ord.created_at
+            });
+            cachedDepotDebtsBreakdown[depotId].totalSourced += lineCost;
+          }
+        }
+      });
+    });
+
+    // ច. ដកចេញនូវទឹកប្រាក់ដែលយើងធ្លាប់បានសងដេប៉ូនោះកន្លងមក
+    (depotExpenses || []).forEach(function(e) {
+      var noteText = e.note || '';
+      for (var dId in cachedDepotDebtsBreakdown) {
+        if (noteText.includes(dId) || noteText.includes(cachedDepotDebtsBreakdown[dId].depot.name)) {
+          var amt = parseFloat(e.amount || 0);
+          cachedDepotDebtsBreakdown[dId].totalPaid += amt;
+        }
+      }
+    });
+
+    // ឆ. គណនាបំណុលនៅសល់សុទ្ធ & បង្ហាញ UI
+    var grandTotalDepotDebt = 0;
+    var listForUI = [];
+
+    for (var dKey in cachedDepotDebtsBreakdown) {
+      var info = cachedDepotDebtsBreakdown[dKey];
+      var remaining = Math.max(0, info.totalSourced - info.totalPaid);
+      info.netDebt = remaining;
+      grandTotalDepotDebt += remaining;
+
+      if (remaining > 0) {
+        listForUI.push(info);
+      }
+    }
+
+    if (grandTotalEl) {
+      grandTotalEl.innerText = '៛ ' + grandTotalDepotDebt.toLocaleString();
+    }
+
+    renderDepotDebtsCardsUI(listForUI);
+
+  } catch(err) {
+    container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុសគណនាបំណុលដេប៉ូ៖ ' + err.message + '</div>';
+  }
+}
+
+// 📋 ២. បង្ហាញកាតដេប៉ូនីមួយៗដែលយើងជំពាក់
+function renderDepotDebtsCardsUI(list) {
+  var container = document.getElementById('depotDebtsCardsContainer');
+  if (!container) return;
+
+  if (list.length === 0) {
+    container.innerHTML = '<div class="card p-8 text-center text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-3xl space-y-2">' +
+      '<div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl shadow-inner"><i class="fas fa-circle-check"></i></div>' +
+      '<b class="text-slate-800 text-sm block">អបអរសាទរ! យើងគ្មានជំពាក់ប្រាក់ថ្លៃដើមដេប៉ូដៃគូណាមួយឡើយ</b>' +
+      '<p class="text-xs text-slate-400">រាល់ទំនិញដែលដកជំពាក់ពីដេប៉ូនានា ត្រូវបានទូទាត់សងរួចរាល់ទាំងអស់។</p>' +
+    '</div>';
+    return;
+  }
+
+  var html = '';
+  list.forEach(function(info) {
+    var d = info.depot;
+    var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
+    var safeDepotName = String(d.name || '').replace(/'/g, "\\'");
+
+    html += '<div class="card p-4 shadow-md border-l-4 border-rose-500 bg-white rounded-2xl space-y-3 mb-0 hover:shadow-lg transition">' +
+      '<div class="flex justify-between items-start border-b border-slate-100 pb-2.5">' +
+        '<div>' +
+          '<b class="text-sm font-black text-slate-900 flex items-center gap-1.5"><i class="fas fa-shop-lock text-rose-600"></i> ' + d.name + '</b>' +
+          '<div class="text-[10px] text-slate-500 font-bold mt-0.5">' +
+            (d.phone ? ('📞 ' + d.phone) : '') +
+            (d.location ? (' | 📍 ' + d.location) : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="text-right">' +
+          '<span class="text-[10px] font-bold text-slate-400 block uppercase">បំណុលត្រូវសង</span>' +
+          '<b class="text-base sm:text-lg font-black text-rose-700">៛ ' + info.netDebt.toLocaleString() + '</b>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="p-2.5 bg-rose-50/60 rounded-xl border border-rose-200 text-xs space-y-1 text-slate-700">' +
+        '<div class="flex justify-between"><span>ថ្លៃដើមទំនិញបានដកសរុប (+)៖</span><b>៛ ' + info.totalSourced.toLocaleString() + '</b></div>' +
+        '<div class="flex justify-between text-emerald-800"><span>ប្រាក់បានសងដេប៉ូរួច (-)៖</span><b>-៛ ' + info.totalPaid.toLocaleString() + '</b></div>' +
+        '<div class="flex justify-between text-rose-950 font-black border-t border-rose-200 pt-1"><span>បំណុលនៅសល់ (=)៖</span><span class="text-rose-700">៛ ' + info.netDebt.toLocaleString() + '</span></div>' +
+      '</div>' +
+
+      '<div class="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-xs">' +
+        '<div class="flex items-center gap-1.5">' +
+          (cleanPhone ? '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-800 border border-green-200 rounded-xl font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-phone text-green-600"></i> ខលដេប៉ូ</a>' : '') +
+          (d.mapUrl ? '<a href="' + d.mapUrl + '" target="_blank" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-xl font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី</a>' : '') +
+          '<button type="button" onclick="openDepotDebtBreakdownModal(\'' + d.id + '\')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold border shadow-2xs active:scale-95 transition flex items-center gap-1"><i class="fas fa-list-ul"></i> មើលមុខទំនិញ</button>' +
+        '</div>' +
+
+        // ប៊ូតុងទូទាត់សងដេប៉ូ
+        '<button type="button" onclick="settleDepotDebtAction(\'' + d.id + '\', ' + info.netDebt + ', \'' + safeDepotName + '\')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1.5 active:scale-95 transition">' +
+          '<i class="fas fa-hand-holding-dollar text-sm"></i> ទូទាត់សងដេប៉ូ' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// 🔍 ៣. ផ្ទាំង Pop-up មើលមុខទំនិញដែលបានដកពីដេប៉ូនោះ
+function openDepotDebtBreakdownModal(depotId) {
+  var info = cachedDepotDebtsBreakdown[depotId];
+  if (!info) return;
+
+  var existing = document.getElementById('depotBreakdownModal');
+  if (existing) existing.remove();
+
+  var rowsHtml = '';
+  info.items.forEach(function(itm, idx) {
+    var dateStr = new Date(itm.date).toLocaleDateString('km-KH');
+    rowsHtml += '<tr class="border-b text-xs">' +
+      '<td class="p-2 text-center text-[10px]">' + (idx + 1) + '</td>' +
+      '<td class="p-2 text-[10px] text-slate-500 whitespace-nowrap">' + dateStr + '</td>' +
+      '<td class="p-2 font-bold text-slate-800">' + itm.productName + '<br><small class="text-slate-400 font-normal">ភ្ញៀវ: ' + itm.custName + '</small></td>' +
+      '<td class="p-2 text-center font-bold text-blue-700">' + itm.qty + '</td>' +
+      '<td class="p-2 text-right font-black text-rose-700 whitespace-nowrap">៛ ' + itm.costKhr.toLocaleString() + '</td>' +
+    '</tr>';
+  });
+
+  var modalHtml = '<div id="depotBreakdownModal" class="fixed inset-0 z-[8000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" onclick="document.getElementById(\'depotBreakdownModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[90dvh] flex flex-col">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm flex items-center gap-1.5"><i class="fas fa-boxes-stacked text-rose-600"></i> ទំនិញដកពី [' + info.depot.name + ']</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">បញ្ជីទំនិញដែលបានដកជំពាក់កន្លងមក</p>' +
+        '</div>' +
+        '<button type="button" onclick="document.getElementById(\'depotBreakdownModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
+      '</div>' +
+      '<div class="flex-1 overflow-y-auto rounded-2xl border border-slate-200">' +
+        '<table class="w-full text-left text-xs border-collapse"><thead class="sticky top-0 bg-slate-100 text-slate-700 font-bold border-b"><tr><th class="p-2 text-center w-8">ល.រ</th><th class="p-2 text-[10px]">ថ្ងៃ</th><th class="p-2">ទំនិញ</th><th class="p-2 text-center">ចំនួន</th><th class="p-2 text-right">ថ្លៃដើម</th></tr></thead><tbody>' + (rowsHtml || '<tr><td colspan="5" class="p-4 text-center text-slate-400 italic">គ្មានទំនិញ</td></tr>') + '</tbody></table>' +
+      '</div>' +
+      '<button type="button" onclick="document.getElementById(\'depotBreakdownModal\').remove()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">បិទ</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// 💵 ៤. មុខងារទូទាត់សងដេប៉ូដៃគូ (កត់ត្រាចូល Expenses & ផ្ញើ Telegram)
+async function settleDepotDebtAction(depotId, remainingDebt, depotName) {
+  if (remainingDebt <= 0) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "គ្មានបំណុល", message: "អ្នកមិនមានជំពាក់ប្រាក់ដេប៉ូ [" + depotName + "] ឡើយ!", type: "info" });
+    }
+    return;
+  }
+
+  // ក. ប្រើ kcPrompt សួរចំនួនប្រាក់ដែលបានសងដេប៉ូជាក់ស្តែង
+  var val = await kcPrompt({
+    title: "ទូទាត់សងដេប៉ូ៖ " + depotName,
+    message: "បំណុលនៅជំពាក់ដេប៉ូសរុប៖ ៛ " + Number(remainingDebt).toLocaleString() + "\nសូមបញ្ចូលចំនួនទឹកប្រាក់ដែលត្រូវសងដេប៉ូ (៛)៖",
+    defaultValue: remainingDebt,
+    confirmText: "យល់ព្រមសង",
+    inputType: "number"
+  });
+
+  if (val === null || val === "") return;
+  var paidAmount = parseFloat(val);
+  if (isNaN(paidAmount) || paidAmount <= 0) {
+    showToast("សូមបញ្ចូលចំនួនទឹកប្រាក់ធំជាង ០!", "error");
+    return;
+  }
+
+  // ខ. បញ្ជាក់ការទូទាត់តាម kcConfirm
+  var ok = await kcConfirm({
+    title: "បញ្ជាក់ការសងប្រាក់ដេប៉ូ",
+    message: "តើអ្នកពិតជាបានប្រគល់ប្រាក់ចំនួន ៛ " + Number(paidAmount).toLocaleString() + " ទៅកាន់ [" + depotName + "] រួចរាល់មែនទេ? ប្រព័ន្ធនឹងកត់ត្រាចូលតារាងចំណាយ (Expenses) ស្វ័យប្រវត្តិ។",
+    type: "info",
+    confirmText: "យល់ព្រមទូទាត់"
+  });
+
+  if (!ok) return;
+
+  try {
+    // គ. កត់ត្រាចូលតារាង Expenses ក្នុង Supabase
+    const { error: insErr } = await supabaseClient
+      .from('expenses')
+      .insert([{
+        expense_id: "EXP-DEPOT-" + Date.now(),
+        category: "ទូទាត់ថ្លៃដើមដេប៉ូដៃគូ",
+        amount: paidAmount,
+        currency: "KHR",
+        note: "ទូទាត់ថ្លៃដើមជំពាក់ដេប៉ូ៖ " + depotName + " [ID: " + depotId + "]",
+        admin_name: currentUser.fullName || "Admin"
+      }]);
+
+    if (insErr) throw insErr;
+
+    // ឃ. ផ្ញើសារដំណឹង Telegram ទៅកាន់ថៅកែ
+    try {
+      var timeKhNow = new Date().toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
+      var tgMsg = "🏬 <b>[KC WATER - ទូទាត់ថ្លៃដើមសងដេប៉ូដៃគូរួចរាល់]</b>\n\n" +
+                  "🏢 <b>ដេប៉ូដៃគូ៖</b> <b>" + depotName + "</b>\n" +
+                  "💰 <b>ប្រាក់បានសង៖</b> <b>៛ " + Number(paidAmount).toLocaleString() + "</b>\n" +
+                  "✍️ <b>អ្នកកត់ត្រា៖</b> " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
+
+      if (typeof sendTelegramAlert === 'function') {
+        sendTelegramAlert(tgMsg);
+      }
+    } catch(tgE) {}
+
+    // ង. បង្ហាញផ្ទាំង kcAlert ជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ទូទាត់ជោគជ័យ! 🎉",
+        message: "បានកត់ត្រាការសងប្រាក់ចំនួន ៛ " + Number(paidAmount).toLocaleString() + " ជូនដេប៉ូ [" + depotName + "] ចូលក្នុងបញ្ជីចំណាយរួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានទូទាត់សងដេប៉ូជោគជ័យ!", "success");
+    }
+
+    // ច. ទាញទិន្នន័យបញ្ជីជំពាក់ឡើងវិញភ្លាមៗ
+    fetchPartnerDepotDebts();
+
+  } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
   }
 }
