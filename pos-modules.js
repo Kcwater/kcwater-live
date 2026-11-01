@@ -8,7 +8,7 @@ var editingProductId = null;
 var custPortalDataCache = null;
 var currentCustPayMode = "ABA";
 
-// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានប្រព័ន្ធ Live KHR Converter បង្ហាញលុយខ្មែរអូតូពេលវាយ ฿ ឬ $)
+// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានភ្ជាប់ប្រអប់រើសដេប៉ូដៃគូផ្គត់ផ្គង់)
 function renderStockModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -43,14 +43,36 @@ function renderStockModule() {
           '</select>' +
         '</div>' +
 
-        '<div id="cSec" style="display:block">' +
-          '<div class="flex justify-between items-center mb-1">' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>' +
-            '<span id="pCoPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
+        '<div id="cSec" style="display:block" class="space-y-2">' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div>' +
+              '<div class="flex justify-between items-center mb-1">' +
+                '<label class="text-[10px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>' +
+                '<span id="pCoPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
+              '</div>' +
+              '<input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
+            '</div>' +
+            '<div>' +
+              '<div class="flex justify-between items-center mb-1">' +
+                '<label class="text-[10px] font-black text-blue-900 uppercase">📦 ចំនួនស្តុកដំបូង (Stock) *</label>' +
+                '<span class="text-[9px] text-slate-400 font-bold">*សម្រាប់លក់លើ Web</span>' +
+              '</div>' +
+              '<input type="number" id="pInitialStock" placeholder="ឧ៖ 50 ឬ 10" value="50" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black text-blue-900 w-full text-xs outline-none bg-blue-50/30">' +
+            '</div>' +
           '</div>' +
-          '<input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០ ឬ 35฿ ឬ $1.5)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
-        '</div>' +
 
+          // 🏬 ប្រអប់ជ្រើសរើសដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot)
+          '<div class="p-2.5 bg-rose-50/70 rounded-2xl border-2 border-rose-200 space-y-1">' +
+            '<div class="flex justify-between items-center">' +
+              '<label class="text-[10px] font-black text-rose-950 uppercase flex items-center gap-1">' +
+                '<i class="fas fa-shop-lock text-rose-600"></i> ដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot) *' +
+              '</label>' +
+              '<span id="pDepotTermsBadge"></span>' +
+            '</div>' +
+            '<select id="pSupplierDepot" onchange="onProductDepotChange()" class="border-2 border-rose-300 focus:border-rose-600 p-2 rounded-xl font-black w-full text-xs bg-white text-rose-950 outline-none"></select>' +
+          '</div>' +
+        '</div>' +
+  
         // 🏷️ ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
         '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
           '<div>' +
@@ -85,7 +107,7 @@ function renderStockModule() {
           '</div>' +
         '</div>' +
 
-        // 💵 ប្រអប់តម្លៃ (POS vs Online) មានភ្ជាប់ Live KHR Hint
+        // 💵 ប្រអប់តម្លៃ (POS vs Online)
         '<div id="priceInputsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
           '<div id="secPosPrice">' +
             '<div class="flex justify-between items-center mb-1">' +
@@ -186,6 +208,14 @@ function renderStockModule() {
   toggleChannelPrices();
   initStockModuleDropdowns();
 
+  // 📂 ផ្ទុក Category & ដេប៉ូដៃគូ មកដាក់ក្នុង Dropdown ស្វ័យប្រវត្តិ
+  loadCategoriesFromSupabase().then(function() {
+    populateProductCategoryDropdown();
+  });
+  loadDepotsFromSupabase().then(function() {
+    populateProductDepotDropdown();
+  });
+
   if (!allProducts || allProducts.length === 0) {
     fetchInitialPOSData().then(function() {
       if (typeof syncOnlineSortsFromDatabase === 'function') {
@@ -203,6 +233,24 @@ function renderStockModule() {
     }
   }
 }
+
+  if (!allProducts || allProducts.length === 0) {
+    fetchInitialPOSData().then(function() {
+      if (typeof syncOnlineSortsFromDatabase === 'function') {
+        syncOnlineSortsFromDatabase().then(renderStockTableRows);
+      } else {
+        renderStockTableRows();
+      }
+      initStockModuleDropdowns();
+    });
+  } else {
+    if (typeof syncOnlineSortsFromDatabase === 'function') {
+      syncOnlineSortsFromDatabase().then(renderStockTableRows);
+    } else {
+      renderStockTableRows();
+    }
+  }
+
 
 // 🪙 មុខងារជំនួយគណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ភ្លាមៗ (Live Preview)
 function updateProductCostPreviewLive() {
@@ -262,6 +310,24 @@ function toggleChannelPrices() {
     if (onlineSec) onlineSec.style.display = 'block';
     if (cont) cont.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200';
   }
+}
+
+// ==========================================================================
+// 📂 មុខងារបង្កើតជម្រើស Category ក្នុង Dropdown នៃផ្ទាំងស្តុក (Dynamic Categories)
+// ==========================================================================
+function populateProductCategoryDropdown(selectedKey) {
+  var sel = document.getElementById('pCategory');
+  if (!sel) return;
+
+  var currentVal = selectedKey || sel.value || 'GROCERY';
+  var html = '';
+
+  activeStoreCategories.forEach(function(cat) {
+    var isSel = (cat.key === currentVal) ? 'selected' : '';
+    html += '<option value="' + cat.key + '" ' + isSel + '>' + (cat.icon || '📦') + ' ' + cat.name + '</option>';
+  });
+
+  sel.innerHTML = html;
 }
 
 function initStockModuleDropdowns() {
@@ -374,7 +440,7 @@ function switchStockSortView(tab) {
   renderStockTableRows();
 }
 
-// 📋 មុខងារបង្ហាញតារាងទំនិញ (មានប៊ូតុងព្រួញ ⬆️ ⬇️ រៀបលំដាប់ងាយស្រួលបំផុត ១ ឃ្លីក & ពហុរូបិយប័ណ្ណ)
+// 📋 មុខងារបង្ហាញតារាងទំនិញ (មានបង្ហាញឈ្មោះដេប៉ូផ្គត់ផ្គង់ & ប៊ូតុង ⬆️ ⬇️ រៀបលំដាប់)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
@@ -458,9 +524,7 @@ function renderStockTableRows() {
     var sortPosNum = (p.sort_order !== null && p.sort_order !== undefined && p.sort_order !== '') ? parseInt(p.sort_order) : 99;
     var sortWebNum = (p.online_sort_order !== null && p.online_sort_order !== undefined && p.online_sort_order !== '') ? parseInt(p.online_sort_order) : sortPosNum;
 
-    // ⚡ រចនាបថប៊ូតុង ⬆️ ⬇️ រៀបលំដាប់រហ័សតាម Tab ដែលកំពុងបើក
     var sortControlHtml = '';
-
     if (isWebTab) {
       if (isForWeb) {
         sortControlHtml = '<div class="flex items-center justify-center gap-1">' +
@@ -485,6 +549,17 @@ function renderStockTableRows() {
       }
     }
 
+    // 🏬 រកឈ្មោះដេប៉ូដែលផ្គត់ផ្គង់ទំនិញនេះ
+    var depotBadge = '';
+    if (p.type === 'ផលិតឯង') {
+      depotBadge = '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200 inline-flex items-center gap-1 mt-0.5"><i class="fas fa-droplet text-[8px] text-blue-500"></i> ឃ្លាំង KC</span>';
+    } else {
+      var dObj = (activePartnerDepots || []).find(d => d.id === p.depot_id);
+      var dName = dObj ? dObj.name : 'ដេប៉ូដៃគូ';
+      var dTerm = (dObj && dObj.payTerms === 'CASH') ? '💵' : '📝';
+      depotBadge = '<span class="text-[9px] font-bold text-rose-800 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 inline-flex items-center gap-1 mt-0.5" title="' + dName + '"><i class="fas fa-shop-lock text-[8px] text-rose-500"></i> ' + dTerm + ' ' + dName + '</span>';
+    }
+
     html += '<tr class="border-b hover:bg-gray-50">' +
       '<td class="p-2 text-center ' + (isWebTab ? 'bg-emerald-50/30' : 'bg-blue-50/30') + ' whitespace-nowrap">' +
         sortControlHtml +
@@ -493,6 +568,7 @@ function renderStockTableRows() {
       '<td class="p-2.5 font-bold text-gray-800">' + 
         p.name + 
         '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + ' | ' + curr + '</span>' +
+        '<br>' + depotBadge + 
       '</td>' +
       '<td class="p-2.5 text-center">' + chBadge + '</td>' +
       '<td class="p-2.5 text-center text-[10.5px] leading-tight">' + 
@@ -665,24 +741,40 @@ async function autoFixAllSortDuplicates() {
   }
 }
 
-// 🔄 ទាញលេខ Web ពី Database មកបញ្ចូលលើ allProducts ជានិច្ច
+// 🔄 ទាញលេខ Web & ដេប៉ូផ្គត់ផ្គង់ ពី Database មកបញ្ចូលលើ allProducts ជានិច្ច
 async function syncOnlineSortsFromDatabase() {
   try {
-    const { data: setList } = await supabaseClient.from('settings').select('key, value').like('key', 'ONLINE_SORT_%');
-    var map = {};
-    (setList || []).forEach(r => { map[r.key.replace('ONLINE_SORT_', '')] = parseInt(r.value); });
-    allProducts.forEach(p => {
-      if (map[p.id] !== undefined) p.online_sort_order = map[p.id];
+    const [sortRes, depotRes] = await Promise.all([
+      supabaseClient.from('settings').select('key, value').like('key', 'ONLINE_SORT_%'),
+      supabaseClient.from('settings').select('key, value').like('key', 'DEPOT_%')
+    ]);
+
+    var sortMap = {};
+    var depotMap = {};
+
+    (sortRes.data || []).forEach(function(r) {
+      sortMap[r.key.replace('ONLINE_SORT_', '')] = parseInt(r.value);
+    });
+
+    (depotRes.data || []).forEach(function(r) {
+      depotMap[r.key.replace('DEPOT_', '')] = r.value;
+    });
+
+    allProducts.forEach(function(p) {
+      if (sortMap[p.id] !== undefined) p.online_sort_order = sortMap[p.id];
+      // ភ្ជាប់ដេប៉ូជាមួយទំនិញ (បើផលិតឯង គឺឃ្លាំងរោងចក្រ KC)
+      p.depot_id = depotMap[p.id] || (p.type === 'ផលិតឯង' ? 'DEPOT_KC' : 'DEPOT_KC');
     });
   } catch(e) {}
 }
-// 🧹 មុខងារជម្រះប្រអប់បញ្ចូលទិន្នន័យទំនិញឱ្យនៅទទេស្អាត ១០០% ត្រៀមបញ្ចូលទំនិញថ្មី (ជួសជុល bug រួចរាល់)
+
+// 🧹 មុខងារកំណត់គ្រប់ប្រអប់បញ្ចូលទំនិញទៅសភាពដើមវិញស្វ័យប្រវត្តិ (Auto-Reset Defaults)
 function cancelEditProduct() {
   editingProductId = null;
   
   var titleEl = document.getElementById('prodFormTitle');
   if (titleEl) {
-    titleEl.innerHTML = '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (Products)';
+    titleEl.innerHTML = '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (KC MART Products)';
   }
   
   var btnCancel = document.getElementById('btnCancelEditProd');
@@ -695,24 +787,33 @@ function cancelEditProduct() {
     btn.disabled = false;
   }
 
-  // 🔢 គណនាលេខរៀងបន្ទាប់សម្រាប់ទំនិញថ្មី
+  // 🔢 គណនាលេខរៀងបន្ទាប់សម្រាប់ទំនិញថ្មីអូតូ (ឡើងលេខថ្មីមិនឱ្យស្ទួន)
   var nextSortNum = (allProducts && allProducts.length > 0) ? (allProducts.length + 1) : 1;
 
-  // 🧼 ជម្រះគ្រប់ប្រអប់ឱ្យទទេស្អាតទាំងអស់
+  // 🧼 កំណត់ទិន្នន័យត្រឡប់ទៅសភាពដើមវិញ (Default State)
   if (document.getElementById('pI')) document.getElementById('pI').value = 'P-' + Math.floor(Math.random() * 9000 + 1000);
   if (document.getElementById('pN')) document.getElementById('pN').value = '';
   if (document.getElementById('pTy')) document.getElementById('pTy').value = 'ទិញគេ';
   if (document.getElementById('pCu')) document.getElementById('pCu').value = 'KHR';
   if (document.getElementById('pCo')) document.getElementById('pCo').value = '';
+  if (document.getElementById('pPr')) document.getElementById('pPr').value = '';
+  if (document.getElementById('pOnlinePr')) document.getElementById('pOnlinePr').value = '';
   if (document.getElementById('pChannel')) document.getElementById('pChannel').value = 'ALL';
   if (document.getElementById('pCategory')) document.getElementById('pCategory').value = 'GROCERY';
   if (document.getElementById('pBadge')) document.getElementById('pBadge').value = 'គុណភាពខ្ពស់';
-  if (document.getElementById('pPr')) document.getElementById('pPr').value = '';
-  if (document.getElementById('pOnlinePr')) document.getElementById('pOnlinePr').value = '';
+  if (document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
+
+  // 🌟 កំណត់ត្រឡប់ទៅសភាពដើមតាមការស្នើសុំរបស់អ្នក៖
+  if (document.getElementById('pInitialStock')) document.getElementById('pInitialStock').value = 50;
+  if (document.getElementById('pMin')) document.getElementById('pMin').value = 5;
   if (document.getElementById('pSortPos')) document.getElementById('pSortPos').value = nextSortNum;
   if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = nextSortNum;
-  if (document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
-  if (document.getElementById('pMin')) document.getElementById('pMin').value = 5;
+
+  // 🏬 កំណត់ដេប៉ូត្រឡប់ទៅ «រោងចក្រទឹក KC WATER (ឃ្លាំងផ្ទាល់)» វិញអូតូ
+  if (document.getElementById('pSupplierDepot')) {
+    document.getElementById('pSupplierDepot').value = 'DEPOT_KC';
+    if (typeof onProductDepotChange === 'function') onProductDepotChange();
+  }
 
   // 🖼️ សម្អាតប្រអប់រូបភាព
   if (document.getElementById('pImgPreview')) {
@@ -722,15 +823,24 @@ function cancelEditProduct() {
   if (document.getElementById('pImgFileInput')) document.getElementById('pImgFileInput').value = '';
   if (document.getElementById('pImgNote')) document.getElementById('pImgNote').innerText = 'អាចថតរូប ឬជ្រើសរូបភាពពីទូរស័ព្ទ';
 
+  // 🪙 សម្អាតអក្សរជំនួយតម្លៃលុយខ្មែរ (Live KHR Hints)
+  var coHint = document.getElementById('pCoPreviewHint');
+  var prHint = document.getElementById('pPrPreviewHint');
+  var opHint = document.getElementById('pOnlinePrPreviewHint');
+  if (coHint) coHint.innerText = '';
+  if (prHint) prHint.innerText = '';
+  if (opHint) opHint.innerText = '';
+
   if (typeof tCF === 'function') tCF();
   if (typeof toggleChannelPrices === 'function') toggleChannelPrices();
 
-  // 🎯 ដាក់ Cursor ឱ្យមកចាំនៅប្រអប់ឈ្មោះទំនិញអូតូ ងាយស្រួលវាយទំនិញបន្ទាប់ភ្លាមៗ
+  // 🎯 ដាក់ Cursor ឱ្យមកចាំនៅប្រអប់ឈ្មោះទំនិញអូតូ ងាយស្រួលវាយទំនិញថ្មីភ្លាមៗ
   var nameInp = document.getElementById('pN');
   if (nameInp) setTimeout(function() { nameInp.focus(); }, 150);
 }
 
-// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, Description & បង្ហាញការបំប្លែងលុយខ្មែរភ្លាមៗ)
+
+// 📋 មុខងាររៀបចំកែប្រែទំនិញ (ទាញ Category, ដេប៉ូដៃគូផ្គត់ផ្គង់ & Description)
 async function prepareEditProduct(id) {
   var p = allProducts.find(item => item.id === id);
   if (!p) return;
@@ -756,16 +866,17 @@ async function prepareEditProduct(id) {
   document.getElementById('pPr').value = p.price || 0;
   document.getElementById('pOnlinePr').value = p.online_price || p.price || 0;
   document.getElementById('pMin').value = p.min_stock || 5;
+  if (document.getElementById('pInitialStock')) {
+    document.getElementById('pInitialStock').value = p.stock || 0;
+  }
   document.getElementById('pChannel').value = p.channel || 'ALL';
 
-  // 🔢 កំណត់លេខរៀង POS និង Web
   var sortPosVal = (p.sort_order !== undefined && p.sort_order !== null && p.sort_order !== '') ? parseInt(p.sort_order) : 1;
   var sortOnlineVal = (p.online_sort_order !== undefined && p.online_sort_order !== null && p.online_sort_order !== '') ? parseInt(p.online_sort_order) : sortPosVal;
   
   if (document.getElementById('pSortPos')) document.getElementById('pSortPos').value = sortPosVal;
   if (document.getElementById('pSortOnline')) document.getElementById('pSortOnline').value = sortOnlineVal;
 
-  // 📂 ទាញយក Category, Badge និង Description
   var catInp = document.getElementById('pCategory');
   var badgeInp = document.getElementById('pBadge');
   var descInp = document.getElementById('pDesc');
@@ -783,12 +894,21 @@ async function prepareEditProduct(id) {
     const { data: setCat } = await supabaseClient.from('settings').select('value').eq('key', 'CAT_' + p.id).maybeSingle();
     if (setCat && setCat.value && catInp) catInp.value = setCat.value;
 
+    // 🏬 ទាញយកដេប៉ូដែលផ្គត់ផ្គង់ទំនិញនេះ
+    const { data: setDepot } = await supabaseClient.from('settings').select('value').eq('key', 'DEPOT_' + p.id).maybeSingle();
+    var currentDepotId = setDepot ? setDepot.value : 'DEPOT_KC';
+    populateProductDepotDropdown(currentDepotId);
+
     const { data: setWebSort } = await supabaseClient.from('settings').select('value').eq('key', 'ONLINE_SORT_' + p.id).maybeSingle();
     if (setWebSort && setWebSort.value && document.getElementById('pSortOnline')) {
       document.getElementById('pSortOnline').value = setWebSort.value;
       p.online_sort_order = parseInt(setWebSort.value);
     }
   } catch(e) {}
+
+  if (typeof populateProductCategoryDropdown === 'function') {
+    populateProductCategoryDropdown(catInp ? catInp.value : 'GROCERY');
+  }
 
   var preview = document.getElementById('pImgPreview');
   if (preview) preview.src = p.img || 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
@@ -797,7 +917,6 @@ async function prepareEditProduct(id) {
   tCF();
   toggleChannelPrices();
 
-  // 🪙 ដំណើរការគណនាបំប្លែងលុយខ្មែរភ្លាមៗលើអេក្រង់កែប្រែ
   if (typeof updateProductCostPreviewLive === 'function') {
     updateProductCostPreviewLive();
   }
@@ -805,40 +924,56 @@ async function prepareEditProduct(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 💾 រក្សាទុកទំនិញ (ដោះស្រាយបញ្ហាលេខរៀង POS & Web ឱ្យត្រឹមត្រូវ ១០០%)
+// 💾 រក្សាទុកទំនិញ & កំណត់ឡើងលេខរៀងថ្មីព្រមទាំង Reset សភាពដើមអូតូ
 async function saveProductToSupabase() {
-  var name = document.getElementById('pN').value.trim();
-  if (!name) { showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error"); return; }
+  var nameInp = document.getElementById('pN');
+  var name = nameInp ? nameInp.value.trim() : '';
+
+  if (!name) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះព័ត៌មាន",
+        message: "សូមបញ្ចូលឈ្មោះទំនិញ!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមបញ្ចូលឈ្មោះទំនិញ!", "error");
+    }
+    if (nameInp) nameInp.focus();
+    return;
+  }
 
   var prodId = document.getElementById('pI').value;
   var imgData = document.getElementById('pImgBase64').value || "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
   var descVal = document.getElementById('pDesc') ? document.getElementById('pDesc').value.trim() : '';
   var badgeVal = document.getElementById('pBadge') ? document.getElementById('pBadge').value : 'គុណភាពខ្ពស់';
   var catVal = document.getElementById('pCategory') ? document.getElementById('pCategory').value : 'GROCERY';
+  var depotVal = document.getElementById('pSupplierDepot') ? document.getElementById('pSupplierDepot').value : 'DEPOT_KC';
   
-  // 🔢 ទាញយកលេខរៀងពិតប្រាកដពីប្រអប់លើអេក្រង់
   var sortPosNum = parseInt(document.getElementById('pSortPos') ? document.getElementById('pSortPos').value || 1 : 1);
   var sortOnlineNum = parseInt(document.getElementById('pSortOnline') ? document.getElementById('pSortOnline').value || sortPosNum : sortPosNum);
+
+  var initialStockVal = parseFloat(document.getElementById('pInitialStock') ? document.getElementById('pInitialStock').value || 0 : 0);
+  var prodType = document.getElementById('pTy').value;
 
   var payload = {
     id: prodId,
     name: name,
-    type: document.getElementById('pTy').value,
+    type: prodType,
     currency: document.getElementById('pCu').value,
     cost: parseFloat(document.getElementById('pCo') ? document.getElementById('pCo').value || 0 : 0),
     price: parseFloat(document.getElementById('pPr').value || 0),
     online_price: parseFloat(document.getElementById('pOnlinePr').value || 0),
     min_stock: parseFloat(document.getElementById('pMin').value || 5),
     channel: document.getElementById('pChannel').value,
-    sort_order: sortPosNum, // 🚚 លេខរៀងសម្រាប់ POS
+    sort_order: sortPosNum,
     img: imgData
   };
 
   var btn = document.getElementById('btnSaveProdAction');
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
 
   try {
-    // 🔄 ការពារកុំឱ្យស្ទួនលេខរៀង POS៖ បើមានទំនិញចាស់ផ្សេងទៀតជាប់លេខរៀងនេះ រំកិលវាចុះក្រោមអូតូ
     var targetId = editingProductId || prodId;
     var conflictingItems = allProducts.filter(function(item) {
       return item.id !== targetId && parseInt(item.sort_order) === sortPosNum;
@@ -853,33 +988,52 @@ async function saveProductToSupabase() {
     }
 
     if (editingProductId) {
+      payload.stock = (prodType === 'ផលិតឯង') ? 0 : initialStockVal;
       await supabaseClient.from('products').update(payload).eq('id', editingProductId);
     } else {
-      payload.stock = 0;
+      payload.stock = (prodType === 'ផលិតឯង') ? 0 : initialStockVal;
       await supabaseClient.from('products').insert([payload]);
     }
 
-    // 🌐 រក្សាទុក Description, Badge, Category និងលេខរៀង Web ចូលតារាង Settings
+    // 🌐 រក្សាទុក Description, Badge, Category, Online Sort និង ដេប៉ូផ្គត់ផ្គង់ (DEPOT_${prodId})
     var settingRows = [
       { key: 'DESC_' + prodId, value: descVal },
       { key: 'BADGE_' + prodId, value: badgeVal },
       { key: 'CAT_' + prodId, value: catVal },
+      { key: 'DEPOT_' + prodId, value: depotVal },
       { key: 'ONLINE_SORT_' + prodId, value: String(sortOnlineNum) }
     ];
     await supabaseClient.from('settings').upsert(settingRows);
 
-    showToast(editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
-    cancelEditProduct();
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!",
+        type: "success"
+      });
+    } else {
+      showToast(editingProductId ? "បានធ្វើបច្ចុប្បន្នភាពទំនិញជោគជ័យ!" : "បានបង្កើតទំនិញថ្មីជោគជ័យ!", "success");
+    }
+
+    // 🔄 ទាញបញ្ជីទំនិញថ្មីពី Supabase ជាមុនសិន
     await fetchInitialPOSData();
     if (typeof syncOnlineSortsFromDatabase === 'function') {
       await syncOnlineSortsFromDatabase();
     }
+
+    // 🌟 កំណត់ទម្រង់ឱ្យត្រឡប់ទៅសភាពដើមវិញ និងឡើងលេខរៀងថ្មីអូតូភ្លាមៗ
+    cancelEditProduct();
     renderStockTableRows();
     initStockModuleDropdowns();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
   } finally {
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -1969,11 +2123,9 @@ async function delUserFromSupabase(id) {
   }
 }
 
-// ==========================================
-// ⚙️ ៥. ការកំណត់ប្រព័ន្ធ (SETTINGS: SMART DELIVERY & MULTI-PROMO CHECKBOX)
-// ==========================================
-var currentTelegramAlertStatus = "ON";
-var currentPromoRules = []; // បញ្ជីលក្ខខណ្ឌថែមទំនិញ (Buy A -> Free B)
+// ==========================================================================
+// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារ (មានបន្ថែម ៧. ដេប៉ូដៃគូផ្គត់ផ្គង់ PARTNER DEPOTS)
+// ==========================================================================
 
 function renderSettingsModule() {
   var area = document.getElementById('contentArea');
@@ -1981,14 +2133,562 @@ function renderSettingsModule() {
 
   var curUsd = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var curThb = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+  var tgStatus = (telegramConfig && telegramConfig.status) ? telegramConfig.status : 'ON';
 
-  // បញ្ជីទំនិញសម្រាប់រើសទំនិញថែម (Free Gift)
-  var freeProdOptions = '<option value="">-- រើសមុខទំនិញដែលត្រូវថែម Free --</option>';
-  (allProducts || []).forEach(function(p) {
-    freeProdOptions += '<option value="' + p.name + '">' + p.name + '</option>';
+  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
+    // ក្បាលទំព័រ
+    '<div class="flex justify-between items-center bg-white p-4 rounded-3xl border shadow-sm">' +
+      '<div>' +
+        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+          '<i class="fas fa-gear text-emerald-600"></i>' +
+          '<span>ការកំណត់ប្រព័ន្ធ (System Settings)</span>' +
+        '</h2>' +
+        '<p class="text-xs text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
+      '</div>' +
+      '<button onclick="renderSettingsModule()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5">' +
+        '<i class="fas fa-sync-alt"></i> Refresh' +
+      '</button>' +
+    '</div>' +
+
+    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៧ (រួមបញ្ចូលដេប៉ូដៃគូផ្គត់ផ្គង់)
+    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">' +
+      
+      // កាត ១៖ ប្រភេទទំនិញ
+      '<div onclick="openCategoryManagerModal()" class="card border-l-4 border-emerald-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-layer-group"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-emerald-700 transition">ប្រភេទទំនិញ (Categories)</b>' +
+            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">បង្កើត ប្តូរឈ្មោះ & Emoji រហ័ស</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ២៖ អត្រាប្តូរប្រាក់
+      '<div onclick="openExchangeRatesModal()" class="card border-l-4 border-blue-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-money-bill-transfer"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-blue-700 transition">អត្រាប្តូរប្រាក់ (Exchange Rates)</b>' +
+            '<span class="text-[11px] text-blue-700 font-bold block mt-0.5">$1=' + curUsd.toLocaleString() + '៛ | 1฿=' + curThb.toLocaleString() + '៛</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // 🌟 កាត ៣ (ថ្មី)៖ ដេប៉ូដៃគូផ្គត់ផ្គង់ (PARTNER DEPOTS)
+      '<div onclick="openDepotManagerModal()" class="card border-l-4 border-rose-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-rose-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-shop-lock"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-rose-700 transition">ដេប៉ូដៃគូផ្គត់ផ្គង់ (Depots)</b>' +
+            '<span class="text-[11px] text-rose-700 font-bold block mt-0.5">ដេប៉ូអង្ករ, គ្រឿងទេស, ទីតាំង & វិធីទូទាត់</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-rose-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៤៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
+      '<div onclick="openDeliverySettingsModal()" class="card border-l-4 border-indigo-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-truck-fast"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-indigo-700 transition">សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ</b>' +
+            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">កំណត់ថ្លៃដឹក & ម៉ោងបើក/បិទហាង</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៥៖ ប្រព័ន្ធ Promotion
+      '<div onclick="openPromoSettingsModal()" class="card border-l-4 border-amber-500 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-amber-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-gift"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-amber-700 transition">ប្រូម៉ូសិនលើ Web (Promotions)</b>' +
+            '<span class="text-[11px] text-amber-700 font-bold block mt-0.5">កាដូថែមទំនិញ & Banner ផ្សាយ</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-amber-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៦៖ ផ្ទាំងស្លាយ Web
+      '<div onclick="openSlidesSettingsModal()" class="card border-l-4 border-teal-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-teal-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fas fa-images"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-teal-700 transition">ផ្ទាំងស្លាយលើ Web (Slides)</b>' +
+            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">ដាក់រូបភាព & អក្សរស្លាយទាំង ៤</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-teal-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៧៖ Telegram Bot Alert
+      '<div onclick="openTelegramSettingsModal()" class="card border-l-4 border-green-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0 sm:col-span-2">' +
+        '<div class="flex items-center gap-3">' +
+          '<div class="w-12 h-12 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+            '<i class="fab fa-telegram text-blue-500"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-sm font-black text-slate-900 block group-hover:text-green-700 transition">Telegram Bot Alerts</b>' +
+            '<span class="text-[11px] font-bold block mt-0.5 ' + (tgStatus === 'ON' ? 'text-green-700' : 'text-slate-400') + '">ស្ថានភាព៖ ' + (tgStatus === 'ON' ? '🔔 បើក (ON)' : '🔕 បិទ (OFF)') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-green-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+    '</div>' +
+  '</div>';
+}
+
+// ==========================================================================
+// 🏬 ប្រព័ន្ធគ្រប់គ្រងដេប៉ូដៃគូផ្គត់ផ្គង់ (PARTNER DEPOTS ENGINE)
+// ==========================================================================
+
+var activePartnerDepots = [
+  { id: "DEPOT_KC", name: "រោងចក្រទឹក KC WATER (ឃ្លាំងផ្ទាល់)", phone: "077 934 748", location: "ក្រុងប៉ោយប៉ែត", mapUrl: "", payTerms: "CASH", isInternal: true }
+];
+var editingDepotId = null;
+
+// 📥 ១. ទាញយកបញ្ជីដេប៉ូពី Supabase Settings (គាំទ្រទាំង PROD & TEST)
+async function loadDepotsFromSupabase() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('settings')
+      .select('value')
+      .eq('key', 'Store_Partner_Depots')
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data && data.value) {
+      var parsed = JSON.parse(data.value);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // ធានាថារោងចក្រ KC WATER នៅជាប់លេខ ១ ជានិច្ច
+        if (!parsed.some(d => d.id === 'DEPOT_KC')) {
+          parsed.unshift(activePartnerDepots[0]);
+        }
+        activePartnerDepots = parsed;
+      }
+    }
+  } catch(e) {
+    console.warn("Depots load warning:", e);
+  }
+}
+
+// 🖼️ ២. បង្កើតផ្ទាំង POP-UP MODAL គ្រប់គ្រងដេប៉ូ
+function injectDepotManagerModalMarkup() {
+  var existing = document.getElementById('depotManagerModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="depotManagerModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeDepotManagerModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
+      
+      // ក្បាលផ្ទាំង
+      '<div class="flex justify-between items-center border-b pb-2.5">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-shop-lock text-rose-600"></i> ដេប៉ូដៃគូផ្គត់ផ្គង់ (Partner Depots)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">គ្រប់គ្រងទីតាំងដេប៉ូដែលត្រូវទៅយកអីវ៉ាន់ និងវិធីទូទាត់ថ្លៃដើម</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeDepotManagerModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      // ទម្រង់បញ្ចូល/កែប្រែដេប៉ូ
+      '<div class="p-3 bg-rose-50/70 border-2 border-rose-200 rounded-2xl text-left space-y-2.5">' +
+        '<div class="flex justify-between items-center">' +
+          '<span id="depotFormTitle" class="text-[10px] font-black text-rose-950 uppercase flex items-center gap-1">' +
+            '<i class="fas fa-plus-circle text-rose-600"></i> បង្កើតដេប៉ូដៃគូថ្មី' +
+          '</span>' +
+          '<button type="button" id="btnCancelEditDepot" onclick="cancelEditDepot()" class="text-[10px] font-bold text-slate-500 hover:text-red-600 hidden">' +
+            '<i class="fas fa-times"></i> បោះបង់' +
+          '</button>' +
+        '</div>' +
+
+        '<div class="space-y-2 text-xs">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">ឈ្មោះដេប៉ូ (*)</label>' +
+            '<input type="text" id="newDepotName" placeholder="ឧ៖ ដេប៉ូ ក - អង្ករសិរីសួស្តី" class="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-bold outline-none focus:border-rose-500">' +
+          '</div>' +
+
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">លេខទូរស័ព្ទដេប៉ូ (*)</label>' +
+              '<input type="tel" id="newDepotPhone" placeholder="ឧ៖ 012 345 678" class="w-full p-2 rounded-xl border border-slate-300 bg-white font-bold font-mono outline-none focus:border-rose-500">' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9.5px] font-black text-rose-950 block mb-0.5">វិធីទូទាត់ថ្លៃដើម (*)</label>' +
+              '<select id="newDepotPayTerms" class="w-full p-2 rounded-xl border-2 border-rose-300 bg-white font-black text-rose-900 outline-none">' +
+                '<option value="CREDIT">📝 កត់ជំពាក់ដេប៉ូ (Credit)</option>' +
+                '<option value="CASH">💵 បង់លុយសុទ្ធភ្លាម (Cash)</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>' +
+
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">ចំណាំទីតាំងដេប៉ូ (Location Landmark)</label>' +
+            '<input type="text" id="newDepotLocation" placeholder="ឧ៖ ខាងជើងផ្សារត្រីប៉ោយប៉ែត ច្រកចូលទី២..." class="w-full p-2 rounded-xl border border-slate-300 bg-white font-bold outline-none focus:border-rose-500">' +
+          '</div>' +
+
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">Link ផែនទី Google Maps ដេប៉ូ (បើមាន)</label>' +
+            '<input type="text" id="newDepotMapUrl" placeholder="https://maps.app.goo.gl/..." class="w-full p-2 rounded-xl border border-slate-300 bg-white font-mono text-[11px] outline-none focus:border-rose-500">' +
+          '</div>' +
+        '</div>' +
+
+        '<button type="button" id="btnSubmitDepotAction" onclick="submitSaveDepot()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5">' +
+          '<i class="fas fa-plus"></i> <span id="btnSubmitDepotText">បន្ថែមដេប៉ូ</span>' +
+        '</button>' +
+      '</div>' +
+
+      // បញ្ជីដេប៉ូកំពុងមាន
+      '<div class="flex-1 overflow-y-auto space-y-2 text-left pr-1" id="depotsListContainer">' +
+        '<div class="text-center py-4 text-slate-400 italic text-xs">កំពុងទាញទិន្នន័យ...</div>' +
+      '</div>' +
+
+      // ប៊ូតុងបិទ
+      '<button type="button" onclick="closeDepotManagerModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">' +
+        'រួចរាល់ (បិទ)' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// 🚀 ៣. បើក និងបិទផ្ទាំង Pop-up ដេប៉ូ
+async function openDepotManagerModal() {
+  injectDepotManagerModalMarkup();
+  cancelEditDepot();
+  await loadDepotsFromSupabase();
+  renderDepotsListUI();
+  var modal = document.getElementById('depotManagerModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeDepotManagerModal() {
+  var modal = document.getElementById('depotManagerModal');
+  if (modal) modal.classList.add('hidden');
+  cancelEditDepot();
+}
+
+// 📋 ៤. បង្ហាញបញ្ជីដេប៉ូលើ Pop-up
+function renderDepotsListUI() {
+  var container = document.getElementById('depotsListContainer');
+  if (!container) return;
+
+  var html = '';
+  activePartnerDepots.forEach(function(d, idx) {
+    var isInternal = (d.isInternal === true || d.id === 'DEPOT_KC');
+    var badgeInternal = isInternal ? 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">🏢 រោងចក្រផ្ទាល់</span>' : 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-rose-100 text-rose-800 border border-rose-200">🏬 ដេប៉ូដៃគូ</span>';
+
+    var termBadge = (d.payTerms === 'CASH') ? 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">💵 បង់លុយសុទ្ធ</span>' : 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300">📝 កត់ជំពាក់</span>';
+
+    var editBtn = '<button type="button" onclick="prepareEditDepotById(\'' + d.id + '\')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[10px] font-black active:scale-90 transition flex items-center gap-1 shadow-2xs">' +
+      '<i class="fas fa-pen-to-square text-amber-600"></i> កែប្រែ' +
+    '</button>';
+
+    var deleteBtn = isInternal ? 
+      '<span class="text-slate-300 text-xs p-1" title="ឃ្លាំងរោងចក្រផ្ទាល់មិនអាចលុបបានឡើយ"><i class="fas fa-lock"></i></span>' : 
+      '<button type="button" onclick="deleteDepotById(\'' + d.id + '\')" class="p-1 text-red-400 hover:text-red-600 active:scale-90 transition" title="លុបដេប៉ូនេះ"><i class="fas fa-trash-can text-xs"></i></button>';
+
+    html += '<div class="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 space-y-1.5 transition text-xs">' +
+      '<div class="flex items-center justify-between gap-2">' +
+        '<div class="flex items-center gap-2 min-w-0 flex-1">' +
+          '<div class="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-sm shrink-0">' +
+            (isInternal ? '💧' : '🏬') +
+          '</div>' +
+          '<div class="min-w-0 flex-1">' +
+            '<b class="text-slate-900 block truncate text-xs">' + d.name + '</b>' +
+            '<span class="text-[10px] text-emerald-800 font-bold font-mono">📞 ' + (d.phone || '-') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-1 shrink-0">' +
+          badgeInternal +
+          termBadge +
+        '</div>' +
+      '</div>' +
+
+      (d.location ? '<div class="text-[10.5px] text-slate-600 font-medium truncate"><i class="fas fa-location-dot text-rose-500 mr-1"></i>' + d.location + '</div>' : '') +
+
+      '<div class="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[10px]">' +
+        (d.mapUrl ? '<a href="' + d.mapUrl + '" target="_blank" class="text-blue-600 font-bold hover:underline flex items-center gap-1"><i class="fas fa-map-location-dot"></i> បើកផែនទី Google Maps</a>' : '<span class="text-slate-400 italic">គ្មាន Link ផែនទី</span>') +
+        '<div class="flex items-center gap-1.5">' +
+          editBtn +
+          deleteBtn +
+        '</div>' +
+      '</div>' +
+    '</div>';
   });
 
-  // បង្កើតប្រអប់ធីក (Checkboxes) សម្រាប់រើសទំនិញច្រើនមុខព្រមគ្នា (ឧ៖ អង្ករ ៣ ប្រភេទ)
+  container.innerHTML = html || '<div class="text-center py-4 text-slate-400 italic text-xs">គ្មានដេប៉ូឡើយ</div>';
+}
+
+// ✏️ ៥. រៀបចំកែប្រែដេប៉ូ
+function prepareEditDepotById(id) {
+  var d = activePartnerDepots.find(item => item.id === id);
+  if (!d) return;
+
+  editingDepotId = d.id;
+
+  var titleEl = document.getElementById('depotFormTitle');
+  var btnCancel = document.getElementById('btnCancelEditDepot');
+  var btnSubmitText = document.getElementById('btnSubmitDepotText');
+  var btnSubmit = document.getElementById('btnSubmitDepotAction');
+
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-pen-to-square text-amber-600"></i> កែសម្រួលដេប៉ូ៖ [' + d.name + ']';
+  if (btnCancel) btnCancel.classList.remove('hidden');
+  if (btnSubmitText) btnSubmitText.innerText = "រក្សាទុកការកែប្រែ";
+  if (btnSubmit) btnSubmit.className = "w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5";
+
+  document.getElementById('newDepotName').value = d.name || '';
+  document.getElementById('newDepotPhone').value = d.phone || '';
+  document.getElementById('newDepotLocation').value = d.location || '';
+  document.getElementById('newDepotMapUrl').value = d.mapUrl || '';
+  document.getElementById('newDepotPayTerms').value = d.payTerms || 'CREDIT';
+}
+
+// ❌ ៦. បោះបង់ការកែប្រែដេប៉ូ
+function cancelEditDepot() {
+  editingDepotId = null;
+  var titleEl = document.getElementById('depotFormTitle');
+  var btnCancel = document.getElementById('btnCancelEditDepot');
+  var btnSubmitText = document.getElementById('btnSubmitDepotText');
+  var btnSubmit = document.getElementById('btnSubmitDepotAction');
+
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-plus-circle text-rose-600"></i> បង្កើតដេប៉ូដៃគូថ្មី';
+  if (btnCancel) btnCancel.classList.add('hidden');
+  if (btnSubmitText) btnSubmitText.innerText = "បន្ថែមដេប៉ូ";
+  if (btnSubmit) btnSubmit.className = "w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5";
+
+  if (document.getElementById('newDepotName')) document.getElementById('newDepotName').value = '';
+  if (document.getElementById('newDepotPhone')) document.getElementById('newDepotPhone').value = '';
+  if (document.getElementById('newDepotLocation')) document.getElementById('newDepotLocation').value = '';
+  if (document.getElementById('newDepotMapUrl')) document.getElementById('newDepotMapUrl').value = '';
+  if (document.getElementById('newDepotPayTerms')) document.getElementById('newDepotPayTerms').value = 'CREDIT';
+}
+
+// 💾 ៧. រក្សាទុកដេប៉ូ (បង្កើតថ្មី ឬ កែប្រែដេប៉ូចាស់)
+async function submitSaveDepot() {
+  var nameInp = document.getElementById('newDepotName');
+  var phoneInp = document.getElementById('newDepotPhone');
+  var locInp = document.getElementById('newDepotLocation');
+  var mapInp = document.getElementById('newDepotMapUrl');
+  var termsInp = document.getElementById('newDepotPayTerms');
+
+  var name = nameInp ? nameInp.value.trim() : '';
+  var phone = phoneInp ? phoneInp.value.trim() : '';
+  var loc = locInp ? locInp.value.trim() : '';
+  var mapUrl = mapInp ? mapInp.value.trim() : '';
+  var payTerms = termsInp ? termsInp.value : 'CREDIT';
+
+  if (!name) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ខ្វះឈ្មោះដេប៉ូ", message: "សូមបញ្ចូលឈ្មោះដេប៉ូដៃគូ!", type: "warning" });
+    } else {
+      showToast("សូមបញ្ចូលឈ្មោះដេប៉ូ!", "error");
+    }
+    if (nameInp) nameInp.focus();
+    return;
+  }
+
+  // ករណីកែប្រែដេប៉ូចាស់
+  if (editingDepotId) {
+    var cur = activePartnerDepots.find(d => d.id === editingDepotId);
+    if (cur) {
+      cur.name = name;
+      cur.phone = phone;
+      cur.location = loc;
+      cur.mapUrl = mapUrl;
+      cur.payTerms = payTerms;
+    }
+  } 
+  // ករណីបង្កើតដេប៉ូថ្មី
+  else {
+    activePartnerDepots.push({
+      id: "DEPOT_" + Date.now(),
+      name: name,
+      phone: phone,
+      location: loc,
+      mapUrl: mapUrl,
+      payTerms: payTerms,
+      isInternal: false
+    });
+  }
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Partner_Depots', value: JSON.stringify(activePartnerDepots) }
+    ]);
+    if (error) throw error;
+
+    var wasEditing = (editingDepotId !== null);
+    cancelEditDepot();
+    renderDepotsListUI();
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: wasEditing ? "បានធ្វើបច្ចុប្បន្នភាពដេប៉ូជោគជ័យ!" : "បានបង្កើតដេប៉ូដៃគូថ្មីជោគជ័យ!",
+        type: "success"
+      });
+    } else {
+      showToast("បានរក្សាទុកដេប៉ូជោគជ័យ!", "success");
+    }
+
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
+
+// 🗑️ ៨. លុបដេប៉ូដៃគូ (ការពារមិនឱ្យលុបឃ្លាំងរោងចក្រ KC)
+async function deleteDepotById(id) {
+  var d = activePartnerDepots.find(item => item.id === id);
+  if (!d) return;
+
+  if (d.isInternal === true || d.id === 'DEPOT_KC') {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ការពារសុវត្ថិភាព", message: "ឃ្លាំងរោងចក្រផ្ទាល់ មិនអាចលុបបានឡើយ!", type: "warning" });
+    }
+    return;
+  }
+
+  var ok = true;
+  if (typeof kcConfirm === 'function') {
+    ok = await kcConfirm({
+      title: "បញ្ជាក់ការលុបដេប៉ូ",
+      message: "តើអ្នកពិតជាចង់លុបដេប៉ូដៃគូ [" + d.name + "] នេះមែនទេ?",
+      type: "danger",
+      confirmText: "យល់ព្រមលុប"
+    });
+  }
+
+  if (!ok) return;
+
+  activePartnerDepots = activePartnerDepots.filter(item => item.id !== id);
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Partner_Depots', value: JSON.stringify(activePartnerDepots) }
+    ]);
+    if (error) throw error;
+
+    cancelEditDepot();
+    renderDepotsListUI();
+    showToast("បានលុបដេប៉ូជោគជ័យ!", "info");
+
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
+
+// ==========================================================================
+// 🌟 មុខងារ POP-UP MODALS សម្រាប់ផ្ទាំង SETTINGS នីមួយៗ
+// ==========================================================================
+
+// 💵 ១. POP-UP អត្រាប្តូរប្រាក់ (Exchange Rates Modal)
+function openExchangeRatesModal() {
+  var curUsd = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var curThb = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+  var existing = document.getElementById('exchangeRatesModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="exchangeRatesModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'exchangeRatesModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-4 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fas fa-money-bill-transfer text-blue-600"></i> អត្រាប្តូរប្រាក់ (Exchange Rates)</b>' +
+        '<button type="button" onclick="document.getElementById(\'exchangeRatesModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
+      '</div>' +
+      '<div class="space-y-3 text-left text-xs">' +
+        '<div class="p-3 bg-blue-50/70 rounded-2xl border-2 border-blue-200 space-y-1">' +
+          '<label class="font-black text-blue-900 uppercase block">💵 $1 ដុល្លារ = (... ៛)</label>' +
+          '<input type="number" id="set_rate_usd" value="' + curUsd + '" class="font-black border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl w-full text-center text-lg outline-none text-blue-950 bg-white">' +
+        '</div>' +
+        '<div class="p-3 bg-amber-50/70 rounded-2xl border-2 border-amber-200 space-y-1">' +
+          '<label class="font-black text-amber-950 uppercase block">🪙 1฿ បាត = (... ៛)</label>' +
+          '<input type="number" id="set_rate_thb" value="' + curThb + '" class="font-black border-2 border-amber-300 focus:border-amber-600 p-2.5 rounded-xl w-full text-center text-lg outline-none text-amber-950 bg-white">' +
+        '</div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="document.getElementById(\'exchangeRatesModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveQuickExchangeRates().then(() => document.getElementById(\'exchangeRatesModal\').remove())" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុក</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// 🛵 ២. POP-UP សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ (Delivery Settings Modal)
+async function openDeliverySettingsModal() {
+  var existing = document.getElementById('deliverySettingsModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="deliverySettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'deliverySettingsModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fas fa-truck-fast text-indigo-600"></i> សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ</b>' +
+        '<button type="button" onclick="document.getElementById(\'deliverySettingsModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
+      '</div>' +
+      '<div class="space-y-3 text-left text-xs">' +
+        '<div class="grid grid-cols-2 gap-2">' +
+          '<div><label class="font-bold text-slate-500 uppercase block mb-1">ម៉ោងបើក (Open)</label><input type="time" id="set_open_time" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50"></div>' +
+          '<div><label class="font-bold text-slate-500 uppercase block mb-1">ម៉ោងបិទ (Close)</label><input type="time" id="set_close_time" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50"></div>' +
+        '</div>' +
+        '<div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200">' +
+          '<label class="font-bold text-slate-700 uppercase block mb-1">ថ្លៃដឹកធម្មតា (៛)</label>' +
+          '<input type="number" id="set_del_fee" placeholder="2000" class="font-black border border-slate-300 p-2 rounded-xl w-full text-center bg-white">' +
+        '</div>' +
+        '<div class="p-2.5 bg-blue-50/70 rounded-2xl border border-blue-200">' +
+          '<label class="font-black text-blue-900 uppercase block mb-1">💧 ទឹកធុង ២០L ដឹក FREE</label>' +
+          '<input type="number" id="set_del_min" placeholder="2" class="font-black border-2 border-blue-300 p-2 rounded-xl w-full text-center bg-white">' +
+          '<span class="text-[9px] text-blue-700 font-bold block mt-0.5">*កុម្ម៉ង់ចាប់ពី ២ ធុងឡើង Free</span>' +
+        '</div>' +
+        '<div class="p-2.5 bg-emerald-50 rounded-2xl border-2 border-emerald-300">' +
+          '<label class="font-black text-emerald-950 uppercase block mb-1">🍚 ទំនិញទូទៅដឹក FREE</label>' +
+          '<input type="number" id="set_del_free_amount" placeholder="50000" class="font-black border-2 border-emerald-400 p-2 rounded-xl w-full text-center bg-white">' +
+          '<span class="text-[9px] text-emerald-800 font-bold block mt-0.5">*ទិញអស់ចាប់ពី ៥០,០០០៛ ឡើង Free</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="document.getElementById(\'deliverySettingsModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveSettingsToSupabase().then(() => document.getElementById(\'deliverySettingsModal\').remove())" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុក</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  await loadSettingsForm();
+}
+
+// 🎁 ៣. POP-UP ប្រព័ន្ធ PROMOTION (Promo Settings Modal)
+async function openPromoSettingsModal() {
+  var existing = document.getElementById('promoSettingsModal');
+  if (existing) existing.remove();
+
+  var freeProdOptions = '<option value="">-- រើសទំនិញថែម Free --</option>';
+  (allProducts || []).forEach(function(p) { freeProdOptions += '<option value="' + p.name + '">' + p.name + '</option>'; });
+
   var buyCheckboxesHtml = '';
   (allProducts || []).forEach(function(p) {
     buyCheckboxesHtml += '<label class="flex items-center gap-2 p-1.5 hover:bg-amber-100/60 rounded-xl cursor-pointer transition select-none border border-slate-100 bg-white">' +
@@ -1997,251 +2697,132 @@ function renderSettingsModule() {
     '</label>';
   });
 
-  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
-    // 💵 ១. កាតកំណត់អត្រាប្តូរប្រាក់ (Exchange Rates)
-    '<div class="card border-t-4 border-emerald-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
-      '<div class="flex justify-between items-center">' +
-        '<div>' +
-          '<h3 class="font-extrabold text-emerald-950 text-base flex items-center gap-2">' +
-            '<i class="fas fa-money-bill-transfer text-emerald-600"></i>គ្រប់គ្រងអត្រាប្តូរប្រាក់ (Exchange Rates)' +
-          '</h3>' +
-          '<p class="text-[11px] text-gray-500 font-bold mt-0.5">*កំណត់អត្រាប្រាក់រៀល (៛), បាតថៃ (฿), និងដុល្លារ ($) សម្រាប់ POS & Store Web</p>' +
-        '</div>' +
-        '<span class="text-[10px] text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full font-black border border-emerald-300">Auto-Sync</span>' +
-      '</div>' +
-      '<div class="grid grid-cols-2 gap-3 text-xs">' +
-        '<div class="p-3 bg-blue-50/60 rounded-2xl border-2 border-blue-200 space-y-1.5">' +
-          '<label class="font-black text-blue-900 uppercase block">💵 $1 ដុល្លារ = (... ៛)</label>' +
-          '<input type="number" id="set_rate_usd" oninput="updateRatePreviewLive()" value="' + curUsd + '" class="font-black border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-blue-950 bg-white">' +
-        '</div>' +
-        '<div class="p-3 bg-amber-50/60 rounded-2xl border-2 border-amber-200 space-y-1.5">' +
-          '<label class="font-black text-amber-950 uppercase block">🪙 1฿ បាត = (... ៛)</label>' +
-          '<input type="number" id="set_rate_thb" oninput="updateRatePreviewLive()" value="' + curThb + '" class="font-black border-2 border-amber-300 focus:border-amber-600 p-2.5 rounded-xl w-full text-center text-base outline-none text-amber-950 bg-white">' +
-        '</div>' +
-      '</div>' +
-      '<button type="button" onclick="saveQuickExchangeRates()" id="btnSaveQuickRates" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs transition">' +
-        '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុកអត្រាប្តូរប្រាក់' +
-      '</button>' +
-    '</div>' +
-
-    // 🛵 ២. កាតម៉ោងបើក/បិទ & សេវាដឹកឆ្លាតវៃ (ការពារហាងមិនឱ្យខាតថ្លៃដឹក)
-    '<div class="card border-t-4 border-indigo-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
-      '<div>' +
-        '<h2 class="font-extrabold text-indigo-950 text-base flex items-center gap-2"><i class="fas fa-truck-fast text-indigo-600"></i>សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ (Delivery Rules)</h2>' +
-        '<p class="text-[10px] text-gray-500 font-bold mt-0.5">បែងចែកលក្ខខណ្ឌ Free រវាងទឹកធុង ២០L និងទំនិញទូទៅ/គ្រឿងទេស</p>' +
-      '</div>' +
-
-      '<div class="grid grid-cols-2 gap-2 text-xs">' +
-        '<div><label class="font-bold text-gray-500 uppercase block mb-1">ម៉ោងបើក (Open)</label><input type="time" id="set_open_time" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50"></div>' +
-        '<div><label class="font-bold text-gray-500 uppercase block mb-1">ម៉ោងបិទ (Close)</label><input type="time" id="set_close_time" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50"></div>' +
-      '</div>' +
-
-      '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs pt-1">' +
-        '<div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200">' +
-          '<label class="font-bold text-slate-700 uppercase block mb-1">ថ្លៃដឹកធម្មតា (៛)</label>' +
-          '<input type="number" id="set_del_fee" placeholder="ឧ៖ 2000" class="font-black border border-slate-300 p-2 rounded-xl w-full text-center text-slate-900 bg-white">' +
-          '<span class="text-[9px] text-slate-400 block mt-1">*គិតពេលទិញតិចតួច</span>' +
-        '</div>' +
-        '<div class="p-2.5 bg-blue-50/70 rounded-2xl border border-blue-200">' +
-          '<label class="font-black text-blue-900 uppercase block mb-1">💧 ទឹកធុង ២០L ដឹក FREE</label>' +
-          '<input type="number" id="set_del_min" placeholder="ឧ៖ 2" class="font-black border-2 border-blue-300 p-2 rounded-xl w-full text-center text-blue-900 bg-white">' +
-          '<span class="text-[9px] text-blue-700 font-bold block mt-1">*កុម្ម៉ង់ចាប់ពី ២ ធុងឡើង Free</span>' +
-        '</div>' +
-        '<div class="p-2.5 bg-emerald-50 rounded-2xl border-2 border-emerald-300">' +
-          '<label class="font-black text-emerald-950 uppercase block mb-1">🍚 ទំនិញទូទៅដឹក FREE</label>' +
-          '<input type="number" id="set_del_free_amount" placeholder="ឧ៖ 50000" class="font-black border-2 border-emerald-400 bg-white text-emerald-900 p-2 rounded-xl w-full text-center">' +
-          '<span class="text-[9px] text-emerald-800 font-bold block mt-1">*ទិញអស់ចាប់ពី ៥០,០០០៛ ឡើង Free</span>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
-    // 🎁 ៣. កាត PROMOTION កម្រិតខ្ពស់ (មាន Checkbox រើសទំនិញច្រើនមុខព្រមគ្នា A ថែម B)
-    '<div class="card border-t-4 border-amber-500 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
+  var html = '<div id="promoSettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'promoSettingsModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
       '<div class="flex justify-between items-center border-b pb-2">' +
-        '<div>' +
-          '<h3 class="font-extrabold text-amber-950 text-base flex items-center gap-2">' +
-            '<i class="fas fa-gift text-amber-500"></i>ប្រព័ន្ធ Promotion លើ Website' +
-          '</h3>' +
-          '<p class="text-[10px] text-gray-400 font-bold mt-0.5">រូបភាព Banner, កាលបរិច្ឆេទ & ថែមទំនិញច្រើនមុខព្រមគ្នា</p>' +
-        '</div>' +
-        '<select id="set_promo_status" class="text-xs font-black border-2 border-amber-400 bg-amber-50 rounded-xl p-2">' +
-          '<option value="OFF">🔕 បិទ (OFF)</option>' +
-          '<option value="ON">🔔 បើក (ON)</option>' +
-        '</select>' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fas fa-gift text-amber-500"></i> ប្រូម៉ូសិនលើ Website</b>' +
+        '<button type="button" onclick="document.getElementById(\'promoSettingsModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
       '</div>' +
-
-      // កាលបរិច្ឆេទ ចាប់ផ្តើម & បញ្ចប់
-      '<div class="p-3 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-1.5">' +
-        '<label class="text-[10px] font-black text-amber-950 uppercase block"><i class="fas fa-calendar-days text-amber-600 mr-1"></i> កំណត់ពេលចាប់ផ្តើម និងបញ្ចប់ Promotion (Auto-Timer)</label>' +
-        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold">' +
-          '<div><span class="text-[9.5px] text-gray-500 block mb-0.5">ថ្ងៃ & ម៉ោងចាប់ផ្តើម៖</span><input type="datetime-local" id="set_promo_start" class="border border-amber-300 p-2 rounded-xl w-full bg-white"></div>' +
-          '<div><span class="text-[9.5px] text-gray-500 block mb-0.5">ថ្ងៃ & ម៉ោងបញ្ចប់៖</span><input type="datetime-local" id="set_promo_end" class="border border-amber-300 p-2 rounded-xl w-full bg-white"></div>' +
-        '</div>' +
-      '</div>' +
-
-      // ពាក្យផ្សាយ & រូបថត Banner Promotion
-      '<div class="space-y-2 text-xs">' +
-        '<div>' +
-          '<label class="text-[10px] font-black text-gray-600 uppercase block mb-1">ពាក្យផ្សាយ Promotion លើក្បាលទំព័រ</label>' +
-          '<input type="text" id="set_promo_banner" placeholder="ឧ៖ 🎁 ប្រូម៉ូសិនពិសេស! ទិញអង្ករ ១បាវ ថែមទឹកធុងខៀវ ២ធុង Free!" class="border-2 border-amber-200 focus:border-amber-500 p-2.5 rounded-xl w-full font-bold bg-white">' +
-        '</div>' +
-
-        // ប្រអប់រូបភាព Banner Promotion
-        '<div class="p-3 bg-slate-50 border-2 border-dashed border-amber-300 rounded-2xl flex items-center justify-between gap-3">' +
-          '<div class="flex items-center gap-2.5">' +
-            '<div class="w-16 h-12 rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-xs shrink-0">' +
-              '<img id="promoBannerImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-w-full max-h-full object-cover">' +
-            '</div>' +
-            '<div>' +
-              '<b class="text-xs text-slate-800 block">រូបភាព Banner Promotion</b>' +
-              '<span class="text-[9.5px] text-slate-400 block" id="promoImgStatusNote">អាច Upload រូបផ្សាយពាណិជ្ជកម្មផ្ទាល់</span>' +
-              '<input type="hidden" id="set_promo_img_base64" value="">' +
-            '</div>' +
-          '</div>' +
-          '<label class="cursor-pointer px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-xs active:scale-95 transition whitespace-nowrap">' +
-            '<i class="fas fa-image mr-1"></i> រើសរូប Banner' +
-            '<input type="file" accept="image/*" onchange="previewPromoBannerFile(this)" class="hidden">' +
-          '</label>' +
-        '</div>' +
-      '</div>' +
-
-      // 🛒 បង្កើតលក្ខខណ្ឌថែមទំនិញ (Checkboxes រើសច្រើនមុខព្រមគ្នា)
-      '<div class="p-3.5 bg-gradient-to-br from-amber-50/80 to-orange-50/50 rounded-2xl border-2 border-amber-300 space-y-2.5">' +
-        '<div class="flex justify-between items-center">' +
-          '<b class="text-xs text-amber-950 font-black flex items-center gap-1"><i class="fas fa-boxes-packing text-amber-600"></i> លក្ខខណ្ឌថែមទំនិញ (ធីកជ្រើសរើសទំនិញច្រើនមុខព្រមគ្នា)</b>' +
-          '<span class="text-[9px] text-amber-800 bg-amber-200 px-2 py-0.5 rounded-full font-bold">Multi-Select</span>' +
-        '</div>' +
-
-        '<div class="bg-white p-3 rounded-xl border border-amber-200 space-y-2.5 text-xs shadow-2xs">' +
-          '<div>' +
-            '<div class="flex justify-between items-center mb-1">' +
-              '<span class="text-[10px] font-black text-amber-950 uppercase">១. ធីកជ្រើសរើសមុខទំនិញដែលត្រូវទិញ (អាចរើសលើសពី ១មុខ)៖</span>' +
-              '<button type="button" onclick="toggleAllPromoCheckboxes(true)" class="text-[10px] text-blue-600 font-bold hover:underline">រើសទាំងអស់</button>' +
-            '</div>' +
-            '<div class="max-h-36 overflow-y-auto p-1.5 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-1">' +
-              buyCheckboxesHtml +
-            '</div>' +
-          '</div>' +
-
-          '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">' +
-            '<div>' +
-              '<span class="text-[9.5px] font-bold text-gray-600 block mb-0.5">ចំនួនទិញ (Buy Qty)៖</span>' +
-              '<input type="number" id="pr_buy_qty" placeholder="ឧ៖ 1" value="1" class="font-black border p-2 rounded-xl w-full text-center bg-slate-50">' +
-            '</div>' +
-            '<div>' +
-              '<span class="text-[9.5px] font-bold text-emerald-900 block mb-0.5">២. ថែមជូន Free (Gift)៖</span>' +
-              '<select id="pr_free_prod" class="font-bold border-2 border-emerald-300 p-2 rounded-xl w-full bg-emerald-50 text-emerald-950 text-xs">' + freeProdOptions + '</select>' +
-            '</div>' +
-            '<div>' +
-              '<span class="text-[9.5px] font-bold text-emerald-900 block mb-0.5">ចំនួនថែម (Free Qty)៖</span>' +
-              '<input type="number" id="pr_free_qty" placeholder="ឧ៖ 2" value="2" class="font-black border-2 border-emerald-300 p-2 rounded-xl w-full text-center text-emerald-950 bg-emerald-50">' +
-            '</div>' +
-          '</div>' +
-
-          '<button type="button" onclick="addNewPromoRule()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5">' +
-            '<i class="fas fa-plus"></i> + បញ្ចូលលក្ខខណ្ឌ Promotion សម្រាប់ទំនិញដែលបានធីក' +
-          '</button>' +
-        '</div>' +
-
-        // បញ្ជីលក្ខខណ្ឌកំពុងដំណើរការ
-        '<div id="activePromoRulesContainer" class="space-y-1.5 pt-1"></div>' +
-      '</div>' +
-    '</div>' +
-
-    // 🖼️ ៥. កាតគ្រប់គ្រងផ្ទាំងស្លាយ Web (Banner & Slide Manager)
-    '<div class="card border-t-4 border-teal-600 shadow-xl p-5 mb-0 space-y-3.5 bg-white">' +
-      '<div class="flex justify-between items-center border-b pb-2">' +
-        '<div>' +
-          '<h3 class="font-extrabold text-teal-950 text-base flex items-center gap-2">' +
-            '<i class="fas fa-images text-teal-600"></i>គ្រប់គ្រងផ្ទាំងស្លាយលើ Web (Slides & Banners)' +
-          '</h3>' +
-          '<p class="text-[10px] text-gray-500 font-bold mt-0.5">ដាក់រូបភាពទំនិញពិត និងកែអក្សរលើស្លាយទាំង ៤</p>' +
-        '</div>' +
-        '<span class="text-[10px] font-black text-teal-800 bg-teal-100 px-2.5 py-0.5 rounded-full border border-teal-300">Web Slides</span>' +
-      '</div>' +
-
-      // ប៊ូតុងរើសស្លាយ ១ ដល់ ៤
-      '<div class="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-2xl border text-xs font-bold">' +
-        '<button type="button" id="tabSlide_0" onclick="switchSlideEditTab(0)" class="py-2 rounded-xl bg-teal-700 text-white shadow-xs">ស្លាយ ១ (ទឹក)</button>' +
-        '<button type="button" id="tabSlide_1" onclick="switchSlideEditTab(1)" class="py-2 rounded-xl text-slate-600 hover:bg-white">ស្លាយ ២ (ស្បៀង)</button>' +
-        '<button type="button" id="tabSlide_2" onclick="switchSlideEditTab(2)" class="py-2 rounded-xl text-slate-600 hover:bg-white">ស្លាយ ៣ (ប្រើប្រាស់)</button>' +
-        '<button type="button" id="tabSlide_3" onclick="switchSlideEditTab(3)" class="py-2 rounded-xl text-slate-600 hover:bg-white">ស្លាយ ៤ (ដឹកជញ្ជូន)</button>' +
-      '</div>' +
-
-      // ប្រអប់បញ្ចូលរូបភាព
-      '<div class="p-3 bg-slate-50 border-2 border-dashed border-teal-300 rounded-2xl flex items-center justify-between gap-3">' +
-        '<div class="flex items-center gap-2.5">' +
-          '<div class="w-20 h-14 rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-xs shrink-0">' +
-            '<img id="slideImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="w-full h-full object-cover">' +
-          '</div>' +
-          '<div>' +
-            '<b class="text-xs text-slate-800 block" id="slideImgTitleHint">រូបភាពស្លាយ</b>' +
-            '<span class="text-[9.5px] text-slate-400 block" id="slideImgNote">អាច Upload រូបទំនិញជាក់ស្តែង</span>' +
-          '</div>' +
-        '</div>' +
-        '<div class="flex items-center gap-1.5">' +
-          '<label class="cursor-pointer px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow-xs active:scale-95 transition whitespace-nowrap">' +
-            '<i class="fas fa-camera mr-1"></i> រើសរូបភាព' +
-            '<input type="file" accept="image/*" onchange="previewSlideImageFile(this)" class="hidden">' +
-          '</label>' +
-          '<button type="button" onclick="removeSlideImage()" class="p-2 text-red-500 hover:bg-red-50 rounded-xl active:scale-90" title="លុបរូប">' +
-            '<i class="fas fa-trash-can text-xs"></i>' +
-          '</button>' +
-        '</div>' +
-      '</div>' +
-
-      // ប្រអប់កែប្រែអក្សរ
-      '<div class="space-y-2 text-xs text-left">' +
-        // 🔘 ប៊ូតុងបិទ/បើកស្លាយ (ON / OFF)
-        '<div>' +
-          '<label class="text-[10px] font-black text-slate-700 uppercase block mb-1">ស្ថានភាពស្លាយនេះ (Status) *</label>' +
-          '<select id="inp_slide_status" onchange="onSlideFieldChanged()" class="font-black border-2 border-teal-400 bg-teal-50 text-teal-950 p-2 rounded-xl w-full text-xs outline-none">' +
-            '<option value="ON">🔔 បើកបង្ហាញលើ Web (ON)</option>' +
-            '<option value="OFF">🔕 បិទមិនបង្ហាញ (OFF)</option>' +
+      '<div class="flex-1 overflow-y-auto space-y-3 text-left text-xs pr-1">' +
+        '<div class="flex justify-between items-center bg-amber-50 p-2.5 rounded-2xl border border-amber-200">' +
+          '<b class="text-amber-950 text-xs">ស្ថានភាពប្រូម៉ូសិន</b>' +
+          '<select id="set_promo_status" class="text-xs font-black border-2 border-amber-400 bg-white rounded-xl p-1.5">' +
+            '<option value="OFF">🔕 បិទ (OFF)</option><option value="ON">🔔 បើក (ON)</option>' +
           '</select>' +
         '</div>' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ផ្លាកសម្គាល់ខាងលើ (Tag)</label>' +
-          '<input type="text" id="inp_slide_tag" oninput="onSlideFieldChanged()" class="font-bold border p-2 rounded-xl w-full bg-white">' +
+        '<div class="grid grid-cols-2 gap-2">' +
+          '<div><span class="text-[9.5px] font-bold text-slate-500 block mb-0.5">ម៉ោងចាប់ផ្តើម៖</span><input type="datetime-local" id="set_promo_start" class="border p-2 rounded-xl w-full bg-white text-[10px]"></div>' +
+          '<div><span class="text-[9.5px] font-bold text-slate-500 block mb-0.5">ម៉ោងបញ្ចប់៖</span><input type="datetime-local" id="set_promo_end" class="border p-2 rounded-xl w-full bg-white text-[10px]"></div>' +
         '</div>' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ចំណងជើងធំ (Title) *</label>' +
-          '<input type="text" id="inp_slide_title" oninput="onSlideFieldChanged()" class="font-black border-2 border-teal-300 focus:border-teal-600 p-2 rounded-xl w-full text-slate-900 bg-white text-sm">' +
+        '<div><label class="text-[10px] font-bold text-slate-600 block mb-1">ពាក្យផ្សាយ Promotion លើក្បាលទំព័រ</label><input type="text" id="set_promo_banner" placeholder="ឧ៖ 🎁 ប្រូម៉ូសិនពិសេស..." class="border p-2 rounded-xl w-full font-bold bg-white"></div>' +
+        '<div class="p-3 bg-slate-50 border-2 border-dashed border-amber-300 rounded-2xl flex items-center justify-between gap-2">' +
+          '<div class="flex items-center gap-2">' +
+            '<img id="promoBannerImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="w-14 h-10 object-cover rounded-xl border bg-white">' +
+            '<span class="text-[10px] text-slate-500 font-bold" id="promoImgStatusNote">រូបភាព Banner</span>' +
+            '<input type="hidden" id="set_promo_img_base64" value="">' +
+          '</div>' +
+          '<label class="cursor-pointer px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs active:scale-95 transition"><i class="fas fa-image mr-1"></i> រើសរូប<input type="file" accept="image/*" onchange="previewPromoBannerFile(this)" class="hidden"></label>' +
         '</div>' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ការពិពណ៌នាសង្ខេប (Description)</label>' +
-          '<textarea id="inp_slide_desc" oninput="onSlideFieldChanged()" rows="2" class="font-bold border p-2 rounded-xl w-full bg-white text-xs"></textarea>' +
-        '</div>' +
-      '</div>' +
-
-      '<button type="button" onclick="saveSlidesConfigToSupabase()" id="btnSaveSlidesAction" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md active:scale-95 transition flex items-center justify-center gap-1.5">' +
-        '<i class="fas fa-floppy-disk"></i> រក្សាទុកផ្ទាំងស្លាយទាំងអស់ (Save Slides)' +
-      '</button>' +
-    '</div>' +
-
-// 🔔 ៤. Telegram Bot Alert (គាំទ្រទាំង Group ថៅកែ និង Group អ្នកដឹក)
-    '<div class="card border-t-4 border-green-600 shadow-xl p-5 mb-0 space-y-3">' +
-      '<div class="flex justify-between items-center">' +
-        '<h3 class="font-extrabold text-green-950 text-base flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i>Telegram Bot Alert</h3>' +
-        '<div class="flex items-center gap-1.5">' +
-          '<button type="button" id="btnToggleTelegramStatus" onclick="toggleTelegramAlertStatusLive()" class="px-3 py-1.5 rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5"></button>' +
-          '<button type="button" onclick="testTelegramAlertNow()" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200">🔔 តេស្ត</button>' +
+        '<div class="p-3 bg-amber-50/70 rounded-2xl border border-amber-300 space-y-2">' +
+          '<div class="flex justify-between items-center mb-1"><span class="text-[10px] font-black text-amber-950 uppercase">១. ធីកទំនិញដែលត្រូវទិញ (Multi-Select)៖</span><button type="button" onclick="toggleAllPromoCheckboxes(true)" class="text-[10px] text-blue-600 font-bold">រើសទាំងអស់</button></div>' +
+          '<div class="max-h-28 overflow-y-auto p-1 bg-white rounded-xl border border-amber-200 grid grid-cols-1 gap-1">' + buyCheckboxesHtml + '</div>' +
+          '<div class="grid grid-cols-3 gap-1.5 pt-1">' +
+            '<div><span class="text-[9px] font-bold block mb-0.5">ចំនួនទិញ៖</span><input type="number" id="pr_buy_qty" value="1" class="font-black border p-1.5 rounded-xl w-full text-center bg-white"></div>' +
+            '<div><span class="text-[9px] font-bold block mb-0.5">ថែម Free៖</span><select id="pr_free_prod" class="font-bold border p-1.5 rounded-xl w-full bg-white text-[10px]">' + freeProdOptions + '</select></div>' +
+            '<div><span class="text-[9px] font-bold block mb-0.5">ចំនួនថែម៖</span><input type="number" id="pr_free_qty" value="1" class="font-black border p-1.5 rounded-xl w-full text-center bg-white"></div>' +
+          '</div>' +
+          '<button type="button" onclick="addNewPromoRule()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition"><i class="fas fa-plus mr-1"></i> បញ្ចូលលក្ខខណ្ឌ Promotion</button>' +
+          '<div id="activePromoRulesContainer" class="space-y-1 pt-1"></div>' +
         '</div>' +
       '</div>' +
-      '<div class="space-y-2 text-xs">' +
-        '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">🔑 Telegram Bot Token៖</span><input type="password" id="set_tg_token" placeholder="Bot Token (ឧ៖ 123456:ABC-DEF...)" class="border p-2 rounded-xl w-full font-mono bg-white"></div>' +
-        '<div><span class="text-[9.5px] font-bold text-gray-500 block mb-0.5">🏢 Chat ID ក្រុមថៅកែ (ដំណឹងទី១៖ ភ្ញៀវដកទឹក, លក់, ចំណាយ, ស្តុក)៖</span><input type="text" id="set_tg_chatid" placeholder="Chat ID ថៅកែ (ឧ៖ -100xxxxxxxxxx)" class="border p-2 rounded-xl w-full font-mono bg-white"></div>' +
-        '<div><span class="text-[9.5px] font-black text-blue-900 block mb-0.5">🛵 Chat ID ក្រុមអ្នកដឹកជញ្ជូន (ដំណឹងទី២៖ ចាត់ចែងការងារដឹកទឹក)៖</span><input type="text" id="set_tg_driver_chatid" placeholder="Chat ID ក្រុមអ្នកដឹក (ឧ៖ -100yyyyyyyyyy)" class="border-2 border-blue-300 p-2 rounded-xl w-full font-mono bg-blue-50/50 text-blue-950"></div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1 border-t">' +
+        '<button type="button" onclick="document.getElementById(\'promoSettingsModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveSettingsToSupabase().then(() => document.getElementById(\'promoSettingsModal\').remove())" class="py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុក</button>' +
       '</div>' +
-      '<button onclick="saveSettingsToSupabase()" id="btnSaveAllSettings" class="btn-green py-3.5 text-sm font-black shadow-md flex items-center justify-center gap-2">' +
-        '<i class="fas fa-floppy-disk"></i> រក្សាទុកការកំណត់ទាំងអស់ (Save All Settings)' +
-      '</button>' +
     '</div>' +
   '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  await loadSettingsForm();
+}
 
-  loadSettingsForm();
-  switchSlideEditTab(0); // 👈 បង្ហាញស្លាយទី ១ ដំបូងគេ
-  if (typeof updateRatePreviewLive === 'function') updateRatePreviewLive();
+// 🖼️ ៤. POP-UP ផ្ទាំងស្លាយលើ WEB (Slides Settings Modal)
+async function openSlidesSettingsModal() {
+  var existing = document.getElementById('slidesSettingsModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="slidesSettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'slidesSettingsModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fas fa-images text-teal-600"></i> គ្រប់គ្រងផ្ទាំងស្លាយ Web (Slides)</b>' +
+        '<button type="button" onclick="document.getElementById(\'slidesSettingsModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
+      '</div>' +
+      '<div class="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-2xl border text-xs font-bold">' +
+        '<button type="button" id="tabSlide_0" onclick="switchSlideEditTab(0)" class="py-1.5 rounded-xl bg-teal-700 text-white text-[11px]">ស្លាយ ១</button>' +
+        '<button type="button" id="tabSlide_1" onclick="switchSlideEditTab(1)" class="py-1.5 rounded-xl text-slate-600 hover:bg-white text-[11px]">ស្លាយ ២</button>' +
+        '<button type="button" id="tabSlide_2" onclick="switchSlideEditTab(2)" class="py-1.5 rounded-xl text-slate-600 hover:bg-white text-[11px]">ស្លាយ ៣</button>' +
+        '<button type="button" id="tabSlide_3" onclick="switchSlideEditTab(3)" class="py-1.5 rounded-xl text-slate-600 hover:bg-white text-[11px]">ស្លាយ ៤</button>' +
+      '</div>' +
+      '<div class="flex-1 overflow-y-auto space-y-2 text-left text-xs pr-1">' +
+        '<div class="p-2.5 bg-slate-50 border-2 border-dashed border-teal-300 rounded-2xl flex items-center justify-between gap-2">' +
+          '<div class="flex items-center gap-2">' +
+            '<img id="slideImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="w-16 h-12 object-cover rounded-xl border bg-white">' +
+            '<span class="text-[10px] text-slate-600 font-bold" id="slideImgTitleHint">រូបភាពស្លាយ</span>' +
+          '</div>' +
+          '<div class="flex items-center gap-1">' +
+            '<label class="cursor-pointer px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs active:scale-95 transition"><i class="fas fa-camera mr-1"></i> រើសរូប<input type="file" accept="image/*" onchange="previewSlideImageFile(this)" class="hidden"></label>' +
+            '<button type="button" onclick="removeSlideImage()" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i class="fas fa-trash-can text-xs"></i></button>' +
+          '</div>' +
+        '</div>' +
+        '<div><label class="text-[10px] font-black block mb-0.5">ស្ថានភាពស្លាយនេះ (Status) *</label><select id="inp_slide_status" onchange="onSlideFieldChanged()" class="font-black border border-teal-400 bg-teal-50 p-2 rounded-xl w-full text-xs"><option value="ON">🔔 បើក (ON)</option><option value="OFF">🔕 បិទ (OFF)</option></select></div>' +
+        '<div><label class="text-[10px] font-bold text-slate-500 block mb-0.5">ផ្លាកសម្គាល់ (Tag)</label><input type="text" id="inp_slide_tag" oninput="onSlideFieldChanged()" class="font-bold border p-2 rounded-xl w-full bg-white"></div>' +
+        '<div><label class="text-[10px] font-bold text-slate-500 block mb-0.5">ចំណងជើងធំ (Title) *</label><input type="text" id="inp_slide_title" oninput="onSlideFieldChanged()" class="font-black border p-2 rounded-xl w-full bg-white text-xs"></div>' +
+        '<div><label class="text-[10px] font-bold text-slate-500 block mb-0.5">ការពិពណ៌នា (Description)</label><textarea id="inp_slide_desc" oninput="onSlideFieldChanged()" rows="2" class="font-bold border p-2 rounded-xl w-full bg-white text-xs"></textarea></div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1 border-t">' +
+        '<button type="button" onclick="document.getElementById(\'slidesSettingsModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveSlidesConfigToSupabase().then(() => document.getElementById(\'slidesSettingsModal\').remove())" class="py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុកស្លាយ</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  await loadSettingsForm();
+  switchSlideEditTab(0);
+}
+
+// 🔔 ៥. POP-UP TELEGRAM BOT ALERTS (Telegram Settings Modal)
+async function openTelegramSettingsModal() {
+  var existing = document.getElementById('telegramSettingsModal');
+  if (existing) existing.remove();
+
+  var html = '<div id="telegramSettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="document.getElementById(\'telegramSettingsModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<b class="text-sm font-black text-slate-900 flex items-center gap-2"><i class="fab fa-telegram text-blue-500"></i> Telegram Bot Alerts</b>' +
+        '<button type="button" onclick="document.getElementById(\'telegramSettingsModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
+      '</div>' +
+      '<div class="flex justify-between items-center bg-slate-50 p-2.5 rounded-2xl border">' +
+        '<span class="text-xs font-bold text-slate-700">ស្ថានភាព Alert</span>' +
+        '<div class="flex items-center gap-1.5">' +
+          '<button type="button" id="btnToggleTelegramStatus" onclick="toggleTelegramAlertStatusLive()" class="px-2.5 py-1 rounded-xl text-xs font-black shadow-xs"></button>' +
+          '<button type="button" onclick="testTelegramAlertNow()" class="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl border border-blue-200">🔔 តេស្ត</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="space-y-2 text-left text-xs">' +
+        '<div><span class="text-[9.5px] font-bold text-slate-500 block mb-0.5">🔑 Bot Token៖</span><input type="password" id="set_tg_token" class="border p-2 rounded-xl w-full font-mono bg-white text-xs"></div>' +
+        '<div><span class="text-[9.5px] font-bold text-slate-500 block mb-0.5">🏢 Chat ID ថៅកែ (លក់/ចំណាយ/ស្តុក)៖</span><input type="text" id="set_tg_chatid" class="border p-2 rounded-xl w-full font-mono bg-white text-xs"></div>' +
+        '<div><span class="text-[9.5px] font-black text-blue-900 block mb-0.5">🛵 Chat ID ក្រុមអ្នកដឹក (ចាត់ចែងដឹកទឹក)៖</span><input type="text" id="set_tg_driver_chatid" class="border-2 border-blue-300 p-2 rounded-xl w-full font-mono bg-blue-50/50 text-blue-950 text-xs"></div>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="document.getElementById(\'telegramSettingsModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button>' +
+        '<button type="button" onclick="saveSettingsToSupabase().then(() => document.getElementById(\'telegramSettingsModal\').remove())" class="py-2.5 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុក</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  await loadSettingsForm();
 }
 
 // 🔘 មុខងារប្តូរស្ថានភាព Telegram ON/OFF
@@ -3520,5 +4101,439 @@ async function saveSlidesConfigToSupabase() {
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុកផ្ទាំងស្លាយទាំងអស់ (Save Slides)';
     }
+  }
+}
+
+// ==========================================================================
+// 📂 ប្រព័ន្ធគ្រប់គ្រង CATEGORY (មានផ្ទាំងរើស EMOJI រហ័ស & កែប្រែបានគ្រប់ CATEGORY)
+// ==========================================================================
+
+var DEFAULT_STORE_CATEGORIES = [
+  { key: "BARREL", name: "ទឹកធុង ២០L", icon: "💧", isCore: true },
+  { key: "PACK", name: "ទឹកយួរ / ដប", icon: "📦", isCore: true },
+  { key: "GROCERY", name: "ស្បៀង & គ្រឿងទេស", icon: "🍚", isCore: true },
+  { key: "HOUSEHOLD", name: "របស់ប្រើប្រាស់ & អនាម័យ", icon: "🧻", isCore: true },
+  { key: "EQUIP", name: "បរិក្ខារ & ជើងទម្រ", icon: "🛢️", isCore: true }
+];
+
+var activeStoreCategories = JSON.parse(JSON.stringify(DEFAULT_STORE_CATEGORIES));
+var editingCategoryIndex = null;
+
+// 📥 ១. ទាញយក Categories ពី Supabase Settings (គាំទ្រទាំង PROD & TEST)
+async function loadCategoriesFromSupabase() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('settings')
+      .select('value')
+      .eq('key', 'Store_Categories')
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data && data.value) {
+      var parsed = JSON.parse(data.value);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        DEFAULT_STORE_CATEGORIES.forEach(function(def) {
+          if (!parsed.some(c => c.key === def.key)) {
+            parsed.unshift(def);
+          }
+        });
+        activeStoreCategories = parsed;
+      }
+    }
+  } catch(e) {
+    console.warn("Categories load warning:", e);
+    activeStoreCategories = JSON.parse(JSON.stringify(DEFAULT_STORE_CATEGORIES));
+  }
+}
+
+// 🖼️ ២. បង្កើតផ្ទាំង POP-UP MODAL គ្រប់គ្រង Category
+function injectCategoryManagerModalMarkup() {
+  if (document.getElementById('categoryManagerModal')) return;
+
+  // បញ្ជី Emoji ពេញនិយមសម្រាប់ចុចរើសរហ័ស
+  var quickEmojis = ["🥤", "🍺", "🧃", "☕", "🍜", "🍚", "🥫", "🍞", "🍪", "🥩", "🥦", "🍎", "🧻", "🧴", "🧼", "💊", "🛢️", "💧", "📦", "🛒"];
+  var emojiPaletteHtml = '<div class="flex flex-wrap gap-1 pt-1.5">';
+  quickEmojis.forEach(function(em) {
+    emojiPaletteHtml += '<button type="button" onclick="quickPickEmoji(\'' + em + '\')" class="w-7 h-7 bg-white hover:bg-emerald-100 rounded-lg border border-slate-200 text-sm flex items-center justify-center active:scale-90 transition shadow-2xs">' + em + '</button>';
+  });
+  emojiPaletteHtml += '</div>';
+
+  var html = '<div id="categoryManagerModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeCategoryManagerModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-5 space-y-4 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[90dvh] flex flex-col">' +
+      
+      // ក្បាលផ្ទាំង
+      '<div class="flex justify-between items-center border-b pb-2.5">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-layer-group text-emerald-600"></i> គ្រប់គ្រងប្រភេទទំនិញ (Categories)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">បង្កើត កែប្រែ និងលុបប្រភេទទំនិញសម្រាប់ POS & Web</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeCategoryManagerModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      // ទម្រង់បង្កើត & កែប្រែ Category
+      '<div class="p-3 bg-emerald-50/70 border-2 border-emerald-300 rounded-2xl text-left space-y-2" id="catFormBox">' +
+        '<div class="flex justify-between items-center">' +
+          '<span id="catFormTitle" class="text-[10px] font-black text-emerald-950 uppercase flex items-center gap-1">' +
+            '<i class="fas fa-plus-circle text-emerald-600"></i> បង្កើត Category ថ្មី' +
+          '</span>' +
+          '<button type="button" id="btnCancelEditCat" onclick="cancelEditCategory()" class="text-[10px] font-bold text-slate-500 hover:text-red-600 hidden">' +
+            '<i class="fas fa-times"></i> បោះបង់ការកែ' +
+          '</button>' +
+        '</div>' +
+
+        '<div class="grid grid-cols-4 gap-2 text-xs">' +
+          '<div class="col-span-1">' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">Emoji/Icon</label>' +
+            '<input type="text" id="newCatIcon" placeholder="🥤" value="🥤" class="w-full text-center p-2 rounded-xl border-2 border-slate-300 bg-white font-bold outline-none focus:border-emerald-500 text-base shadow-inner">' +
+          '</div>' +
+          '<div class="col-span-3">' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">ឈ្មោះខ្មែរ (*)</label>' +
+            '<input type="text" id="newCatName" placeholder="ឧ៖ ភេសជ្ជៈ & ទឹកផ្លែឈើ" class="w-full p-2 rounded-xl border border-slate-300 bg-white font-bold outline-none focus:border-emerald-500 text-xs">' +
+          '</div>' +
+        '</div>' +
+
+        // 🎨 បន្ទះរើស Emoji រហ័ស
+        '<div>' +
+          '<label class="text-[9px] font-black text-emerald-900 block">👇 ចុចរើសរូប Emoji រហ័សនៅទីនេះ៖</label>' +
+          emojiPaletteHtml +
+        '</div>' +
+
+        '<div class="grid grid-cols-3 gap-2 text-xs pt-1 border-t border-emerald-200">' +
+          '<div class="col-span-2">' +
+            '<label class="text-[9.5px] font-bold text-slate-600 block mb-0.5">កូដសម្គាល់អក្សរឡាតាំង (*)</label>' +
+            '<input type="text" id="newCatKey" placeholder="ឧ៖ DRINKS" class="w-full p-2 rounded-xl border border-slate-300 bg-white font-mono font-bold uppercase text-xs outline-none focus:border-emerald-500">' +
+            '<span id="catKeyLockHint" class="text-[9px] text-slate-400 block mt-0.5 hidden">🔒 កូដគោលត្រូវបានចាក់សោរមិនឱ្យកែ</span>' +
+          '</div>' +
+          '<div class="col-span-1 flex items-end">' +
+            '<button type="button" id="btnSubmitCatAction" onclick="submitSaveCategory()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1">' +
+              '<i class="fas fa-plus"></i> <span id="btnSubmitCatText">បន្ថែម</span>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // បញ្ជី Category កំពុងមាន
+      '<div class="flex-1 overflow-y-auto space-y-2 text-left pr-1" id="categoriesListContainer">' +
+        '<div class="text-center py-4 text-slate-400 italic text-xs">កំពុងទាញទិន្នន័យ...</div>' +
+      '</div>' +
+
+      // ប៊ូតុងបិទ
+      '<button type="button" onclick="closeCategoryManagerModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">' +
+        'រួចរាល់ (បិទ)' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// 🎨 មុខងារចុចរើស Emoji មួយឃ្លីក
+function quickPickEmoji(emojiChar) {
+  var inp = document.getElementById('newCatIcon');
+  if (inp) {
+    inp.value = emojiChar;
+    inp.classList.add('bg-emerald-100');
+    setTimeout(() => inp.classList.remove('bg-emerald-100'), 250);
+  }
+}
+
+// 🚀 ៣. បើក និងបិទផ្ទាំង Pop-up
+async function openCategoryManagerModal() {
+  injectCategoryManagerModalMarkup();
+  cancelEditCategory();
+  await loadCategoriesFromSupabase();
+  renderCategoriesListUI();
+  var modal = document.getElementById('categoryManagerModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeCategoryManagerModal() {
+  var modal = document.getElementById('categoryManagerModal');
+  if (modal) modal.classList.add('hidden');
+  cancelEditCategory();
+}
+
+// 📋 ៤. បង្ហាញបញ្ជី Category លើ Pop-up (មានប៊ូតុងកែប្រែលើគ្រប់ Category ទាំងអស់)
+function renderCategoriesListUI() {
+  var container = document.getElementById('categoriesListContainer');
+  if (!container) return;
+
+  var html = '';
+  activeStoreCategories.forEach(function(cat, idx) {
+    var isCore = cat.isCore === true;
+    var badgeCore = isCore ? 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-blue-100 text-blue-900 border border-blue-200">🔒 គោល</span>' : 
+      '<span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">✨ ថ្មី</span>';
+
+    // ប៊ូតុងកែប្រែ៖ មានលើគ្រប់ Category ទាំងអស់ (រួមទាំង Category គោល)
+    var editBtn = '<button type="button" onclick="prepareEditCategoryByIndex(' + idx + ')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[10px] font-black active:scale-90 transition flex items-center gap-1 shadow-2xs" title="កែប្រែឈ្មោះ & Emoji">' +
+      '<i class="fas fa-pen-to-square text-amber-600"></i> កែប្រែ' +
+    '</button>';
+
+    // ប៊ូតុងលុប៖ Category គោលមិនអាចលុបបានឡើយ (Lock) រីឯ Category បង្កើតថ្មីអាចលុបបាន
+    var deleteBtn = isCore ? 
+      '<span class="text-slate-300 text-xs p-1" title="ប្រភេទទំនិញគោលការពារមិនឱ្យលុប"><i class="fas fa-lock"></i></span>' : 
+      '<button type="button" onclick="deleteCategoryByIndex(' + idx + ')" class="p-1 text-red-400 hover:text-red-600 active:scale-90 transition" title="លុប Category នេះ"><i class="fas fa-trash-can text-xs"></i></button>';
+
+    html += '<div class="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-between gap-2 text-xs transition">' +
+      '<div class="flex items-center gap-2 min-w-0 flex-1">' +
+        '<span class="text-xl shrink-0 p-1 bg-white rounded-xl border border-slate-200 shadow-2xs">' + (cat.icon || '📦') + '</span>' +
+        '<div class="min-w-0 flex-1">' +
+          '<b class="text-slate-900 block truncate text-xs">' + cat.name + '</b>' +
+          '<div class="text-[10px] text-slate-400 font-mono mt-0.5">កូដ៖ <code>' + cat.key + '</code></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="flex items-center gap-1.5 shrink-0">' +
+        badgeCore +
+        editBtn +
+        deleteBtn +
+      '</div>' +
+    '</div>';
+  });
+
+  container.innerHTML = html || '<div class="text-center py-4 text-slate-400 italic text-xs">គ្មាន Category ឡើយ</div>';
+}
+
+// ✏️ ៥. រៀបចំកែប្រែ Category
+function prepareEditCategoryByIndex(idx) {
+  var cat = activeStoreCategories[idx];
+  if (!cat) return;
+
+  editingCategoryIndex = idx;
+
+  var titleEl = document.getElementById('catFormTitle');
+  var btnCancel = document.getElementById('btnCancelEditCat');
+  var btnSubmitText = document.getElementById('btnSubmitCatText');
+  var btnSubmit = document.getElementById('btnSubmitCatAction');
+  var keyLockHint = document.getElementById('catKeyLockHint');
+
+  var iconInp = document.getElementById('newCatIcon');
+  var nameInp = document.getElementById('newCatName');
+  var keyInp = document.getElementById('newCatKey');
+
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-pen-to-square text-amber-600"></i> កែសម្រួល Category៖ [' + cat.name + ']';
+  if (btnCancel) btnCancel.classList.remove('hidden');
+  if (btnSubmitText) btnSubmitText.innerText = "រក្សាទុក";
+  if (btnSubmit) btnSubmit.className = "w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1";
+
+  if (iconInp) iconInp.value = cat.icon || '📦';
+  if (nameInp) { nameInp.value = cat.name || ''; nameInp.focus(); }
+  if (keyInp) {
+    keyInp.value = cat.key || '';
+    if (cat.isCore === true) {
+      keyInp.readOnly = true;
+      keyInp.className = "w-full p-2 rounded-xl border border-slate-300 bg-slate-100 font-mono font-bold uppercase text-xs outline-none select-none text-slate-500";
+      if (keyLockHint) keyLockHint.classList.remove('hidden');
+    } else {
+      keyInp.readOnly = false;
+      keyInp.className = "w-full p-2 rounded-xl border border-slate-300 bg-white font-mono font-bold uppercase text-xs outline-none focus:border-emerald-500";
+      if (keyLockHint) keyLockHint.classList.add('hidden');
+    }
+  }
+}
+
+// ❌ ៦. បោះបង់ការកែប្រែ
+function cancelEditCategory() {
+  editingCategoryIndex = null;
+  var titleEl = document.getElementById('catFormTitle');
+  var btnCancel = document.getElementById('btnCancelEditCat');
+  var btnSubmitText = document.getElementById('btnSubmitCatText');
+  var btnSubmit = document.getElementById('btnSubmitCatAction');
+  var keyLockHint = document.getElementById('catKeyLockHint');
+
+  var iconInp = document.getElementById('newCatIcon');
+  var nameInp = document.getElementById('newCatName');
+  var keyInp = document.getElementById('newCatKey');
+
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-plus-circle text-emerald-600"></i> បង្កើត Category ថ្មី';
+  if (btnCancel) btnCancel.classList.add('hidden');
+  if (btnSubmitText) btnSubmitText.innerText = "បន្ថែម";
+  if (btnSubmit) btnSubmit.className = "w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center justify-center gap-1";
+
+  if (iconInp) iconInp.value = '🥤';
+  if (nameInp) nameInp.value = '';
+  if (keyInp) {
+    keyInp.value = '';
+    keyInp.readOnly = false;
+    keyInp.className = "w-full p-2 rounded-xl border border-slate-300 bg-white font-mono font-bold uppercase text-xs outline-none focus:border-emerald-500";
+    if (keyLockHint) keyLockHint.classList.add('hidden');
+  }
+}
+
+// 💾 ៧. រក្សាទុក Category (ដំណើរការទាំង បង្កើតថ្មី និង កែប្រែ Category ចាស់)
+async function submitSaveCategory() {
+  var iconInp = document.getElementById('newCatIcon');
+  var nameInp = document.getElementById('newCatName');
+  var keyInp = document.getElementById('newCatKey');
+
+  var icon = iconInp ? iconInp.value.trim() : '📦';
+  var name = nameInp ? nameInp.value.trim() : '';
+  var key = keyInp ? keyInp.value.toUpperCase().replace(/[^A-Z0-9_]/g, '').trim() : '';
+
+  if (!name) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ខ្វះឈ្មោះ", message: "សូមបញ្ចូលឈ្មោះខ្មែរនៃ Category!", type: "warning" });
+    } else {
+      showToast("សូមបញ្ចូលឈ្មោះ Category!", "error");
+    }
+    if (nameInp) nameInp.focus();
+    return;
+  }
+
+  // ករណីទី ១៖ កំពុងកែប្រែ Category ចាស់ (Edit Mode)
+  if (editingCategoryIndex !== null) {
+    var curCat = activeStoreCategories[editingCategoryIndex];
+    if (curCat) {
+      curCat.name = name;
+      curCat.icon = icon || '📦';
+      if (curCat.isCore !== true && key) {
+        curCat.key = key;
+      }
+    }
+  } 
+  // ករណីទី ២៖ បង្កើត Category ថ្មីស្រឡាង (New Mode)
+  else {
+    if (!key) {
+      if (typeof kcAlert === 'function') {
+        await kcAlert({ title: "ខ្វះកូដសម្គាល់", message: "សូមបញ្ចូលកូដសម្គាល់ជាអក្សរឡាតាំង (ឧ៖ DRINKS, SNACKS)!", type: "warning" });
+      } else {
+        showToast("សូមបញ្ចូលកូដ Category!", "error");
+      }
+      if (keyInp) keyInp.focus();
+      return;
+    }
+
+    // 🛡️ ពិនិត្យកុំឱ្យស្ទួនកូដចាស់
+    var exists = activeStoreCategories.some(c => c.key === key);
+    if (exists) {
+      if (typeof kcAlert === 'function') {
+        await kcAlert({ title: "កូដស្ទួន", message: "កូដសម្គាល់ [" + key + "] នេះមានរួចហើយ! សូមដាក់កូដថ្មីផ្សេង។", type: "warning" });
+      } else {
+        showToast("កូដ Category នេះមានរួចហើយ!", "error");
+      }
+      return;
+    }
+
+    activeStoreCategories.push({
+      key: key,
+      name: name,
+      icon: icon || '📦',
+      isCore: false
+    });
+  }
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Categories', value: JSON.stringify(activeStoreCategories) }
+    ]);
+    if (error) throw error;
+
+    var wasEditing = (editingCategoryIndex !== null);
+    cancelEditCategory();
+    renderCategoriesListUI();
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: wasEditing ? "បានកែប្រែ Category រួចរាល់!" : "បានបង្កើត Category ថ្មីជោគជ័យ!",
+        type: "success"
+      });
+    } else {
+      showToast("បានរក្សាទុក Category ជោគជ័យ!", "success");
+    }
+
+    // Update Dropdown ក្នុងផ្ទាំងស្តុកភ្លាមៗ
+    if (typeof populateProductCategoryDropdown === 'function') {
+      populateProductCategoryDropdown();
+    }
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
+
+// 🗑️ ៨. លុប Category ថ្មី (ការពារមិនឱ្យលុប Category គោល)
+async function deleteCategoryByIndex(idx) {
+  var cat = activeStoreCategories[idx];
+  if (!cat) return;
+
+  if (cat.isCore === true) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "ការពារសុវត្ថិភាព", message: "ប្រភេទទំនិញគោល [" + cat.name + "] មិនអាចលុបបានឡើយ!", type: "warning" });
+    }
+    return;
+  }
+
+  var ok = true;
+  if (typeof kcConfirm === 'function') {
+    ok = await kcConfirm({
+      title: "បញ្ជាក់ការលុប Category",
+      message: "តើអ្នកពិតជាចង់លុប Category [" + (cat.icon || '') + " " + cat.name + "] នេះមែនទេ?",
+      type: "danger",
+      confirmText: "យល់ព្រមលុប"
+    });
+  }
+
+  if (!ok) return;
+
+  activeStoreCategories.splice(idx, 1);
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Categories', value: JSON.stringify(activeStoreCategories) }
+    ]);
+    if (error) throw error;
+
+    cancelEditCategory();
+    renderCategoriesListUI();
+    showToast("បានលុប Category ជោគជ័យ!", "info");
+
+    if (typeof populateProductCategoryDropdown === 'function') {
+      populateProductCategoryDropdown();
+    }
+  } catch(err) {
+    showToast("កំហុស៖ " + err.message, "error");
+  }
+}
+
+// ==========================================================================
+// 🏬 មុខងារបង្កើតជម្រើសដេប៉ូដៃគូ (DYNAMIC SUPPLIER DEPOT DROPDOWN)
+// ==========================================================================
+function populateProductDepotDropdown(selectedDepotId) {
+  var sel = document.getElementById('pSupplierDepot');
+  if (!sel) return;
+
+  var currentVal = selectedDepotId || sel.value || 'DEPOT_KC';
+  var html = '';
+
+  activePartnerDepots.forEach(function(d) {
+    var isSel = (d.id === currentVal) ? 'selected' : '';
+    var termTag = (d.payTerms === 'CASH') ? ' [💵 លុយសុទ្ធ]' : ' [📝 កត់ជំពាក់]';
+    html += '<option value="' + d.id + '" ' + isSel + '>' + (d.isInternal ? '💧 ' : '🏬 ') + d.name + termTag + '</option>';
+  });
+
+  sel.innerHTML = html;
+  onProductDepotChange();
+}
+
+function onProductDepotChange() {
+  var sel = document.getElementById('pSupplierDepot');
+  var badge = document.getElementById('pDepotTermsBadge');
+  if (!sel || !badge) return;
+
+  var depotId = sel.value;
+  var d = activePartnerDepots.find(item => item.id === depotId);
+
+  if (d) {
+    if (d.payTerms === 'CASH') {
+      badge.innerHTML = '<span class="bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-full font-black text-[9.5px]">💵 ទៅយកបង់លុយសុទ្ធ</span>';
+    } else {
+      badge.innerHTML = '<span class="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-black text-[9.5px]">📝 ទៅយកកត់ជំពាក់ដេប៉ូ</span>';
+    }
+  } else {
+    badge.innerHTML = '';
   }
 }
