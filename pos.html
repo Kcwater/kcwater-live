@@ -56,33 +56,37 @@
 
   <!-- ២. ផ្ទាំងធំ MAIN APP -->
   <div id="mainApp" class="hidden flex flex-col min-h-screen">
-    <!-- Navbar ខាងលើ -->
-    <nav class="bg-green-700 text-white p-3.5 sm:p-4 flex justify-between items-center shadow-lg sticky top-0 z-[1000]">
-      <div class="flex items-center">
-        <button onclick="toggleSidebar()" class="text-2xl mr-3 sm:mr-4 px-2 hover:bg-green-800 rounded transition active:scale-90" aria-label="បើកម៉ឺនុយ">
+    <!-- Navbar ខាងលើ (កែសម្រួលរៀបរយ ១០០% លើអេក្រង់ទូរស័ព្ទ មិនធ្លាក់ជួរ) -->
+    <nav class="bg-green-700 text-white px-2.5 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center shadow-lg sticky top-0 z-[1000] gap-1 select-none">
+      <!-- ផ្នែកខាងឆ្វេង៖ Menu & KC WATER (ចាក់សោរមិនឱ្យធ្លាក់ជួរ) -->
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0 min-w-0">
+        <button onclick="toggleSidebar()" class="text-xl sm:text-2xl p-1 hover:bg-green-800 rounded-lg transition active:scale-90 shrink-0" aria-label="បើកម៉ឺនុយ">
           <i class="fas fa-bars"></i>
         </button>
-        <span class="font-black tracking-tight text-base sm:text-lg flex items-center gap-1.5">
-          <i class="fas fa-droplet text-green-300"></i> KC WATER
+        <span class="font-black tracking-tight text-sm sm:text-base flex items-center gap-1 whitespace-nowrap shrink-0">
+          <i class="fas fa-droplet text-green-300 text-xs sm:text-sm"></i> KC WATER
         </span>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button type="button" id="navOnlineOrdersBtn" onclick="openOnlineOrdersModal()" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-black bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-md flex items-center gap-1.5 active:scale-95 transition border border-amber-300">
-          <i class="fas fa-truck-fast text-xs text-amber-900"></i>
-          <span class="hidden sm:inline">កុម្ម៉ង់ Online</span>
-          <span id="navOnlineOrdersCount" class="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] flex items-center justify-center font-black animate-pulse">0</span>
+      <!-- ផ្នែកខាងស្តាំ៖ ប៊ូតុងមុខងារនានា (រត់ស្មើជួរដេកស្អាត) -->
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        <!-- ប៊ូតុងកុម្ម៉ង់ Online -->
+        <button type="button" id="navOnlineOrdersBtn" onclick="openOnlineOrdersModal()" class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-black bg-amber-400 hover:bg-amber-300 text-amber-950 shadow-md flex items-center gap-1 active:scale-95 transition border border-amber-300 shrink-0">
+          <i class="fas fa-truck-fast text-[11px] sm:text-xs text-amber-900"></i>
+          <span class="hidden md:inline">កុម្ម៉ង់ Online</span>
+          <span id="navOnlineOrdersCount" class="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-red-600 text-white text-[9px] sm:text-[10px] flex items-center justify-center font-black animate-pulse">0</span>
         </button>
 
-        <!-- 🔄 ប៊ូតុង Refresh Web ភ្ញៀវ (ដំណើរការ ១០០% លុប Cache ចាស់ និងទាញទំនិញថ្មីភ្លាមៗ) -->
-        <button type="button" onclick="triggerAppSmartRefresh()" ondblclick="triggerAppSmartRefresh(true)" id="navQuickRefreshBtn" title="ចុច ១ដង=ទាញទិន្នន័យថ្មី | ចុច ២ដង=ទាញកូដថ្មី" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-green-800 hover:bg-green-900 text-green-200 hover:text-white flex items-center justify-center text-xs sm:text-sm shadow-inner active:scale-90 transition border border-green-600">
-  <i id="navRefreshSpinIcon" class="fas fa-rotate"></i>
-</button>
+        <!-- 🔄 ប៊ូតុង Refresh Web -->
+        <button type="button" onclick="triggerAppSmartRefresh()" ondblclick="triggerAppSmartRefresh(true)" id="navQuickRefreshBtn" title="ចុច ១ដង=ទាញទិន្នន័យថ្មី | ចុច ២ដង=ទាញកូដថ្មី" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-green-800 hover:bg-green-900 text-green-200 hover:text-white flex items-center justify-center text-xs shadow-inner active:scale-90 transition border border-green-600 shrink-0">
+          <i id="navRefreshSpinIcon" class="fas fa-rotate"></i>
+        </button>
 
-        <div id="userInfo" class="text-[10px] bg-green-800 px-3 py-1.5 rounded-full border border-green-600 font-bold uppercase shadow-inner">Admin KC WATER</div>
+        <!-- 👤 ប្រអប់ឈ្មោះ Admin (បង្រួមតូចល្មមលើទូរស័ព្ទ) -->
+        <div id="userInfo" class="text-[9.5px] sm:text-[10px] bg-green-800 px-2 sm:px-3 py-1 rounded-full border border-green-600 font-bold uppercase shadow-inner whitespace-nowrap truncate max-w-[85px] sm:max-w-xs shrink-0" title="Admin KC WATER">Admin</div>
       </div>
     </nav>
-
+    
     <!-- តួខ្លួន Sidebar + Content Area -->
     <div class="flex flex-1 relative">
       <aside id="sidebar" class="sidebar shadow-2xl hidden-sidebar overflow-y-auto">
