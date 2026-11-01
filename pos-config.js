@@ -79,24 +79,23 @@ async function switchAppEnvironment(targetEnv) {
   }
 }
 
-// 🏷️ ៤. មុខងារបង្ហាញផ្លាកសម្គាល់ប្រព័ន្ធ (ដំណើរការពេញលេញទាំង TEST និង PROD គ្មានកូដស្ទួន)
+// 🏷️ ៤. មុខងារបង្ហាញផ្លាកសម្គាល់ប្រព័ន្ធ (រចនាបែប High-Tech Pill មិនធ្លាក់ជួរលើអេក្រង់តូច ១០០%)
 function renderEnvironmentBanner() {
-  // សម្អាតផ្លាកចាស់ចេញសិនដើម្បីកុំឱ្យជាន់គ្នា
   var oldBanner = document.getElementById('kcTestModeBanner');
   if (oldBanner) oldBanner.remove();
 
   var oldBadge = document.getElementById('navTestBadge');
   if (oldBadge) oldBadge.remove();
 
-  // ក. បើកំពុងនៅប្រព័ន្ធសាកល្បង (TEST)៖ បង្ហាញរបារពណ៌ទឹកក្រូចធំនៅខាងលើបង្អស់
+  // ក. បើកំពុងនៅប្រព័ន្ធសាកល្បង (TEST)៖ របារពណ៌ទឹកក្រូចបង្រួមតូចល្មម មិនធ្លាក់ជួរ
   if (CURRENT_ENV === 'TEST') {
-    var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 8px 14px; text-align: center; font-size: 11px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">' +
-      '<div style="display: flex; align-items: center; gap: 8px; margin: 0 auto;">' +
-        '<span style="display: inline-block; width: 8px; height: 8px; background: white; border-radius: 50%; box-shadow: 0 0 8px white;"></span>' +
-        '<span>🧪 កំពុងប្រើប្រព័ន្ធសាកល្បង (TEST MODE) — មិនប៉ះពាល់ទិន្នន័យលក់ពិតឡើយ</span>' +
+    var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 4px 10px; font-size: 10px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; white-space: nowrap; box-sizing: border-box;">' +
+      '<div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+        '<span style="display: inline-block; width: 6px; height: 6px; background: white; border-radius: 50%; box-shadow: 0 0 6px white; flex-shrink: 0;"></span>' +
+        '<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🧪 ប្រព័ន្ធសាកល្បង (TEST MODE)</span>' +
       '</div>' +
-      '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 10px; padding: 4px 10px; border-radius: 8px; border: none; cursor: pointer; white-space: nowrap;">' +
-        'ប្តូរទៅប្រព័ន្ធពិត ➔' +
+      '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 9.5px; padding: 3px 8px; border-radius: 6px; border: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; margin-left: 8px;">' +
+        'ប្តូរ ➔' +
       '</button>' +
     '</div>';
 
@@ -107,19 +106,19 @@ function renderEnvironmentBanner() {
     else document.body.insertAdjacentHTML('afterbegin', bannerHtml);
   }
 
-  // ខ. បង្ហាញប៊ូតុងផ្លាក [🧪 TEST 🔄] ឬ [🏢 PROD 🔄] នៅលើ Navbar ជាប់ឈ្មោះ Admin
+  // ខ. បង្ហាញប៊ូតុងផ្លាក [🧪 TEST 🔄] ឬ [🏢 PROD 🔄] ជាប់រាង Pill តូចស្អាត មិនខូចរាង
   var userInfo = document.getElementById('userInfo');
   if (userInfo && !document.getElementById('navTestBadge')) {
     var isTest = (CURRENT_ENV === 'TEST');
     var badgeStyle = isTest ? 
       'background: #fbbf24; color: #78350f; border: 1px solid #f59e0b;' : 
       'background: #047857; color: #a7f3d0; border: 1px solid #059669;';
-    var badgeText = isTest ? '🧪 TEST 🔄' : '🏢 PROD 🔄';
+    var badgeText = isTest ? '🧪 TEST' : '🏢 PROD';
     var switchTarget = isTest ? 'PROD' : 'TEST';
     var switchTitle = isTest ? 'ចុចដើម្បីប្តូរទៅប្រព័ន្ធពិត (PROD)' : 'ចុចដើម្បីប្តូរទៅប្រព័ន្ធសាកល្បង (TEST)';
 
-    var badgeBtnHtml = '<button type="button" onclick="switchAppEnvironment(\'' + switchTarget + '\')" title="' + switchTitle + '" id="navTestBadge" style="' + badgeStyle + ' font-size: 10px; font-weight: 900; padding: 3px 9px; border-radius: 9999px; margin-right: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">' +
-      badgeText +
+    var badgeBtnHtml = '<button type="button" onclick="switchAppEnvironment(\'' + switchTarget + '\')" title="' + switchTitle + '" id="navTestBadge" style="' + badgeStyle + ' font-size: 9.5px; font-weight: 900; padding: 2px 7px; border-radius: 9999px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; white-space: nowrap; height: 26px; line-height: 1;">' +
+      badgeText + ' 🔄' +
     '</button>';
 
     userInfo.insertAdjacentHTML('beforebegin', badgeBtnHtml);
