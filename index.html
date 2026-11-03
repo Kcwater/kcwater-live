@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
+  <!-- 🚀 កូដបង្ខំឱ្យលោតទៅ Google Chrome ភ្លាមៗក្នុង 0.001 វិនាទី ពេលបើកក្នុង Messenger លើ Android -->
+  <script>
+    (function() {
+      var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+      var isAndroid = ua.includes('android');
+      var isFBorMessenger = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+
+      // បើជា Android កំពុងបើកក្នុង Messenger -> បញ្ជាឱ្យលោតចូល Google Chrome ភ្លាមៗតែម្តង
+      if (isAndroid && isFBorMessenger) {
+        var currentUrl = window.location.href;
+        if (!currentUrl.includes('no_auto_chrome=1')) {
+          var cleanUrl = currentUrl.replace(/^https?:\/\//, '');
+          var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+          window.location.replace(intentUrl);
+        }
+      }
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>KC WATER - ទឹកពិសាបរិសុទ្ធ ខេ ស៊ី (ប៉ោយប៉ែត)</title>
@@ -2118,23 +2136,25 @@ function filterCatalog(cat, btn) {
       document.getElementById('checkoutModal').classList.add('hidden');
     }
 
-   // 🛒 មុខងារគណនាកន្ត្រក Checkout បកប្រែ ៣ ភាសាពេញលេញ ១០០% (ខ្មែរ / EN / 中文)
+// 🛒 មុខងារគណនាកន្ត្រក Checkout & ទាញតម្លៃសំបកធុងពីស្តុកផ្ទាល់ ១០០%
 function updateCheckoutCalculation() {
   var listCont = document.getElementById('checkoutCartItemsList');
   var grandText = document.getElementById('coGrandTotalText');
   var khqrDue = document.getElementById('khqrDueAmountText');
-  var barrelHint = document.getElementById('barrelCountSummaryBadge');
+  var barrelBadge = document.getElementById('barrelCountSummaryBadge');
+  var swapSection = document.getElementById('coSectionSwap') ? document.getElementById('coSectionSwap').closest('.space-y-1\\.5') : null;
+  var optNoSpan = document.getElementById('optSwapNo');
+
   var d = DICT[currentLang] || DICT.km;
   var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
-  // 📚 វចនានុក្រមពាក្យ Checkout តាម ៣ ភាសា
   var coDict = {
     km: {
       freeGiftTag: "🎁 [កាដូថែម Free]",
       freeTag: "Free (ឥតគិតថ្លៃ) 🎉",
-      blueBarrelDeposit: "សំបកធុងខៀវថ្មី",
-      whiteBarrelDeposit: "សំបកធុងសថ្មី",
+      blueBarrelDeposit: "ទិញសំបកធុងខៀវថ្មី",
+      whiteBarrelDeposit: "ទិញសំបកធុងសថ្មី",
       homeDelivery: "សេវាដឹកដល់ផ្ទះ",
       deliveryFeeLabel: "សេវាដឹកជញ្ជូន",
       freeByBarrel: "ទិញទឹកធុង ២០L ចំនួន {min} ធុង ដឹក Free",
@@ -2145,8 +2165,8 @@ function updateCheckoutCalculation() {
     en: {
       freeGiftTag: "🎁 [Free Gift]",
       freeTag: "Free Delivery 🎉",
-      blueBarrelDeposit: "New Blue Barrel Deposit",
-      whiteBarrelDeposit: "New White Barrel Deposit",
+      blueBarrelDeposit: "Buy New Blue Barrel",
+      whiteBarrelDeposit: "Buy New White Barrel",
       homeDelivery: "Home Delivery",
       deliveryFeeLabel: "Delivery Fee",
       freeByBarrel: "Free delivery for {min}+ barrels",
@@ -2157,8 +2177,8 @@ function updateCheckoutCalculation() {
     zh: {
       freeGiftTag: "🎁 [特惠赠品]",
       freeTag: "免费配送 🎉",
-      blueBarrelDeposit: "全新蓝桶押金",
-      whiteBarrelDeposit: "全新白桶押金",
+      blueBarrelDeposit: "购买全新蓝桶",
+      whiteBarrelDeposit: "购买全新白桶",
       homeDelivery: "送货上门",
       deliveryFeeLabel: "配送费",
       freeByBarrel: "满 {min} 桶 20L 免配送费",
@@ -2173,7 +2193,7 @@ function updateCheckoutCalculation() {
   var blueBarrelsQty = 0;
   var whiteBarrelsQty = 0;
 
-  // ១. បង្ហាញទំនិញក្នុងកន្ត្រក (បកប្រែឈ្មោះទំនិញតាមភាសាដែលរើស)
+  // ១. បង្ហាញទំនិញក្នុងកន្ត្រក & រាប់ចំនួនទឹកធុង ២០L
   for (var k in cartItems) {
     if (cartItems[k].qty > 0) {
       var itemPriceKhr = cartItems[k].price;
@@ -2221,7 +2241,7 @@ function updateCheckoutCalculation() {
     }
   }
 
-  // 🎁 ២. គណនាទំនិញថែម Free (បកប្រែឈ្មោះកាដូថែមជាភាសាដែលភ្ញៀវរើស)
+  // 🎁 ២. គណនាទំនិញថែម Free
   var freeGiftItems = [];
   if (activePromoConfig && activePromoConfig.rules && activePromoConfig.rules.length > 0) {
     activePromoConfig.rules.forEach(function(rule) {
@@ -2232,7 +2252,6 @@ function updateCheckoutCalculation() {
           if (freeMultiplier > 0) {
             var totalGiftCount = freeMultiplier * (rule.freeQty || 1);
             freeGiftItems.push({ name: rule.freeProduct, qty: totalGiftCount });
-
             var localizedGiftName = getLocalizedProductName({ name: rule.freeProduct }, currentLang);
 
             html += '<div class="flex justify-between items-center py-2 border-t-2 border-amber-300 text-amber-950 bg-amber-100/90 px-2.5 rounded-xl mt-1.5 animate-pulse">' +
@@ -2245,7 +2264,9 @@ function updateCheckoutCalculation() {
     });
   }
 
-  // 🛢️ ៣. គណនាសំបកធុង (បកប្រែឈ្មោះសំបកធុង)
+  // 🛢️ ៣. ទាញតម្លៃសំបកធុងផ្ទាល់ពី Database Stock (STORE_CATALOG)
+  var total20LBarrels = blueBarrelsQty + whiteBarrelsQty;
+
   var blueBarrelProd = STORE_CATALOG.find(function(p) {
     var n = (p.raw_name || '').toLowerCase();
     return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ខៀវ') !== -1 || n.indexOf('blue') !== -1);
@@ -2255,17 +2276,43 @@ function updateCheckoutCalculation() {
     return (n.indexOf('សំបក') !== -1 || n.indexOf('empty') !== -1) && (n.indexOf('ស') !== -1 || n.indexOf('white') !== -1);
   });
 
-  var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.price || 0) : 10000;
-  var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.price || 0) : 12000;
+  // ទាញតម្លៃពីស្តុក (បើមិនឃើញក្នុងស្តុក យកតម្លៃលំនាំដើម)
+  var blueBarrelPrice = blueBarrelProd ? parseFloat(blueBarrelProd.priceKhr || blueBarrelProd.price || 10000) : 10000;
+  var whiteBarrelPrice = whiteBarrelProd ? parseFloat(whiteBarrelProd.priceKhr || whiteBarrelProd.price || 12000) : 12000;
+
+  // បង្ហាញ ឬលាក់ផ្នែកសំបកធុង (បើទិញតែគ្រឿងទេស គ្មានទឹកធុង ២០L គឺលាក់ចោលភ្លាម)
+  if (swapSection) {
+    if (total20LBarrels > 0) {
+      swapSection.classList.remove('hidden');
+      if (barrelBadge) {
+        barrelBadge.innerText = 'សរុប ' + total20LBarrels + ' ធុង';
+      }
+      if (optNoSpan) {
+        var representativePrice = (whiteBarrelsQty > 0) ? whiteBarrelPrice : blueBarrelPrice;
+        optNoSpan.innerText = '🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មី +' + representativePrice.toLocaleString() + '៛/ធុង)';
+      }
+    } else {
+      swapSection.classList.add('hidden');
+    }
+  }
 
   var swapChecked = document.querySelector('input[name="co_swapOption"]:checked');
-  var isNoSwap = swapChecked ? (swapChecked.value === 'NO') : false;
+  var isNoSwap = (total20LBarrels > 0) && swapChecked ? (swapChecked.value === 'NO') : false;
   var barrelFee = 0;
+  var emptyBarrelsToBuy = [];
 
   if (isNoSwap) {
-    if (blueBarrelsQty > 0 && blueBarrelPrice > 0) {
+    // ធុងខៀវ
+    if (blueBarrelsQty > 0) {
       var bTotal = blueBarrelsQty * blueBarrelPrice;
       barrelFee += bTotal;
+      emptyBarrelsToBuy.push({
+        id: blueBarrelProd ? blueBarrelProd.id : '',
+        name: blueBarrelProd ? blueBarrelProd.raw_name : 'សំបកធុង ២០L ពណ៌ខៀវ',
+        qty: blueBarrelsQty,
+        price: blueBarrelPrice
+      });
+
       var bTotalThb = Math.round(bTotal / rateT).toLocaleString();
       var bTotalUsd = (bTotal / rateU).toFixed(2);
       html += '<div class="flex justify-between items-center py-1.5 border-t border-blue-200 text-blue-950 bg-blue-50 px-2 rounded-lg mt-1">' +
@@ -2277,9 +2324,17 @@ function updateCheckoutCalculation() {
       '</div>';
     }
 
-    if (whiteBarrelsQty > 0 && whiteBarrelPrice > 0) {
+    // ធុងស
+    if (whiteBarrelsQty > 0) {
       var wTotal = whiteBarrelsQty * whiteBarrelPrice;
       barrelFee += wTotal;
+      emptyBarrelsToBuy.push({
+        id: whiteBarrelProd ? whiteBarrelProd.id : '',
+        name: whiteBarrelProd ? whiteBarrelProd.raw_name : 'សំបកធុង ២០L ពណ៌ស',
+        qty: whiteBarrelsQty,
+        price: whiteBarrelPrice
+      });
+
       var wTotalThb = Math.round(wTotal / rateT).toLocaleString();
       var wTotalUsd = (wTotal / rateU).toFixed(2);
       html += '<div class="flex justify-between items-center py-1.5 border-t border-amber-200 text-amber-950 bg-amber-50 px-2 rounded-lg mt-1">' +
@@ -2292,12 +2347,11 @@ function updateCheckoutCalculation() {
     }
   }
 
-  // 🛵 ៤. គណនាថ្លៃដឹកជញ្ជូន (បកប្រែពាក្យដឹកជញ្ជូន & ដំណឹង Free ៣ ភាសា)
+  // 🛵 ៤. គណនាថ្លៃដឹកជញ្ជូន
   var deliveryFee = 0;
   var stdFee = parseFloat((storeDeliveryConfig && storeDeliveryConfig.standardFee) || 0);
   var minFreeBarrels = parseInt((storeDeliveryConfig && storeDeliveryConfig.freeMinQty) || 2);
   var minFreeAmount = parseFloat((storeDeliveryConfig && storeDeliveryConfig.freeMinAmount) || 50000);
-  var total20LBarrels = blueBarrelsQty + whiteBarrelsQty;
 
   if (totalUnits > 0) {
     var isFreeByBarrels = (total20LBarrels >= minFreeBarrels);
@@ -2358,7 +2412,8 @@ function updateCheckoutCalculation() {
     grandTotalUsd: grandTotalUsd,
     deliveryFee: deliveryFee,
     barrelFee: barrelFee,
-    freeGifts: freeGiftItems
+    freeGifts: freeGiftItems,
+    emptyBarrels: emptyBarrelsToBuy // 👈 ផ្ញើបញ្ជីសំបកធុងពិតប្រាកដទៅមុខងារ Submit
   };
 }
     
@@ -2468,10 +2523,17 @@ function updateCheckoutCalculation() {
         return item.raw_name + " x " + item.qty;
       }).join(", ");
 
-      // បន្ថែមទំនិញថែម Free ចូលក្នុងបញ្ជីកុម្ម៉ង់
+      // 🎁 បន្ថែមទំនិញថែម Free ចូលក្នុងបញ្ជីកុម្ម៉ង់
       if (calcResult.freeGifts && calcResult.freeGifts.length > 0) {
         calcResult.freeGifts.forEach(function(g) {
           itemsSummaryText += ", 🎁 [Free] " + g.name + " x " + g.qty;
+        });
+      }
+
+      // 🛢️ បន្ថែមមុខទំនិញសំបកធុងទិញថ្មីដាច់ចូលក្នុងបញ្ជីកុម្ម៉ង់ (ដើម្បីឱ្យ POS ស្គាល់ និងកាត់ស្តុកអូតូ)
+      if (calcResult.emptyBarrels && calcResult.emptyBarrels.length > 0) {
+        calcResult.emptyBarrels.forEach(function(b) {
+          itemsSummaryText += ", 🛢️ " + b.name + " x " + b.qty;
         });
       }
 
@@ -2569,81 +2631,132 @@ function updateCheckoutCalculation() {
       }
     }
 
-    // 📍 មុខងារចាប់ GPS ផ្ទះ (កូដពេញលេញ ត្រឹមត្រូវ ១០០% គ្មានកូដសេសសល់)
-    function detectGPSLocation() {
-      var hint = document.getElementById('gpsStatusHint');
-      var inpUrl = document.getElementById('inp_custMapUrl');
-      var btnLabel = document.getElementById('btnGpsLabel');
-      var btn = document.getElementById('btnDetectGPSAction');
+    // 📍 មុខងារចាប់ GPS ផ្ទះ (គាំទ្រប៊ូតុង ១ ឃ្លីក លោតទៅ Google Chrome សម្រាប់ Messenger លើ Android)
+function detectGPSLocation() {
+  var hint = document.getElementById('gpsStatusHint');
+  var inpUrl = document.getElementById('inp_custMapUrl');
+  var btnLabel = document.getElementById('btnGpsLabel');
+  var btn = document.getElementById('btnDetectGPSAction');
 
-      var ua = navigator.userAgent || navigator.vendor || window.opera;
-      var isInAppBrowser = (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBIOS') > -1) || (ua.indexOf('Messenger') > -1) || (ua.indexOf('Line') > -1);
+  var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+  var isMessengerOrFB = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+  var isLine = ua.includes('line');
+  var isAndroid = ua.includes('android');
 
-      if (isInAppBrowser) {
-        if (hint) {
-          hint.innerHTML = '<div class="p-2.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-amber-950 font-bold text-xs space-y-1.5 text-left mt-1">' +
-            '<div class="flex items-center gap-1.5 text-amber-900 font-black"><i class="fas fa-triangle-exclamation text-amber-600"></i> លោកអ្នកកំពុងបើកក្នុង Messenger / LINE!</div>' +
-            '<div class="text-[11px] leading-relaxed text-amber-800">Facebook/LINE បានបិទសិទ្ធិចាប់ GPS។ ដើម្បីចាប់ទីតាំងបាន សូមចុចសញ្ញាចុច ៣ <b>`...`</b> នៅខាងលើស្តាំ ហើយរើស <b>«បើកក្នុង Chrome/Safari»</b></div>' +
-            '<div class="text-[10px] text-slate-500 italic">*ឬលោកអ្នកអាចវាយភូមិ/សង្កាត់/ចំណាំផ្ទះក្នុងប្រអប់ខាងក្រោមដោយផ្ទាល់បាន។</div>' +
-          '</div>';
-        }
-      }
-
-      if (!navigator.geolocation) {
-        if (hint) hint.innerHTML = '<span class="text-red-500 font-bold">⚠️ កម្មវិធីនេះមិនគាំទ្រ GPS ទេ (សូមវាយចំណាំទីតាំងផ្ទះដោយដៃ)</span>';
-        return;
-      }
-
-      if (btn) btn.disabled = true;
-      if (btnLabel) btnLabel.innerText = "កំពុងចាប់ទីតាំង GPS...";
-      if (hint && !isInAppBrowser) hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងចាប់ទីតាំង GPS...</span>';
-
-      function onGpsSuccess(pos) {
-        var lat = pos.coords.latitude.toFixed(6);
-        var lng = pos.coords.longitude.toFixed(6);
-        var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
-
-        if (inpUrl) inpUrl.value = googleMapUrl;
-        if (btn) {
-          btn.disabled = false;
-          btn.className = "w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition";
-        }
-        if (btnLabel) btnLabel.innerText = "✅ ចាប់បានទីតាំងផ្ទះជោគជ័យ!";
-        if (hint) {
-          hint.innerHTML = '<span class="text-emerald-700 font-bold">✅ ចាប់បានទីតាំងជោគជ័យ!</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(មើលផែនទី)</a>';
-        }
-      }
-
-      function onGpsError(err) {
-        if (btn) btn.disabled = false;
-        if (btnLabel) btnLabel.innerText = "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ";
-
-        var errorMsg = "⚠️ មិនអាចចាប់ GPS បានទេ (សូមវាយទីតាំងផ្ទះដោយដៃ)";
-        if (err.code === 1) {
-          if (isInAppBrowser) {
-            errorMsg = "⚠️ Messenger/Facebook បានបិទសិទ្ធិចាប់ GPS! សូមចុចសញ្ញាចុច ៣ `...` នៅខាងលើស្តាំ ហើយរើស «Open in Chrome / Safari» ឬវាយទីតាំងដោយដៃខាងក្រោម។";
-          } else {
-            errorMsg = "⚠️ លោកអ្នកបានបដិសេធសិទ្ធិ (សូមចុច Allow Location លើ Browser របស់អ្នក ឬវាយទីតាំងដោយដៃ)!";
-          }
-        } else if (err.code === 2) {
-          errorMsg = "⚠️ មិនមានសញ្ញា GPS ទេ (សូមបើក Location លើទូរស័ព្ទដៃ ឬវាយទីតាំងដោយដៃ)!";
-        } else if (err.code === 3) {
-          errorMsg = "⚠️ ការចាប់ទីតាំងយឺតពេក (សូមចុចសាកល្បងម្តងទៀត ឬវាយទីតាំងដោយដៃ)!";
-        }
-
-        if (hint) {
-          hint.innerHTML = '<span class="text-amber-800 font-bold text-[11px] block text-left">' + errorMsg + '</span>';
-        }
-      }
-
-      navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 30000
-      });
+  // 🚀 បើភ្ញៀវកំពុងបើកក្នុង Messenger លើ Android -> បង្ហាញប៊ូតុងធំ ១ ឃ្លីកលោតទៅ Chrome ភ្លាម!
+  if (isMessengerOrFB && isAndroid) {
+    if (hint) {
+      hint.innerHTML = '<div class="p-3 bg-amber-50 border-2 border-amber-400 rounded-2xl text-amber-950 font-bold text-xs space-y-2 text-center mt-2 animate-in zoom-in-95 duration-200">' +
+        '<div class="flex items-center justify-center gap-1.5 text-amber-900 font-black">' +
+          '<i class="fas fa-triangle-exclamation text-amber-600 text-sm"></i> Messenger បានបិទសិទ្ធិចាប់ GPS!' +
+        '</div>' +
+        '<p class="text-[11px] leading-relaxed text-amber-800 font-medium">ដើម្បីឱ្យទូរស័ព្ទអាចចាប់ទីតាំងផ្ទះរបស់អ្នកបានត្រឹមត្រូវ សូមចុចប៊ូតុងបៃតងខាងក្រោម៖</p>' +
+        '<button type="button" onclick="launchAndroidChromeBreakout()" class="w-full py-3 px-3 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-xl font-black text-xs shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
+          '<i class="fab fa-chrome text-yellow-300 text-base"></i> 🚀 ចុចទីនេះ ១ ឃ្លីក ដើម្បីចាប់ GPS ក្នុង Chrome' +
+        '</button>' +
+        '<span class="text-[9.5px] text-slate-500 font-normal block">*ទំនិញក្នុងកន្ត្រករបស់អ្នកនឹងមិនបាត់បង់ឡើយ</span>' +
+      '</div>';
     }
+    return;
+  }
+
+  // 🍎 បើភ្ញៀវប្រើ iPhone ក្នុង Messenger (Apple មិនឱ្យលោតអូតូ) -> បង្ហាញការណែនាំខ្លីច្បាស់ៗ
+  if (isMessengerOrFB && !isAndroid) {
+    if (hint) {
+      hint.innerHTML = '<div class="p-3 bg-blue-50 border-2 border-blue-300 rounded-2xl text-blue-950 font-bold text-xs space-y-1.5 text-left mt-2">' +
+        '<div class="flex items-center gap-1.5 text-blue-900 font-black">' +
+          '<i class="fab fa-apple text-sm"></i> សម្រាប់ទូរស័ព្ទ iPhone ក្នុង Messenger៖' +
+        '</div>' +
+        '<p class="text-[11px] text-blue-800 leading-relaxed font-medium">សូមចុចសញ្ញាចុច ៣ <b>`...`</b> នៅខាងលើស្តាំអេក្រង់ ហើយរើស <b>«Open in Safari / បើកក្នុង Safari»</b> ដើម្បីចាប់ GPS បានភ្លាម!</p>' +
+        '<span class="text-[10px] text-slate-500 italic block">*ឬលោកអ្នកអាចវាយភូមិ/សង្កាត់/ចំណាំផ្ទះក្នុងប្រអប់ខាងក្រោមដោយផ្ទាល់បាន។</span>' +
+      '</div>';
+    }
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    if (hint) hint.innerHTML = '<span class="text-red-500 font-bold">⚠️ កម្មវិធី Browser នេះមិនគាំទ្រ GPS ទេ (សូមវាយទីតាំងផ្ទះដោយដៃ)</span>';
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (btnLabel) btnLabel.innerText = "កំពុងចាប់ទីតាំង GPS...";
+  if (hint) hint.innerHTML = '<span class="text-blue-600 font-bold"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងចាប់ទីតាំង GPS...</span>';
+
+  function onGpsSuccess(pos) {
+    var lat = pos.coords.latitude.toFixed(6);
+    var lng = pos.coords.longitude.toFixed(6);
+    var googleMapUrl = "https://www.google.com/maps?q=" + lat + "," + lng;
+
+    if (inpUrl) inpUrl.value = googleMapUrl;
+    if (btn) {
+      btn.disabled = false;
+      btn.className = "w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition";
+    }
+    if (btnLabel) btnLabel.innerText = "✅ ចាប់បានទីតាំងផ្ទះជោគជ័យ!";
+    if (hint) {
+      hint.innerHTML = '<span class="text-emerald-700 font-bold">✅ ចាប់បានទីតាំងជោគជ័យ!</span> <a href="' + googleMapUrl + '" target="_blank" class="text-blue-600 underline font-bold ml-1">(មើលផែនទី)</a>';
+    }
+  }
+
+  function onGpsError(err) {
+    if (btn) btn.disabled = false;
+    if (btnLabel) btnLabel.innerText = "📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ";
+    var errorMsg = "⚠️ មិនអាចចាប់ GPS បានទេ (សូមវាយភូមិ/សង្កាត់ ឬចំណាំផ្ទះដោយដៃ)";
+    if (err.code === 1) {
+      errorMsg = "⚠️ លោកអ្នកបានបដិសេធសិទ្ធិ (សូមចុច Allow Location លើ Browser របស់អ្នក ឬវាយទីតាំងដោយដៃ)!";
+    }
+    if (hint) {
+      hint.innerHTML = '<span class="text-amber-800 font-bold text-[11px] block text-left">' + errorMsg + '</span>';
+    }
+  }
+
+  navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 30000
+  });
+}
   
-   function showInAppError(msg) {
+   // 🚀 មុខងារ ១ ឃ្លីក បង្ខំទូរស័ព្ទ Android ឱ្យលោតចេញពី Messenger ទៅបើកក្នុង Google Chrome ភ្លាមៗ
+function launchAndroidChromeBreakout() {
+  try {
+    // រក្សាទុកកន្ត្រកទំនិញ និងទិន្នន័យភ្ញៀវចូលក្នុង URL Parameter ដើម្បីកុំឱ្យបាត់ទំនិញ
+    var cartParam = encodeURIComponent(JSON.stringify(cartItems || {}));
+    var targetUrl = window.location.origin + window.location.pathname + '?open_chrome=1&cart=' + cartParam;
+    
+    // បាញ់កូដ Android Chrome Intent ទៅកាន់ប្រព័ន្ធប្រតិបត្តិការ Android
+    var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
+    var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+    
+    window.location.href = intentUrl;
+  } catch(e) {
+    window.open(window.location.href, '_system');
+  }
+}
+
+// 📥 មុខងារស្រង់កន្ត្រកទំនិញមកវិញស្វ័យប្រវត្តិពេលលោតមកដល់ Google Chrome
+function restoreCartFromUrlIfRedirected() {
+  try {
+    var urlParams = new URLSearchParams(window.location.search);
+    var cartData = urlParams.get('cart');
+    if (cartData) {
+      var parsedCart = JSON.parse(decodeURIComponent(cartData));
+      if (parsedCart && Object.keys(parsedCart).length > 0) {
+        cartItems = parsedCart;
+        if (typeof recalcCartDock === 'function') recalcCartDock();
+        if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
+        
+        // បើកផ្ទាំង Checkout ជូនភ្ញៀវភ្លាម ដើម្បីឱ្យគាត់គ្រាន់តែចុចចាប់ GPS ជាការស្រេច
+        setTimeout(function() {
+          if (typeof openCheckoutModal === 'function') openCheckoutModal();
+        }, 500);
+      }
+    }
+  } catch(e) {}
+}
+    
+    function showInAppError(msg) {
       var alertBox = document.getElementById('checkoutErrorAlert');
       var msgSpan = document.getElementById('checkoutErrorMsg');
       if (alertBox && msgSpan) {
@@ -3283,6 +3396,7 @@ function applyCustomSlidesFromSettings(sMap) {
 
    // 🔄 បើកទំព័រដំបូង៖ ស្តារកន្ត្រកទំនិញ & ព័ត៌មានភ្ញៀវជាមុនសិនបង្អស់ (Refresh មិនបាត់ទំនិញឡើយ ១០០%)
     window.addEventListener('DOMContentLoaded', async function() {
+      restoreCartFromUrlIfRedirected();
       restoreSavedCartOnLoad();   // 👈 ១. ស្រង់កន្ត្រកទំនិញចាស់មកវិញមុនគេបង្អស់
       loadSavedCustomerProfile(); // 👈 ២. ស្រង់ឈ្មោះ លេខទូរស័ព្ទ និងទីតាំងផ្ទះមកវិញភ្លាមៗ
       
@@ -3712,6 +3826,7 @@ function openShareStoreModal() {
   }
 
   if (btnLine) {
+    var lineUrl = s.webUrl + (s.webUrl.includes('?') ? '&' : '?') + 'openExternalBrowser=1';
     var lineText = s.title + "\n" + s.desc + "\n" + s.tgAppUrl;
     btnLine.href = "https://line.me/R/msg/text/?" + encodeURIComponent(lineText);
   }
