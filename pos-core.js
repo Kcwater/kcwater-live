@@ -662,6 +662,16 @@ async function confirmQuickRestockSubmit() {
 var currentPosSearchKeyword = '';
 
 function renderPOSModule() {
+  // 🛡️ រារាំងអ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver) ដាច់ខាត ១០០%
+  if (currentUser && currentUser.type === 'CompanyDriver') {
+    kcAlert({
+      title: "គ្មានសិទ្ធិប្រើប្រាស់!",
+      message: "អ្នកដឹកជញ្ជូនរោងចក្រ គ្មានសិទ្ធិដក ឬលក់ទំនិញក្នុងផ្ទាំង POS ឡើយ! លោកអ្នកត្រូវបានបញ្ជូនទៅផ្ទាំងដឹកទឹកវិញ។",
+      type: "danger"
+    });
+    loadModule('CompanyDeliveries');
+    return;
+  }
   var area = document.getElementById('contentArea');
   
   var isAdmin = (currentUser && currentUser.role === 'Admin');
@@ -813,26 +823,28 @@ function onPosSearchInput(val) {
   rPG();
 }
 
-// 🚚 មុខងារឆ្លាតវៃពេល Admin ជ្រើសរើសឈ្មោះម៉ូយក្នុង POS (Smart Proxy Handler)
-function onAdminPosCustomerChange(val) {
+// 🚚 មុខងារឆ្លាតវៃពេល Admin ជ្រើសរើសឈ្មោះម៉ូយក្នុង POS (ចាក់សោរម៉ូយ Monthly ដាច់ខាត ១០០%)
+async function onAdminPosCustomerChange(val) {
   var notice = document.getElementById('adminProxyModeNotice');
   var nameLabel = document.getElementById('adminProxyCustName');
   var paySec = document.getElementById('posPaymentSectionWrapper');
   var sBtn = document.getElementById('sBtn');
 
   var isWalkIn = (!val || val === 'Walk-in');
+  var custObj = allCustomers.find(c => c.full_name === val);
+  var isMonthly = (custObj && custObj.type === 'Monthly');
 
   // បើជ្រើសរើសម៉ូយ បង្ហាញបដាដកជំនួស
   if (notice && nameLabel) {
     if (!isWalkIn) {
-      nameLabel.innerText = val;
+      nameLabel.innerText = val + (isMonthly ? ' [ប្រចាំខែ - កុងត្រា]' : '');
       notice.classList.remove('hidden');
     } else {
       notice.classList.add('hidden');
     }
   }
 
-  // បើដកជំនួសម៉ូយ លាក់ប្រអប់ទូទាត់លុយរាយចោលភ្លាម ដើម្បីកុំឱ្យច្រឡំដៃគិតលុយ
+  // បើដកជំនួសម៉ូយ លាក់ប្រអប់ទូទាត់លុយរាយចោលភ្លាម
   if (paySec) {
     if (!isWalkIn) {
       paySec.classList.add('hidden');
@@ -853,8 +865,34 @@ function onAdminPosCustomerChange(val) {
     }
   }
 
-  // អាប់ដេតតម្លៃពិសេសក្នុងកន្ត្រកបើម៉ូយមានតម្លៃពិសេស (មិនសម្អាតកន្ត្រកចោលឡើយ)
-  if (cart && cart.length > 0) {
+  // 🔒 ត្រួតពិនិត្យកន្ត្រកទំនិញចំពោះម៉ូយប្រចាំខែ (Monthly Contract Enforcer)
+  if (isMonthly && cart && cart.length > 0) {
+    var removedItems = [];
+    var validCart = [];
+
+    cart.forEach(function(item) {
+      var sp = specialPrices.find(s => s.customer_name === val && s.product_name === item.name);
+      if (sp) {
+        // បើមានក្នុងកុងត្រា កំណត់យកតម្លៃកុងត្រាអូតូ
+        item.price = parseFloat(sp.price);
+        validCart.push(item);
+      } else {
+        // បើគ្មានក្នុងកុងត្រា ត្រូវដកចេញពីកន្ត្រក
+        removedItems.push(item.name);
+      }
+    });
+
+    cart = validCart;
+
+    if (removedItems.length > 0) {
+      await kcAlert({
+        title: "ទំនិញគ្មានក្នុងកុងត្រា!",
+        message: "ទំនិញខាងក្រោមនេះត្រូវបានដកចេញពីកន្ត្រក ដោយសារអតិថិជនប្រចាំខែ [" + val + "] គ្មានតម្លៃកុងត្រាសម្រាប់មុខទំនិញនេះឡើយ៖\n👉 " + removedItems.join(", "),
+        type: "warning"
+      });
+    }
+  } else if (!isMonthly && cart && cart.length > 0) {
+    // ចំពោះម៉ូយធម្មតា អាប់ដេតតម្លៃពិសេសបើមាន
     cart.forEach(function(item) {
       var sp = specialPrices.find(s => s.customer_name === val && s.product_name === item.name);
       var prod = allProducts.find(p => p.id === item.id);
@@ -866,6 +904,7 @@ function onAdminPosCustomerChange(val) {
   rPG();
   rC();
 }
+ 
 
 function setDiscountType(type) {
   currentPosDiscount.type = type;
@@ -1534,6 +1573,24 @@ async function confirmSale() {
     return;
   }
   if (isSubmittingSaleLock) return;
+  // 🔒 រនាំងការពារសុវត្ថិភាពចុងក្រោយសម្រាប់ម៉ូយប្រចាំខែ (Monthly Security Guard)
+  var custObjCheck = allCustomers.find(c => c.full_name === custName);
+  if (custObjCheck && custObjCheck.type === 'Monthly') {
+    var invalidItems = [];
+    cart.forEach(function(item) {
+      var hasContract = specialPrices.some(s => s.customer_name === custName && s.product_name === item.name);
+      if (!hasContract) invalidItems.push(item.name);
+    });
+
+    if (invalidItems.length > 0) {
+      await kcAlert({
+        title: "មិនអាចកត់ត្រាបានទេ!",
+        message: "រកឃើញទំនិញក្រៅកុងត្រាក្នុងកន្ត្រក៖ [" + invalidItems.join(", ") + "] មិនអាចលក់ឱ្យម៉ូយប្រចាំខែ [" + custName + "] បានឡើយ!",
+        type: "danger"
+      });
+      return;
+    }
+  }
   if (cart.length === 0) { showToast("កន្ត្រកទទេ! សូមរើសទំនិញជាមុនសិន", "error"); return; }
 
   var custNameEl = document.getElementById('posCustSelect');
