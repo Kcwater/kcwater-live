@@ -9,7 +9,6 @@ var adminOnlineOrdersCache = [];
 var activeAdminOnlineTab = 'ACTIVE';
 // 🖼️ ឃ្លាំងផ្ទុករូបថតផ្ទះភ្ញៀវសុវត្ថិភាព (ការពារកុំឱ្យ Crash ពេលភ្ញៀវភ្ជាប់រូបមុខផ្ទះ)
 var safeOrderPhotoStore = {};
-
 function storeOrderPhoto(orderId, photoUrl, custName) {
   if (!orderId || !photoUrl) return;
   safeOrderPhotoStore[orderId] = {
@@ -851,7 +850,7 @@ async function completeOnlineOrder(orderId, custName, total, itemsText, driverNa
   document.getElementById('completeDeliveryModal').classList.remove('hidden');
 }
 
-// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ ចេញវិក្កយបត្រ & បែងចែកថ្លៃដឹកច្បាស់ៗ
+// 💾 មុខងារកត់ត្រាការដឹកដល់ បំបែកទំនិញ & កាត់ស្តុកសំបកធុងចេញពីឃ្លាំង Supabase អូតូ ១០០%
 async function executeFinalCompleteDelivery() {
   if (!activeDeliveryTaskData) return;
 
@@ -873,7 +872,7 @@ async function executeFinalCompleteDelivery() {
   }
 
   try {
-    // ១. Update ស្ថានភាពទៅ Delivered ក្នុងតារាង Orders
+    // ១. Update ស្ថានភាពទៅជា Delivered ក្នុងតារាង Orders
     const { error: ordErr } = await supabaseClient
       .from('orders')
       .update({
@@ -884,13 +883,13 @@ async function executeFinalCompleteDelivery() {
 
     if (ordErr) throw ordErr;
 
-    // ២. ធានាថាមានទិន្នន័យទំនិញក្នុងស្តុកដើម្បីផ្ទៀងផ្ទាត់
+    // ២. ធានាថាមានទិន្នន័យទំនិញស្រស់ៗពី Database ដើម្បីពិនិត្យស្តុក
     if (!allProducts || allProducts.length === 0) {
       const { data: pList } = await supabaseClient.from('products').select('*');
       if (pList) allProducts = pList;
     }
 
-    // ៣. បំបែកទំនិញបញ្ចូលក្នុង Transactions (ស្គាល់ទំនិញ Promotion Free និងកាត់ស្តុកស្វ័យប្រវត្តិ)
+    // ៣. បំបែកទំនិញបញ្ចូលក្នុង Transactions (ស្គាល់ទាំងទំនិញ Free និងសំបកធុងថ្មី)
     var tid = "TR-" + new Date().getTime();
     var rowsToInsert = [];
     var totalAllocated = 0;
@@ -903,9 +902,16 @@ async function executeFinalCompleteDelivery() {
       var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
       if (isNaN(qty) || qty <= 0) qty = 1;
 
-      // 🎁 ឆែកមើលថាតើជាទំនិញថែម Promotion Free ដែរឬទេ
+      // 🎁 ឆែកមើលទំនិញថែម Free
       var isFreeGift = rawName.includes('[Free]') || rawName.includes('🎁') || rawName.includes('កាដូ');
-      var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').replace(/\[កាដូថែម Free\]/gi, '').trim();
+      
+      // 🛢️ សម្អាត Emoji ផ្សេងៗដើម្បីស្វែងរកឈ្មោះទំនិញពិតប្រាកដក្នុងស្តុក (សំបកធុង និងទំនិញទូទៅ)
+      var cleanName = rawName
+        .replace(/🎁\s*\[Free\]/gi, '')
+        .replace(/\[Free\]/gi, '')
+        .replace(/\[កាដូថែម Free\]/gi, '')
+        .replace(/🛢️/gi, '')
+        .trim();
 
       var matchedProd = allProducts.find(function(p) {
         return p.name.trim().toLowerCase() === cleanName.toLowerCase();
@@ -931,16 +937,13 @@ async function executeFinalCompleteDelivery() {
       });
     });
 
-    // 🚚 បែងចែកច្បាស់ៗរវាង «សេវាដឹកជញ្ជូន» និង «ថ្លៃទិញសំបកធុង»
+    // 🛵 គណនាថ្លៃដឹកជញ្ជូនជាក់ស្តែង (បើមាននៅសល់ពីតម្លៃទំនិញ & សំបកធុង)
     var diff = total - totalAllocated;
     if (diff > 0) {
-      var isBarrelDeposit = (task.barrel_swap && task.barrel_swap.includes('ទិញសំបក'));
-      var lineLabel = isBarrelDeposit ? "ថ្លៃទិញសំបកធុងថ្មី (Barrel Deposit)" : "សេវាដឹកជញ្ជូនដល់ផ្ទះ (Delivery Fee)";
-
       rowsToInsert.push({
         transaction_id: tid,
         customer_name: custName,
-        product_name: lineLabel,
+        product_name: "សេវាដឹកជញ្ជូនដល់ផ្ទះ (Delivery Fee)",
         clean_product_name: "",
         qty: 1,
         price: diff,
@@ -953,7 +956,7 @@ async function executeFinalCompleteDelivery() {
       });
     }
 
-    // កត់ត្រាចូល Transactions Table
+    // កត់ត្រាប្រតិបត្តិការលក់ចូលតារាង Transactions
     if (rowsToInsert.length > 0) {
       var rowsForDb = rowsToInsert.map(function(r) {
         var copy = Object.assign({}, r);
@@ -963,7 +966,7 @@ async function executeFinalCompleteDelivery() {
       await supabaseClient.from('transactions').insert(rowsForDb);
     }
 
-    // ៤. កាត់ស្តុកទំនិញទិញគេ
+    // 📦 ៤. កាត់ស្តុកទំនិញទិញគេចេញពីឃ្លាំង Supabase អូតូ (រួមទាំងសំបកធុងស និងសំបកធុងខៀវ)
     for (var i = 0; i < rowsToInsert.length; i++) {
       var row = rowsToInsert[i];
       var targetSearchName = (row.clean_product_name || row.product_name).toLowerCase();
@@ -974,13 +977,13 @@ async function executeFinalCompleteDelivery() {
       if (prodToDeduct && prodToDeduct.type === 'ទិញគេ' && row.qty > 0) {
         var newStock = Math.max(0, parseFloat(prodToDeduct.stock || 0) - row.qty);
         await supabaseClient.from('products').update({ stock: newStock }).eq('id', prodToDeduct.id);
-        prodToDeduct.stock = newStock;
+        prodToDeduct.stock = newStock; // អាប់ដេត Memory ភ្លាមៗ
       }
     }
     
     // ៥. បិទផ្ទាំងបញ្ជាក់ការដឹក
     closeCompleteDeliveryModal();
-    showToast("បានកត់ត្រាការដឹកដល់ និងប្រមូលប្រាក់ជោគជ័យ!", "success");
+    showToast("បានកត់ត្រាការដឹកដល់ និងកាត់ស្តុកសំបកធុងជោគជ័យ!", "success");
 
     // ៦. 🧾 បង្កើតវិក្កយបត្រឌីជីថល Pop-up ភ្លាមៗ
     if (typeof generateReceiptImage === 'function') {
@@ -1020,11 +1023,11 @@ async function executeFinalCompleteDelivery() {
       sendTelegramAlert(tgMsg);
     } catch(tgE) {}
 
-    // 🌟 បង្ហាញផ្ទាំងជូនដំណឹងស្តង់ដារ KC POS ជូនដំណឹងដល់អ្នកដឹក
+    // 🌟 បង្ហាញផ្ទាំង kcAlert ស្តង់ដារជូនដំណឹង
     if (typeof kcAlert === 'function') {
       kcAlert({
         title: "ដឹកជញ្ជូនជោគជ័យ! 🎉",
-        message: "ការកុម្ម៉ង់ [" + orderId + "] របស់ " + custName + " ទឹកប្រាក់ ៛ " + Number(total).toLocaleString() + " ត្រូវបានកត់ត្រាចូលបញ្ជីលក់រួចរាល់!",
+        message: "ការកុម្ម៉ង់ [" + orderId + "] របស់ " + custName + " ទឹកប្រាក់ ៛ " + Number(total).toLocaleString() + " ត្រូវបានកត់ត្រា និងកាត់ស្តុកជោគជ័យ!",
         type: "success",
         confirmText: "យល់ព្រម"
       });
@@ -1080,14 +1083,14 @@ window.addEventListener('load', function() {
   initOrdersRealtimeListener();
 });
 
-// 📱 មុខងារបើក ABA QR ផ្ទាល់សម្រាប់អ្នកដឹក
+// 📱 មុខងារបើក ABA QR សម្រាប់អ្នកដឹក (តភ្ជាប់ទៅ openDriverAbaQrModal កុំឱ្យស្ទួនកូដ និងមាន z-index ត្រឹមត្រូវ)
 function openDriverDirectQr(amount, custName) {
-  var qrModal = document.getElementById('posKhqrModal');
-  var amtText = document.getElementById('posKhqrAmountText');
-  if (qrModal && amtText) {
-    amtText.innerText = "៛ " + Number(amount || 0).toLocaleString();
-    qrModal.classList.remove('hidden');
+  if (amount) {
+    if (!activeDeliveryTaskData) activeDeliveryTaskData = {};
+    activeDeliveryTaskData.total = amount;
+    activeDeliveryTaskData.custName = custName || '';
   }
+  openDriverAbaQrModal();
 }
 
 // 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (មានប៊ូតុង "ចេញដំណើរ" ទំនើប)
