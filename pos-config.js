@@ -125,9 +125,9 @@ function renderEnvironmentBanner() {
   }
 }
 
-// ហៅឱ្យដំណើរការទាំងពេលបើកដំបូង និងពេលទំព័រដើរចប់
+// ហៅឱ្យដំណើរការតែម្តងគត់កុំឱ្យស្ទួន Banner
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', renderEnvironmentBanner);
+  document.addEventListener('DOMContentLoaded', renderEnvironmentBanner, { once: true });
 } else {
   renderEnvironmentBanner();
 }
