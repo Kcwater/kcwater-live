@@ -234,23 +234,6 @@ function renderStockModule() {
   }
 }
 
-  if (!allProducts || allProducts.length === 0) {
-    fetchInitialPOSData().then(function() {
-      if (typeof syncOnlineSortsFromDatabase === 'function') {
-        syncOnlineSortsFromDatabase().then(renderStockTableRows);
-      } else {
-        renderStockTableRows();
-      }
-      initStockModuleDropdowns();
-    });
-  } else {
-    if (typeof syncOnlineSortsFromDatabase === 'function') {
-      syncOnlineSortsFromDatabase().then(renderStockTableRows);
-    } else {
-      renderStockTableRows();
-    }
-  }
-
 
 // 🪙 មុខងារជំនួយគណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ភ្លាមៗ (Live Preview)
 function updateProductCostPreviewLive() {
