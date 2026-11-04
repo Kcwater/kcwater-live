@@ -2984,54 +2984,69 @@ async function loadSettingsForm() {
   } catch(e) {}
 }
 
-// 💾 រក្សាទុកការកំណត់ទាំងអស់ចូល Supabase (ធានា Save ទាំង Token, Chat ID ថៅកែ និង Chat ID អ្នកដឹក)
+
+// 💾 មុខងាររក្សាទុកការកំណត់ឆ្លាតវៃ (រក្សាទុកតែប្រអប់ណាដែលមានលើអេក្រង់ មិនលុបទិន្នន័យចាស់ឡើយ)
 async function saveSettingsToSupabase() {
-  var btn = document.getElementById('btnSaveAllSettings');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...'; }
+  var rows = [];
 
-  var tokenVal = document.getElementById('set_tg_token') ? document.getElementById('set_tg_token').value.trim() : '';
-  var chatIdVal = document.getElementById('set_tg_chatid') ? document.getElementById('set_tg_chatid').value.trim() : '';
-  var driverChatIdVal = document.getElementById('set_tg_driver_chatid') ? document.getElementById('set_tg_driver_chatid').value.trim() : '';
+  // ១. ពិនិត្យម៉ោងធ្វើការ & សេវាដឹកជញ្ជូន (បើមានលើអេក្រង់)
+  var elOpen = document.getElementById('set_open_time');
+  var elClose = document.getElementById('set_close_time');
+  var elFee = document.getElementById('set_del_fee');
+  var elMin = document.getElementById('set_del_min');
+  var elFreeAmt = document.getElementById('set_del_free_amount');
 
-  var rows = [
-    { key: 'Store_Open_Time', value: document.getElementById('set_open_time') ? document.getElementById('set_open_time').value : "07:00" },
-    { key: 'Store_Close_Time', value: document.getElementById('set_close_time') ? document.getElementById('set_close_time').value : "18:00" },
-    { key: 'Delivery_Fee_Standard', value: document.getElementById('set_del_fee') ? document.getElementById('set_del_fee').value : "2000" },
-    { key: 'Delivery_Free_Min_Qty', value: document.getElementById('set_del_min') ? document.getElementById('set_del_min').value : "2" },
-    { key: 'Delivery_Free_Min_Amount', value: document.getElementById('set_del_free_amount') ? document.getElementById('set_del_free_amount').value : "50000" },
+  if (elOpen) rows.push({ key: 'Store_Open_Time', value: elOpen.value });
+  if (elClose) rows.push({ key: 'Store_Close_Time', value: elClose.value });
+  if (elFee) rows.push({ key: 'Delivery_Fee_Standard', value: elFee.value });
+  if (elMin) rows.push({ key: 'Delivery_Free_Min_Qty', value: elMin.value });
+  if (elFreeAmt) rows.push({ key: 'Delivery_Free_Min_Amount', value: elFreeAmt.value });
 
-    // Promotion
-    { key: 'Promo_Status', value: document.getElementById('set_promo_status') ? document.getElementById('set_promo_status').value : 'OFF' },
-    { key: 'Promo_Start_Time', value: document.getElementById('set_promo_start') ? document.getElementById('set_promo_start').value : '' },
-    { key: 'Promo_End_Time', value: document.getElementById('set_promo_end') ? document.getElementById('set_promo_end').value : '' },
-    { key: 'Promo_Banner_Text', value: document.getElementById('set_promo_banner') ? document.getElementById('set_promo_banner').value.trim() : '' },
-    { key: 'Promo_Banner_Img', value: document.getElementById('set_promo_img_base64') ? document.getElementById('set_promo_img_base64').value : '' },
-    { key: 'Promo_Rules', value: JSON.stringify(currentPromoRules || []) },
+  // ២. ពិនិត្យប្រព័ន្ធ Promotion (បើមានលើអេក្រង់)
+  var elPromoStatus = document.getElementById('set_promo_status');
+  var elPromoStart = document.getElementById('set_promo_start');
+  var elPromoEnd = document.getElementById('set_promo_end');
+  var elPromoBanner = document.getElementById('set_promo_banner');
+  var elPromoImg = document.getElementById('set_promo_img_base64');
 
-    // Telegram Settings (រក្សាទុកទាំង ២ Group ត្រឹមត្រូវ ១០០%)
-    { key: 'Telegram_Token', value: tokenVal },
-    { key: 'Telegram_ChatID', value: chatIdVal },
-    { key: 'Telegram_Driver_ChatID', value: driverChatIdVal },
-    { key: 'Telegram_Alert_Status', value: currentTelegramAlertStatus },
+  if (elPromoStatus) rows.push({ key: 'Promo_Status', value: elPromoStatus.value });
+  if (elPromoStart) rows.push({ key: 'Promo_Start_Time', value: elPromoStart.value });
+  if (elPromoEnd) rows.push({ key: 'Promo_End_Time', value: elPromoEnd.value });
+  if (elPromoBanner) rows.push({ key: 'Promo_Banner_Text', value: elPromoBanner.value.trim() });
+  if (elPromoImg && elPromoImg.value) rows.push({ key: 'Promo_Banner_Img', value: elPromoImg.value });
+  if (elPromoStatus) {
+    rows.push({ key: 'Promo_Rules', value: JSON.stringify(currentPromoRules || []) });
+  }
 
-    // Exchange Rates
-    { key: 'Exchange_Rate_USD', value: document.getElementById('set_rate_usd') ? document.getElementById('set_rate_usd').value : "4100" },
-    { key: 'Exchange_Rate_THB', value: document.getElementById('set_rate_thb') ? document.getElementById('set_rate_thb').value : "115" }
-  ];
+  // ៣. ពិនិត្យ Telegram Bot Settings (បើមានលើអេក្រង់)
+  var elTgToken = document.getElementById('set_tg_token');
+  var elTgChat = document.getElementById('set_tg_chatid');
+  var elTgDriverChat = document.getElementById('set_tg_driver_chatid');
+
+  if (elTgToken) rows.push({ key: 'Telegram_Token', value: elTgToken.value.trim() });
+  if (elTgChat) rows.push({ key: 'Telegram_ChatID', value: elTgChat.value.trim() });
+  if (elTgDriverChat) rows.push({ key: 'Telegram_Driver_ChatID', value: elTgDriverChat.value.trim() });
+  if (elTgToken) {
+    rows.push({ key: 'Telegram_Alert_Status', value: currentTelegramAlertStatus });
+  }
+
+  // ៤. ពិនិត្យអត្រាប្តូរប្រាក់ (បើមានលើអេក្រង់)
+  var elRateUsd = document.getElementById('set_rate_usd');
+  var elRateThb = document.getElementById('set_rate_thb');
+  if (elRateUsd) rows.push({ key: 'Exchange_Rate_USD', value: elRateUsd.value });
+  if (elRateThb) rows.push({ key: 'Exchange_Rate_THB', value: elRateThb.value });
+
+  // ប្រសិនបើគ្មានប្រអប់ Setting ណាមួយត្រូវបានបើកទេ មិនបាច់ Save ឡើយ
+  if (rows.length === 0) return;
 
   try {
     const { error } = await supabaseClient.from('settings').upsert(rows);
     if (error) throw error;
 
-    showToast("បានរក្សាទុកការកំណត់ Telegram & ដឹកជញ្ជូនជោគជ័យ!", "success");
+    showToast("បានរក្សាទុកការកំណត់ជោគជ័យ!", "success");
     await loadSettingsAndTelegram();
   } catch(err) {
     showToast("កំហុស៖ " + err.message, "error");
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុកការកំណត់ទាំងអស់ (Save All Settings)';
-    }
   }
 }
 
