@@ -2,7 +2,7 @@
   "name": "KC WATER POS - ប្រព័ន្ធគ្រប់គ្រងរោងចក្រទឹក",
   "short_name": "KC POS",
   "description": "ប្រព័ន្ធគ្រប់គ្រងការលក់ ស្តុក ចំណាយ និងចាត់ចែងអ្នកដឹកជញ្ជូនរោងចក្រទឹក ខេ ស៊ី (ប៉ោយប៉ែត)",
-  "start_url": "./",
+  "start_url": "./pos.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
