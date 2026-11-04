@@ -54,8 +54,22 @@ var SUPABASE_URL = activeEnv.url;
 var SUPABASE_KEY = activeEnv.key;
 var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🔄 ៣. មុខងារចុចប្តូររវាង PROD និង TEST ភ្លាមៗ (មានសួរបញ្ជាក់តាម Popup POS)
+// 🔄 ៣. មុខងារចុចប្តូររវាង PROD និង TEST ភ្លាមៗ (ចាក់សោរសម្រាប់តែ Admin)
 async function switchAppEnvironment(targetEnv) {
+  // 🔒 សុវត្ថិភាព៖ បើ Login ហើយ តែមិនមែនជា Admin ➔ បដិសេធភ្លាម!
+  if (currentUser && currentUser.role && currentUser.role !== 'Admin') {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "គ្មានសិទ្ធិ!",
+        message: "មានតែ Admin ប៉ុណ្ណោះដែលមានសិទ្ធិប្តូររវាងប្រព័ន្ធពិត (PROD) និងសាកល្បង (TEST)!",
+        type: "warning"
+      });
+    } else {
+      showToast("មានតែ Admin ប៉ុណ្ណោះដែលមានសិទ្ធិប្តូរប្រព័ន្ធ!", "error");
+    }
+    return;
+  }
+
   if (targetEnv !== 'TEST' && targetEnv !== 'PROD') return;
   var targetName = (targetEnv === 'TEST') ? 'ប្រព័ន្ធសាកល្បង (TEST)' : 'ប្រព័ន្ធពិត (PROD)';
   
@@ -72,14 +86,13 @@ async function switchAppEnvironment(targetEnv) {
 
   if (ok) {
     localStorage.setItem('kc_current_env', targetEnv);
-    // សម្អាត Query ?env= ចេញកុំឱ្យទាក់
     var url = new URL(window.location.href);
     url.searchParams.delete('env');
     window.location.href = url.pathname;
   }
 }
 
-// 🏷️ ៤. មុខងារបង្ហាញផ្លាកសម្គាល់ប្រព័ន្ធ (រចនាបែប High-Tech Pill មិនធ្លាក់ជួរលើអេក្រង់តូច ១០០%)
+// 🏷️ ៤. មុខងារបង្ហាញផ្លាកសម្គាល់ប្រព័ន្ធ (ចាក់សោរឱ្យឃើញ និងចុចប្តូរបានតែ Admin ម្នាក់គត់)
 function renderEnvironmentBanner() {
   var oldBanner = document.getElementById('kcTestModeBanner');
   if (oldBanner) oldBanner.remove();
@@ -87,41 +100,52 @@ function renderEnvironmentBanner() {
   var oldBadge = document.getElementById('navTestBadge');
   if (oldBadge) oldBadge.remove();
 
-  // ក. បើកំពុងនៅប្រព័ន្ធសាកល្បង (TEST)៖ របារពណ៌ទឹកក្រូចបង្រួមតូចល្មម មិនធ្លាក់ជួរ
+  var isAdmin = (currentUser && currentUser.role === 'Admin');
+  var isNotLoggedIn = (!currentUser || !currentUser.id);
+
+  // 🔒 សុវត្ថិភាពដាច់ខាត៖ បើជាម៉ូយ (Customer), អ្នកដឹក (Driver) ឬបុគ្គលិក (Seller) ➔ លាក់ចោលទាំងស្រុង ១០០%!
+  if (!isAdmin && !isNotLoggedIn) {
+    return;
+  }
+
+  // ក. បើកំពុងនៅប្រព័ន្ធសាកល្បង (TEST)៖ បង្ហាញរបារពណ៌ទឹកក្រូច (តែមានប៊ូតុង [ប្តូរ ➔] សម្រាប់តែ Admin)
   if (CURRENT_ENV === 'TEST') {
+    var switchBtnHtml = (isAdmin || isNotLoggedIn) ? 
+      '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 9.5px; padding: 3px 8px; border-radius: 6px; border: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; margin-left: 8px;">ប្តូរ ➔</button>' : '';
+
     var bannerHtml = '<div id="kcTestModeBanner" style="background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 4px 10px; font-size: 10px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #fde047; z-index: 9999; width: 100%; white-space: nowrap; box-sizing: border-box;">' +
       '<div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
         '<span style="display: inline-block; width: 6px; height: 6px; background: white; border-radius: 50%; box-shadow: 0 0 6px white; flex-shrink: 0;"></span>' +
         '<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🧪 ប្រព័ន្ធសាកល្បង (TEST MODE)</span>' +
       '</div>' +
-      '<button type="button" onclick="switchAppEnvironment(\'PROD\')" style="background: white; color: #78350f; font-weight: 900; font-size: 9.5px; padding: 3px 8px; border-radius: 6px; border: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; margin-left: 8px;">' +
-        'ប្តូរ ➔' +
-      '</button>' +
+      switchBtnHtml +
     '</div>';
 
     var mainApp = document.getElementById('mainApp');
     var loginPage = document.getElementById('loginPage');
-    if (mainApp) mainApp.insertAdjacentHTML('afterbegin', bannerHtml);
+    if (mainApp && !mainApp.classList.contains('hidden')) mainApp.insertAdjacentHTML('afterbegin', bannerHtml);
     else if (loginPage) loginPage.insertAdjacentHTML('beforebegin', bannerHtml);
     else document.body.insertAdjacentHTML('afterbegin', bannerHtml);
   }
 
-  // ខ. បង្ហាញប៊ូតុងផ្លាក [🧪 TEST 🔄] ឬ [🏢 PROD 🔄] ជាប់រាង Pill តូចស្អាត មិនខូចរាង
-  var userInfo = document.getElementById('userInfo');
-  if (userInfo && !document.getElementById('navTestBadge')) {
-    var isTest = (CURRENT_ENV === 'TEST');
-    var badgeStyle = isTest ? 
-      'background: #fbbf24; color: #78350f; border: 1px solid #f59e0b;' : 
-      'background: #047857; color: #a7f3d0; border: 1px solid #059669;';
-    var badgeText = isTest ? '🧪 TEST' : '🏢 PROD';
-    var switchTarget = isTest ? 'PROD' : 'TEST';
-    var switchTitle = isTest ? 'ចុចដើម្បីប្តូរទៅប្រព័ន្ធពិត (PROD)' : 'ចុចដើម្បីប្តូរទៅប្រព័ន្ធសាកល្បង (TEST)';
+  // ខ. បង្ហាញប៊ូតុងផ្លាក [🧪 TEST 🔄] ឬ [🏢 PROD 🔄] លើ Navbar សម្រាប់តែ Admin ម្នាក់គត់
+  if (isAdmin) {
+    var userInfo = document.getElementById('userInfo');
+    if (userInfo && !document.getElementById('navTestBadge')) {
+      var isTest = (CURRENT_ENV === 'TEST');
+      var badgeStyle = isTest ? 
+        'background: #fbbf24; color: #78350f; border: 1px solid #f59e0b;' : 
+        'background: #047857; color: #a7f3d0; border: 1px solid #059669;';
+      var badgeText = isTest ? '🧪 TEST' : '🏢 PROD';
+      var switchTarget = isTest ? 'PROD' : 'TEST';
+      var switchTitle = isTest ? 'ចុចដើម្បីប្តូរទៅប្រព័ន្ធពិត (PROD)' : 'ចុចដើម្បីប្តូរទៅប្រព័ន្ធសាកល្បង (TEST)';
 
-    var badgeBtnHtml = '<button type="button" onclick="switchAppEnvironment(\'' + switchTarget + '\')" title="' + switchTitle + '" id="navTestBadge" style="' + badgeStyle + ' font-size: 9.5px; font-weight: 900; padding: 2px 7px; border-radius: 9999px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; white-space: nowrap; height: 26px; line-height: 1;">' +
-      badgeText + ' 🔄' +
-    '</button>';
+      var badgeBtnHtml = '<button type="button" onclick="switchAppEnvironment(\'' + switchTarget + '\')" title="' + switchTitle + '" id="navTestBadge" style="' + badgeStyle + ' font-size: 9.5px; font-weight: 900; padding: 2px 7px; border-radius: 9999px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; white-space: nowrap; height: 26px; line-height: 1;">' +
+        badgeText + ' 🔄' +
+      '</button>';
 
-    userInfo.insertAdjacentHTML('beforebegin', badgeBtnHtml);
+      userInfo.insertAdjacentHTML('beforebegin', badgeBtnHtml);
+    }
   }
 }
 
