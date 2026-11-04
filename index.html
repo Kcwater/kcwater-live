@@ -1,22 +1,17 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
- <!-- 🚀 កូដបង្ខំឱ្យលោតទៅ Google Chrome ភ្លាមៗក្នុង 0.001 វិនាទី ពេលបើកក្នុង Messenger លើ Android -->
+  <!-- 🚀 កូដត្រួតពិនិត្យសុវត្ថិភាព In-App Browser (គាំទ្រ Telegram Mini App ១០០% មិនកន្ត្រាក់) -->
   <script>
     (function() {
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
       var isAndroid = ua.includes('android');
-      var isFBorMessenger = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+      
+      // 🔍 ពិនិត្យដឹង Messenger / Facebook (ដែលតែងតែបិទសិទ្ធិចាប់ GPS)
+      var isMetaInApp = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab') || ua.includes('instagram');
 
-      // បើជា Android កំពុងបើកក្នុង Messenger -> បញ្ជាឱ្យលោតចេញទៅ Chrome ភ្លាមៗតែម្តង
-      if (isAndroid && isFBorMessenger) {
-        var currentUrl = window.location.href;
-        if (!currentUrl.includes('no_auto_chrome=1')) {
-          var cleanUrl = currentUrl.replace(/^https?:\/\//, '');
-          var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
-          window.location.replace(intentUrl);
-        }
-      }
+      // 🛡️ បើជា Telegram Mini App គឺអនុញ្ញាតឱ្យដំណើរការក្នុង Telegram ពេញលេញ ១០០% មិនទាត់ចេញឡើយ
+      window.__isMetaInApp = isMetaInApp;
     })();
   </script>
   <meta charset="UTF-8">
@@ -119,7 +114,61 @@
 </head>
 <body class="pb-36 antialiased select-none">
 
- 
+  <!-- 🚀 ផ្ទាំង Pop-up ពេលភ្ញៀវបើកតាម Messenger / Facebook (ពាក្យសុភាព គ្មានពាក្យ GPS) -->
+  <div id="messengerBreakoutModalStore" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden select-none">
+    <div class="bg-white rounded-3xl p-5 max-w-sm w-full text-center space-y-3.5 shadow-2xl border-2 border-emerald-600 animate-in zoom-in-95 duration-200">
+      
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl shadow-inner">
+        <i class="fab fa-chrome text-emerald-700 animate-bounce"></i>
+      </div>
+
+      <div>
+        <h3 class="font-black text-slate-900 text-base">សូមបើកក្នុង Google Chrome</h3>
+        <p class="text-xs text-slate-500 font-bold mt-1 leading-relaxed">
+          ដើម្បីទទួលបានសេវាដឹកជញ្ជូនរហ័សដល់មុខផ្ទះ និងភាពងាយស្រួលក្នុងការកុម្ម៉ង់ សូមចុចប៊ូតុងខាងក្រោម៖
+        </p>
+      </div>
+
+      <!-- ប៊ូតុងចុច ១ ឃ្លីក លោតទៅ Chrome -->
+      <button type="button" onclick="launchAndroidChromeBreakout()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-2xl font-black text-xs shadow-lg flex items-center justify-center gap-2 active:scale-95 transition">
+        <i class="fab fa-chrome text-yellow-300 text-base"></i> 🚀 បើកក្នុង Google Chrome
+      </button>
+
+      <button type="button" onclick="document.getElementById('messengerBreakoutModalStore').classList.add('hidden')" class="w-full py-1 text-slate-400 hover:text-slate-600 font-bold text-xs">
+        បន្តមើលនៅទីនេះ
+      </button>
+
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+      var isAndroid = ua.includes('android');
+      
+      // ១. ពិនិត្យដឹង Messenger / Facebook
+      var isMeta = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+
+      // ២. ពិនិត្យដឹង Telegram Browser ធម្មតា (ដែលមិនទាន់ចូលដល់ Mini App)
+      var isTelegram = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined';
+      var isAlreadyMiniApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+
+      // 🤖 ក. បើភ្ញៀវចុច Link ក្នុង Telegram -> បញ្ជូនឱ្យលោតចូល Telegram Mini App ផ្ទាល់ភ្លាម!
+      if (isTelegram && !isAlreadyMiniApp) {
+        window.location.replace("https://t.me/KC_water_pos_bot/app");
+        return;
+      }
+
+      // 💬 ខ. បើភ្ញៀវចុច Link ក្នុង Messenger / Facebook លើ Android -> បង្ហាញផ្ទាំង Pop-up សួរទៅ Chrome
+      if (isAndroid && isMeta) {
+        window.addEventListener('DOMContentLoaded', function() {
+          var modal = document.getElementById('messengerBreakoutModalStore');
+          if (modal) modal.classList.remove('hidden');
+        });
+      }
+    })();
+  </script>
+  
   <!-- ១. NAVBAR (KC MART - ទំនើប ស្រាលភ្នែក និងមិនធ្លាក់អក្សរលើអេក្រង់តូច ១០០%) -->
   <header class="sticky top-0 z-40 kc-glass-nav">
     <div class="max-w-md mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
@@ -1841,13 +1890,6 @@ function toggleFavoriteProduct(prodId, event) {
     localStorage.setItem('kc_customer_favorites', JSON.stringify(favs));
   } catch(e) {}
 
-  // 🔢 តម្រៀបលេខរៀងឱ្យម៉ត់ចត់
-          STORE_CATALOG.sort(function(a, b) {
-            var orderA = (a.sort_order !== null && a.sort_order !== undefined && a.sort_order !== '') ? parseInt(a.sort_order) : 999;
-            var orderB = (b.sort_order !== null && b.sort_order !== undefined && b.sort_order !== '') ? parseInt(b.sort_order) : 999;
-            return orderA - orderB;
-          });
-
   // បង្ហាញ UI ឡើងវិញភ្លាមៗ
   renderCategoryChips();
   renderCatalogGrid(activeCatalogCategoryFilter);
@@ -2719,20 +2761,40 @@ function detectGPSLocation() {
   });
 }
   
-   // 🚀 មុខងារ ១ ឃ្លីក បង្ខំទូរស័ព្ទ Android ឱ្យលោតចេញពី Messenger ទៅបើកក្នុង Google Chrome ភ្លាមៗ
+   // 🚀 មុខងារ ១ ឃ្លីក បើកក្នុង Google Chrome (រក្សាទុកកន្ត្រកទំនិញ & មិនបាត់ TEST/PROD)
 function launchAndroidChromeBreakout() {
   try {
-    // រក្សាទុកកន្ត្រកទំនិញ និងទិន្នន័យភ្ញៀវចូលក្នុង URL Parameter ដើម្បីកុំឱ្យបាត់ទំនិញ
-    var cartParam = encodeURIComponent(JSON.stringify(cartItems || {}));
-    var targetUrl = window.location.origin + window.location.pathname + '?open_chrome=1&cart=' + cartParam;
-    
-    // បាញ់កូដ Android Chrome Intent ទៅកាន់ប្រព័ន្ធប្រតិបត្តិការ Android
-    var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
-    var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
-    
-    window.location.href = intentUrl;
+    // ១. រក្សាទុក URL និង Parameters ទាំងអស់ (រួមទាំង ?env=TEST បើមាន)
+    var url = new URL(window.location.href);
+    url.searchParams.set('open_chrome', '1');
+
+    // ២. រក្សាទុកកន្ត្រកទំនិញកុំឱ្យបាត់
+    if (typeof cartItems !== 'undefined' && Object.keys(cartItems).length > 0) {
+      url.searchParams.set('cart', encodeURIComponent(JSON.stringify(cartItems)));
+    }
+
+    var targetUrl = url.toString();
+
+    // 📱 ៣. ប្រសិនបើកំពុងស្ថិតក្នុង Telegram Mini App -> ប្រើ API ផ្លូវការរបស់ Telegram ដើម្បីបើក
+    if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === 'function') {
+      window.Telegram.WebApp.openLink(targetUrl);
+      return;
+    }
+
+    // 🤖 ៤. សម្រាប់ Android ក្នុង Messenger/Facebook -> បាញ់ Chrome Intent ដោយមាន Fallback សុវត្ថិភាព
+    var ua = (navigator.userAgent || '').toLowerCase();
+    if (ua.includes('android')) {
+      var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
+      var fallbackUrl = encodeURIComponent(targetUrl);
+      // មានភ្ជាប់ S.browser_fallback_url ការពារកុំឱ្យ Error បើទូរស័ព្ទប្រើ Samsung Internet
+      var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + fallbackUrl + ";end";
+      window.location.href = intentUrl;
+    } else {
+      // 🍎 សម្រាប់ iPhone / Browser ផ្សេងៗ
+      window.open(targetUrl, '_blank');
+    }
   } catch(e) {
-    window.open(window.location.href, '_system');
+    window.location.href = window.location.href;
   }
 }
 
@@ -4003,16 +4065,13 @@ function shareViaNativeSheet() {
   </div>
   <script>
   </script>
-  <!-- ==========================================================================
-       📲 ផ្ទាំងដាស់តឿនដំឡើង APP លើទូរស័ព្ទ (PWA STANDALONE INSTALL PROMPT)
-       ========================================================================== -->
-  <!-- ១. បដាដំឡើង App លើទូរស័ព្ទ Android -->
-  <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-50 max-w-sm mx-auto bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-white/20 hidden animate-in slide-in-from-bottom duration-300 select-none">
+  <!-- 📲 បដាដំឡើង App KC MART លើ Android & កុំព្យូទ័រ PC -->
+  <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-[9990] max-w-sm mx-auto bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-emerald-500/40 hidden animate-in slide-in-from-bottom duration-300 select-none">
     <div class="flex items-center justify-between gap-2.5">
       <div class="flex items-center gap-2.5 min-w-0 flex-1">
-        <div class="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-lg shadow-sm shrink-0">
-  <i class="fas fa-droplet text-emerald-200"></i>
-</div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-lg shadow-inner shrink-0 border border-emerald-400/40">
+          <i class="fas fa-droplet text-emerald-200"></i>
+        </div>
         <div class="min-w-0 flex-1">
           <b class="text-xs font-black text-white block truncate">ដំឡើង App KC MART</b>
           <span class="text-[9.5px] text-emerald-300 font-bold block truncate mt-0.5">ស្រួលកុម្ម៉ង់លើកក្រោយ គ្មាន Tab Browser</span>
@@ -4020,9 +4079,9 @@ function shareViaNativeSheet() {
       </div>
       <div class="flex items-center gap-1.5 shrink-0">
         <button type="button" onclick="triggerPwaInstallAction()" class="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:opacity-90 text-slate-950 font-black text-xs rounded-xl shadow-md active:scale-95 transition flex items-center gap-1">
-          <i class="fas fa-download text-[10px]"></i> ដំឡើង App
+          <i class="fas fa-download text-[10px]"></i> ដំឡើង
         </button>
-        <button type="button" onclick="dismissPwaBanner()" class="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs font-bold transition">&times;</button>
+        <button type="button" onclick="dismissPwaBanner()" class="w-6 h-6 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition">&times;</button>
       </div>
     </div>
   </div>
@@ -4059,26 +4118,29 @@ function shareViaNativeSheet() {
       </button>
     </div>
   </div>
-
-  <script>
+  
+   <script>
     // 🧠 LOGIC គ្រប់គ្រងការដំឡើង APP (PWA ENGINE)
     var deferredPwaPrompt = null;
     var isAppInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
-    // ១. ស្វែងរកប្រព័ន្ធប្រតិបត្តិការ (Android vs iOS)
     var uaStr = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
     var isIosDevice = /iphone|ipad|ipod/.test(uaStr);
 
-    // ២. ចាប់យក Event ដំឡើងលើ Android / Chrome
+    // 📲 ១. ចុះឈ្មោះ Service Worker ភ្លាមៗដើម្បីឱ្យ Chrome បើកសិទ្ធិដំឡើង App
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(function() {});
+    }
+
+    // 📲 ២. ចាប់យក Event ដំឡើងលើ Android & PC
     window.addEventListener('beforeinstallprompt', function(e) {
       e.preventDefault();
       deferredPwaPrompt = e;
-      if (!isAppInStandaloneMode && !sessionStorage.getItem('kc_pwa_dismissed')) {
-        setTimeout(showPwaInstallBanner, 2000); // បង្ហាញក្រោយបើក Web បាន ២ វិនាទី
+      if (!isAppInStandaloneMode) {
+        setTimeout(showPwaInstallBanner, 1500); // បង្ហាញក្រោយ ១.៥ វិនាទី
       }
     });
 
-    // ៣. បង្ហាញបដាលើ Android
+    // 📲 ៣. មុខងារបង្ហាញបដា
     function showPwaInstallBanner() {
       if (isAppInStandaloneMode) return;
       var banner = document.getElementById('pwaInstallBanner');
@@ -4086,7 +4148,7 @@ function shareViaNativeSheet() {
         banner.classList.remove('hidden');
       }
     }
-
+    
     // ៤. ពេលភ្ញៀវចុចប៊ូតុង «ដំឡើង App»
     function triggerPwaInstallAction() {
       if (isIosDevice) {
