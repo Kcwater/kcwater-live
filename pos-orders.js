@@ -800,16 +800,17 @@ function onCdmPayMethodChange(mode) {
   }
 }
 
-// 📱 មុខងារបើក ABA QR សម្រាប់អ្នកដឹក (កំណត់ z-index ឱ្យលោតមកលើបង្អស់ ១០០%)
-function openDriverAbaQrModal() {
-  if (!activeDeliveryTaskData) return;
-  var total = activeDeliveryTaskData.total || 0;
+// 📱 មុខងារបើក ABA QR សម្រាប់អ្នកដឹក (គាំទ្រទាំងទាញតម្លៃអូតូ និងបញ្ជូនតម្លៃផ្ទាល់ + កម្រិត z-index ត្រឹមត្រូវ)
+function openDriverAbaQrModal(amount, custName) {
+  var total = (amount !== undefined && amount !== null && amount !== '') ? 
+              amount : (activeDeliveryTaskData ? (activeDeliveryTaskData.total || 0) : 0);
+  
   var qrModal = document.getElementById('posKhqrModal');
   var amtText = document.getElementById('posKhqrAmountText');
   
   if (qrModal && amtText) {
     amtText.innerText = "៛ " + Number(total).toLocaleString();
-    qrModal.style.zIndex = '9000'; // 👈 រុញឱ្យខ្ពស់ជាងផ្ទាំងបញ្ជាក់ការដឹកដល់ (z-[7500]) ដាច់ខាត
+    qrModal.style.zIndex = '9000'; // 👈 រុញឱ្យខ្ពស់ជាងផ្ទាំងបញ្ជាក់ការដឹកដល់
     qrModal.classList.remove('hidden');
   }
 }
@@ -1082,16 +1083,6 @@ window.addEventListener('load', function() {
   checkPendingOnlineOrdersBadge();
   initOrdersRealtimeListener();
 });
-
-// 📱 មុខងារបើក ABA QR សម្រាប់អ្នកដឹក (តភ្ជាប់ទៅ openDriverAbaQrModal កុំឱ្យស្ទួនកូដ និងមាន z-index ត្រឹមត្រូវ)
-function openDriverDirectQr(amount, custName) {
-  if (amount) {
-    if (!activeDeliveryTaskData) activeDeliveryTaskData = {};
-    activeDeliveryTaskData.total = amount;
-    activeDeliveryTaskData.custName = custName || '';
-  }
-  openDriverAbaQrModal();
-}
 
 // 🚚 មុខងារបង្ហាញបេសកកម្មដឹកទឹករបស់អ្នកដឹកជញ្ជូនរោងចក្រ (មានប៊ូតុង "ចេញដំណើរ" ទំនើប)
 async function renderCompanyDeliveriesModule(isSilentRefresh) {
