@@ -3092,17 +3092,24 @@ async function renderCustomerPortalHome() {
   var area = document.getElementById('contentArea');
   if (!area) return;
 
+  var userPhoneText = (currentUser && currentUser.phone) ? currentUser.phone : 'មិនទាន់មានលេខទូរស័ព្ទ';
+
   area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
     '<div class="card border-t-4 border-green-600 bg-gradient-to-r from-green-800 to-green-700 text-white p-5 shadow-xl rounded-3xl">' +
       '<div class="flex justify-between items-start">' +
         '<div>' +
           '<span id="cpBadgeType" class="text-[10px] bg-green-900/80 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-green-400/40">គណនីម៉ូយប្រចាំ KC WATER</span>' +
           '<h2 class="text-xl sm:text-2xl font-black mt-1">👋 សួស្តី, ' + currentUser.fullName + '</h2>' +
-          '<p class="text-[11px] text-green-100 mt-0.5">ប្រព័ន្ធត្រួតពិនិត្យការដកទឹក តម្លៃ និងទូទាត់ប្រាក់</p>' +
+          '<div id="cpMyPhoneDisplay" class="text-xs text-yellow-300 font-bold mt-1 flex items-center gap-1.5">' +
+            '<i class="fas fa-phone text-[10px]"></i>' +
+            '<span>' + userPhoneText + '</span>' +
+          '</div>' +
+          '<p class="text-[10.5px] text-green-100/90 mt-0.5">ប្រព័ន្ធត្រួតពិនិត្យការដកទឹក តម្លៃ និងទូទាត់ប្រាក់</p>' +
         '</div>' +
         '<div class="flex gap-1.5">' +
-          '<button onclick="openChangePasswordModal()" title="ប្តូរលេខសម្ងាត់" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm active:scale-95 transition shadow-sm"><i class="fas fa-key"></i></button>' +
-          '<button onclick="openContactEnterpriseModal()" title="ទាក់ទងរោងចក្រ" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm active:scale-95 transition shadow-sm"><i class="fas fa-phone"></i></button>' +
+          '<button onclick="openEditMyPhoneModal()" title="កែប្រែ/បន្ថែមលេខទូរស័ព្ទ" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 text-yellow-300 flex items-center justify-center text-sm active:scale-95 transition shadow-sm border border-white/20"><i class="fas fa-phone-flip"></i></button>' +
+          '<button onclick="openChangePasswordModal()" title="ប្តូរលេខសម្ងាត់" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm active:scale-95 transition shadow-sm border border-white/20"><i class="fas fa-key"></i></button>' +
+          '<button onclick="openContactEnterpriseModal()" title="ទាក់ទងរោងចក្រ" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-sm active:scale-95 transition shadow-sm border border-white/20"><i class="fas fa-headset"></i></button>' +
         '</div>' +
       '</div>' +
       '<div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-green-600/60">' +
@@ -4533,5 +4540,156 @@ function onProductDepotChange() {
     }
   } else {
     badge.innerHTML = '';
+  }
+}
+
+// 📱 មុខងារបើកផ្ទាំងកែប្រែ & បញ្ចូលបានច្រើនលេខទូរស័ព្ទសម្រាប់ម៉ូយ
+async function openEditMyPhoneModal() {
+  var existing = document.getElementById('editMyPhoneModal');
+  if (existing) existing.remove();
+
+  // ១. ទាញទិន្នន័យលេខទូរស័ព្ទចុងក្រោយពី Supabase ឱ្យជាក់លាក់
+  var rawPhone = currentUser.phone || '';
+  try {
+    const { data: u } = await supabaseClient.from('users').select('phone').eq('id', currentUser.id).maybeSingle();
+    if (u && u.phone) rawPhone = u.phone;
+  } catch(e) {}
+
+  // ២. បំបែកលេខទូរស័ព្ទប្រសិនបើមានច្រើនខ្សែ (តាមសញ្ញាក្បៀស , ឬសញ្ញា /)
+  var phones = rawPhone.split(/[,/]/).map(p => p.trim()).filter(Boolean);
+  var phone1 = phones[0] || '';
+  var phone2 = phones[1] || '';
+  var phone3 = phones[2] || '';
+
+  var html = '<div id="editMyPhoneModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-4">' +
+    '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="document.getElementById(\'editMyPhoneModal\').remove()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 relative border text-center animate-in zoom-in duration-200">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-phone-flip text-emerald-600"></i> លេខទូរស័ព្ទទាក់ទងរបស់ខ្ញុំ' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">អាចបញ្ចូលបានរហូតដល់ ៣ ខ្សែ</p>' +
+        '</div>' +
+        '<button type="button" onclick="document.getElementById(\'editMyPhoneModal\').remove()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>' +
+      '</div>' +
+
+      '<div class="space-y-2.5 text-left text-xs">' +
+        '<div>' +
+          '<label class="text-[10px] font-black text-slate-700 uppercase block mb-1">១. លេខទូរស័ព្ទទី ១ (ខ្សែចម្បង) *</label>' +
+          '<input type="tel" id="inpMyPhone1" value="' + phone1 + '" placeholder="ឧ៖ 012 345 678" class="font-bold border-2 border-emerald-300 focus:border-emerald-600 rounded-xl p-2.5 w-full bg-slate-50 focus:bg-white outline-none font-mono text-sm">' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-slate-600 uppercase block mb-1">២. លេខទូរស័ព្ទទី ២ (ខ្សែបន្ថែម បើមាន)</label>' +
+          '<input type="tel" id="inpMyPhone2" value="' + phone2 + '" placeholder="ឧ៖ 097 888 999" class="font-bold border border-slate-300 focus:border-emerald-600 rounded-xl p-2.5 w-full bg-slate-50 focus:bg-white outline-none font-mono text-sm">' +
+        '</div>' +
+        '<div>' +
+          '<label class="text-[10px] font-bold text-slate-600 uppercase block mb-1">៣. លេខទូរស័ព្ទទី ៣ (ខ្សែបន្ថែម បើមាន)</label>' +
+          '<input type="tel" id="inpMyPhone3" value="' + phone3 + '" placeholder="ឧ៖ 088 123 456" class="font-bold border border-slate-300 focus:border-emerald-600 rounded-xl p-2.5 w-full bg-slate-50 focus:bg-white outline-none font-mono text-sm">' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="grid grid-cols-2 gap-2 pt-1">' +
+        '<button type="button" onclick="document.getElementById(\'editMyPhoneModal\').remove()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បោះបង់</button>' +
+        '<button type="button" id="btnSaveMyPhoneAction" onclick="submitUpdateMyPhone()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">រក្សាទុកលេខទូរស័ព្ទ</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+  setTimeout(function() {
+    var p1 = document.getElementById('inpMyPhone1');
+    if (p1) p1.focus();
+  }, 150);
+}
+
+// 💾 មុខងាររក្សាទុកលេខទូរស័ព្ទច្រើនខ្សែចូល Database & ផ្ញើដំណឹង Telegram ទៅ Admin
+async function submitUpdateMyPhone() {
+  var p1 = document.getElementById('inpMyPhone1') ? document.getElementById('inpMyPhone1').value.trim() : '';
+  var p2 = document.getElementById('inpMyPhone2') ? document.getElementById('inpMyPhone2').value.trim() : '';
+  var p3 = document.getElementById('inpMyPhone3') ? document.getElementById('inpMyPhone3').value.trim() : '';
+
+  if (!p1 && !p2 && !p3) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះលេខទូរស័ព្ទ",
+        message: "សូមបញ្ចូលយ៉ាងហោចណាស់ ១ ខ្សែទូរស័ព្ទដើម្បីងាយស្រួលទាក់ទង!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមបញ្ចូលលេខទូរស័ព្ទ!", "error");
+    }
+    return;
+  }
+
+  // ផ្គុំលេខទូរស័ព្ទច្រើនខ្សែចូលគ្នាដោយសញ្ញាក្បៀស (ឧ៖ 012 345 678, 097 888 999)
+  var combinedPhones = [p1, p2, p3].filter(Boolean).join(', ');
+
+  var btn = document.getElementById('btnSaveMyPhoneAction');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
+
+  try {
+    const { error } = await supabaseClient
+      .from('users')
+      .update({ phone: combinedPhones })
+      .eq('id', currentUser.id);
+
+    if (error) throw error;
+
+    // ធ្វើបច្ចុប្បន្នភាពក្នុង Memory
+    currentUser.phone = combinedPhones;
+
+    // ធ្វើបច្ចុប្បន្នភាពលើកាតអេក្រង់ភ្លាមៗ
+    var phoneDisplay = document.getElementById('cpMyPhoneDisplay');
+    if (phoneDisplay) {
+      phoneDisplay.innerHTML = '<i class="fas fa-phone text-[10px]"></i> <span>' + combinedPhones + '</span>';
+    }
+
+    var modal = document.getElementById('editMyPhoneModal');
+    if (modal) modal.remove();
+
+    // 🔔 ផ្ញើសារជូនដំណឹងទៅ Telegram របស់ Admin
+    try {
+      var timeKhNow = new Date().toLocaleString('km-KH', { 
+        timeZone: 'Asia/Phnom_Penh', 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+
+      var tgMsg = "📞 <b>[KC WATER - ម៉ូយបានកែប្រែ/បន្ថែមលេខទូរស័ព្ទ]</b>\n\n" +
+                  "👤 <b>អតិថិជន៖</b> <b>" + currentUser.fullName + "</b>\n" +
+                  "📱 <b>លេខទូរស័ព្ទថ្មី៖</b> <code>" + combinedPhones + "</code>\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
+
+      if (typeof sendTelegramAlert === 'function') {
+        sendTelegramAlert(tgMsg);
+      }
+    } catch(tgE) {}
+
+    // 🌟 បង្ហាញផ្ទាំង kcAlert ជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: "បានធ្វើបច្ចុប្បន្នភាពលេខទូរស័ព្ទរបស់លោកអ្នករួចរាល់៖\n👉 " + combinedPhones,
+        type: "success"
+      });
+    } else {
+      showToast("បានរក្សាទុកលេខទូរស័ព្ទជោគជ័យ!", "success");
+    }
+
+  } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "រក្សាទុកលេខទូរស័ព្ទ";
+    }
   }
 }
