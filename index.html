@@ -119,43 +119,7 @@
 </head>
 <body class="pb-36 antialiased select-none">
 
-  <!-- 🚀 បដា ១ ឃ្លីក លោតទៅ Google Chrome ពេលបើកក្នុង Telegram -->
-  <div id="telegramQuickBar" class="hidden bg-gradient-to-r from-emerald-600 via-green-600 to-teal-700 text-white p-3 px-4 shadow-xl sticky top-0 z-[9999] flex items-center justify-between gap-2 border-b-2 border-yellow-300 select-none">
-    <div class="flex items-center gap-2 min-w-0">
-      <i class="fab fa-chrome text-yellow-300 text-lg shrink-0 animate-bounce"></i>
-      <div class="leading-tight min-w-0">
-        <b class="text-xs block text-yellow-200">ដំឡើង App KC MART</b>
-        <span class="text-[10px] text-white/90 truncate block">ចុចប៊ូតុងខាងស្តាំដើម្បីបើកក្នុង Chrome និងដំឡើង App</span>
-      </div>
-    </div>
-    <button type="button" onclick="openInChromeNow()" class="px-3 py-1.5 bg-yellow-300 hover:bg-yellow-400 text-emerald-950 font-black rounded-xl text-xs shadow-md shrink-0 active:scale-95 transition flex items-center gap-1">
-      🚀 បើក Chrome
-    </button>
-  </div>
-
-  <script>
-    // មុខងារចុច ១ ឃ្លីក រុញទៅបើកក្នុង Google Chrome ភ្លាមៗ
-    function openInChromeNow() {
-      var cleanUrl = window.location.href.replace(/^https?:\/\//, '');
-      var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
-      window.location.href = intentUrl;
-    }
-
-    (function() {
-      var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
-      var isAndroid = ua.includes('android');
-      // ពិនិត្យស្គាល់ WebView របស់ Telegram, Messenger និងកម្មវិធីដទៃទៀត
-      var isWebView = ua.includes('; wv') || ua.includes('version/4.0') || ua.includes('webview') || ua.includes('telegram');
-      var isFB = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
-
-      // បង្ហាញបដានេះតែពេលកំពុងបើកក្នុង Telegram / Messenger លើ Android ប៉ុណ្ណោះ
-      if (isAndroid && (isWebView || isFB)) {
-        var bar = document.getElementById('telegramQuickBar');
-        if (bar) bar.classList.remove('hidden');
-      }
-    })();
-  </script>
-
+ 
   <!-- ១. NAVBAR (KC MART - ទំនើប ស្រាលភ្នែក និងមិនធ្លាក់អក្សរលើអេក្រង់តូច ១០០%) -->
   <header class="sticky top-0 z-40 kc-glass-nav">
     <div class="max-w-md mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
