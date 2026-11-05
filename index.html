@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
+  <!-- 🤖 បណ្ណាល័យផ្លូវការ Telegram Mini App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <!-- 🚀 កូដត្រួតពិនិត្យសុវត្ថិភាព In-App Browser (គាំទ្រ Telegram Mini App ១០០% មិនកន្ត្រាក់) -->
   <script>
     (function() {
@@ -153,13 +155,21 @@
       var isTelegram = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined';
       var isAlreadyMiniApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
 
-      // 🤖 ក. បើភ្ញៀវចុច Link ក្នុង Telegram -> បញ្ជូនឱ្យលោតចូល Telegram Mini App ផ្ទាល់ភ្លាម!
-      if (isTelegram && !isAlreadyMiniApp) {
-        window.location.replace("https://t.me/KC_water_pos_bot/app");
-        return;
-      }
+    // 🤖 ១. ភ្ជាប់ទំនាក់ទំនងជាមួយ Telegram Mini App ឱ្យដំណើរការពេញអេក្រង់ទូរស័ព្ទ
+    if (window.Telegram && window.Telegram.WebApp) {
+      try {
+        window.Telegram.WebApp.ready();  // ប្រាប់ Telegram ឱ្យបើកបង្ហាញទំព័រភ្លាម
+        window.Telegram.WebApp.expand(); // ពង្រីកពេញអេក្រង់ទូរស័ព្ទ
+      } catch(e) {}
+    }
 
-      // 💬 ខ. បើភ្ញៀវចុច Link ក្នុង Messenger / Facebook លើ Android -> បង្ហាញផ្ទាំង Pop-up សួរទៅ Chrome
+    // 💬 ២. ពិនិត្យបង្ហាញ Pop-up សួរទៅ Chrome តែពេលភ្ញៀវបើកតាម Messenger / Facebook លើ Android ប៉ុណ្ណោះ
+    (function() {
+      var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+      var isAndroid = ua.includes('android');
+      var isMeta = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+
+      // 🛡️ បើជា Messenger លើ Android ➔ បង្ហាញ Pop-up សុភាព
       if (isAndroid && isMeta) {
         window.addEventListener('DOMContentLoaded', function() {
           var modal = document.getElementById('messengerBreakoutModalStore');
