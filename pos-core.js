@@ -1105,7 +1105,7 @@ function setModalCurrency(curr) {
 }
 
 // ==========================================
-// 🪙 មុខងារជំនួយតម្លៃលើផ្ទាំង MODAL (+00, +000, តម្លៃរហ័ស 500/1000/2000)
+// 🪙 មុខងារជំនួយតម្លៃលើផ្ទាំង MODAL (ស្វ័យប្រវត្តិ 00 លើ KHR & ស្គាល់ , ឬ . លើ USD)
 // ==========================================
 
 // ១. មុខងារវាយតម្លៃផ្ទាល់ក្នុងប្រអប់
@@ -1113,34 +1113,35 @@ function onModalPriceInput(val) {
   updateModalSubtotal();
 }
 
-// ២. មុខងារថែមសូន្យរហ័ស (+00 ឬ +000) លើលុយខ្មែរ
-function appendModalZeros(zeros) {
+// 🔄 ២. មុខងារសម្រួលតម្លៃស្វ័យប្រវត្តពេលវាយរួច (On Blur)
+function onModalPriceBlur() {
   var inp = document.getElementById('modalPriceInput');
   if (!inp || inp.readOnly) return;
-  
-  var curVal = String(inp.value || '').trim();
-  // បើប្រអប់ទទេ ឬលេខ 0 ពេលចុច +00 ឱ្យចេញ 100 ភ្លាម
-  if (!curVal || curVal === '0') {
-    inp.value = (zeros === '00') ? '100' : '1000';
-  } else {
-    inp.value = curVal + zeros;
+
+  var rawVal = String(inp.value || '').trim();
+  if (!rawVal) return;
+
+  // 🇰🇭 ក. លុយខ្មែរ (KHR)៖ បើវាយចន្លោះពី 1 ដល់ 99 ➔ ថែម 00 លើប្រអប់ភ្លាម (ឧ. 6 -> 600, 15 -> 1500)
+  if (currentModalCurrency === 'KHR') {
+    var clean = rawVal.replace(/[^0-9]/g, '');
+    var num = parseInt(clean);
+    if (!isNaN(num) && num > 0 && num < 100) {
+      inp.value = num * 100;
+    }
+  } 
+  // 💵 ខ. លុយដុល្លារ (USD)៖ បើវាយសញ្ញាក្បៀស (,) ➔ ប្តូរមកសញ្ញាចុច (.) ឱ្យស្អាត (ឧ. 1,5 -> 1.5)
+  else if (currentModalCurrency === 'USD') {
+    if (rawVal.includes(',')) {
+      inp.value = rawVal.replace(',', '.');
+    }
   }
   updateModalSubtotal();
 }
 
-// ៣. មុខងារកំណត់តម្លៃរហ័ស (500, 1000, 2000៛)
-function setModalExactPrice(price) {
-  var inp = document.getElementById('modalPriceInput');
-  if (!inp || inp.readOnly) return;
-  inp.value = price;
-  updateModalSubtotal();
-}
-
-// 🧮 ២. មុខងារបំប្លែង និងទាញយកតម្លៃលក់ (ស្គាល់តម្លៃកុងត្រាអតិថិជន Monthly ជានិច្ច)
+// 🧮 ៣. មុខងារបំប្លែង និងទាញយកតម្លៃលក់ជាក់ស្តែង
 function getModalParsedPrice() {
   var inp = document.getElementById('modalPriceInput');
   
-  // ទាញតម្លៃកុងត្រាពិសេសបើមាន ឬតម្លៃដើមទំនិញ
   var custNameEl = document.getElementById('posCustSelect');
   var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
   var sp = (selectedModalProduct && specialPrices) ? specialPrices.find(s => s.customer_name === custName && s.product_name === selectedModalProduct.name) : null;
@@ -1153,14 +1154,30 @@ function getModalParsedPrice() {
     return defaultPrice;
   }
 
+  // 💵 ករណីទី ១៖ លុយដុល្លារ (USD) -> ស្គាល់ទាំងសញ្ញាក្បៀស (,) និងសញ្ញាចុច (.) គ្មានថែម 00 ឡើយ
   if (currentModalCurrency === 'USD') {
-    rawVal = rawVal.replace(',', '.');
-    var num = parseFloat(rawVal);
-    return isNaN(num) ? defaultPrice : num;
-  } else {
-    var clean = rawVal.replace(/[^0-9.]/g, '');
-    var num = parseFloat(clean);
-    return isNaN(num) ? defaultPrice : num;
+    var cleanUsd = rawVal.replace(',', '.').replace(/[^0-9.]/g, '');
+    var numUsd = parseFloat(cleanUsd);
+    return isNaN(numUsd) ? defaultPrice : numUsd;
+  } 
+  // 🪙 ករណីទី ២៖ លុយថៃ (THB) -> គិតតម្លៃធម្មតា គ្មានថែម 00 ឡើយ
+  else if (currentModalCurrency === 'THB') {
+    var cleanThb = rawVal.replace(/[^0-9.]/g, '');
+    var numThb = parseFloat(cleanThb);
+    return isNaN(numThb) ? defaultPrice : numThb;
+  } 
+  // 🇰🇭 ករណីទី ៣៖ លុយខ្មែរ (KHR) -> ថែម 00 ស្វ័យប្រវត្តិបើវាយលេខចន្លោះពី 1 ដល់ 99
+  else {
+    var cleanKhr = rawVal.replace(/[^0-9]/g, '');
+    var numKhr = parseFloat(cleanKhr);
+    if (isNaN(numKhr)) return defaultPrice;
+
+    // បើវាយលេខ 1 ដល់ 99 ➔ ថែម 00 (ឧ. 1->100, 6->600, 15->1500)
+    if (numKhr > 0 && numKhr < 100) {
+      return numKhr * 100;
+    }
+    // បើវាយចាប់ពី 100 ឡើង (ឧ. 600, 2500) ➔ ទុកតម្លៃនោះដដែល
+    return numKhr;
   }
 }
 
@@ -1214,6 +1231,7 @@ function openProductModal(id) {
   setModalCurrency(isMonthly ? 'KHR' : (p.currency || 'KHR'));
 
   var priceInp = document.getElementById('modalPriceInput');
+  if (priceInp) priceInp.onblur = onModalPriceBlur;
   var quickPayBtn = document.getElementById('btnModalQuickPay');
   var addToCartBtn = document.getElementById('btnModalAddToCart');
   var khrQuickRow = document.getElementById('modalKhrQuickButtonsRow');
