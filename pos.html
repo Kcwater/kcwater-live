@@ -295,8 +295,8 @@
         <img id="posModalReceiptImg" src="" class="w-full rounded-xl">
       </div>
       <div class="grid grid-cols-2 gap-2 pt-1">
-        <button onclick="sharePOSReceiptImage()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition"><i class="fas fa-share-nodes"></i> ផ្ញើ Telegram</button>
-        <a id="posModalReceiptDownloadBtn" href="" download="Receipt.png" class="py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-download"></i> ទាញយក PNG</a>
+        <button type="button" onclick="sharePOSReceiptImage()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition"><i class="fas fa-share-nodes"></i> ផ្ញើ Telegram</button>
+        <button type="button" onclick="downloadPOSReceiptImage()" id="posModalReceiptDownloadBtn" class="py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition"><i class="fas fa-download"></i> ទាញយក PNG</button>
       </div>
       <button onclick="closePOSReceiptModal()" class="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ (រួចរាល់)</button>
     </div>
