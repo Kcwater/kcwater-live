@@ -2001,52 +2001,87 @@ function closePOSReceiptModal() {
   if (modal) modal.classList.add('hidden'); 
 }
 
-// 📥 មុខងារទាញយករូបវិក្កយបត្រ (គាំទ្រទូរស័ព្ទ Android, iPhone & PC ១០០%)
-function downloadPOSReceiptImage() {
+// 📥 មុខងារទាញយករូបវិក្កយបត្រលើទូរស័ព្ទដៃ (គាំទ្រ Android, iPhone & PC ១០០%)
+async function downloadPOSReceiptImage() {
   var img = document.getElementById('posModalReceiptImg');
-  if (!img || !img.src) {
-    showToast("មិនមានរូបភាពវិក្កយបត្រឡើយ!", "error");
+  if (!img || !img.src || img.src.length < 50) {
+    showToast("មិនទាន់មានរូបភាពវិក្កយបត្រឡើយ!", "error");
     return;
   }
 
   showToast("កំពុងទាញយករូបវិក្កយបត្រ...", "info");
 
   try {
-    fetch(img.src)
-      .then(res => res.blob())
-      .then(blob => {
-        var blobUrl = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = 'KC-Receipt-' + Date.now() + '.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
-        showToast("បានទាញយកវិក្កយបត្រជោគជ័យ!", "success");
-      })
-      .catch(err => {
-        var a = document.createElement('a');
-        a.href = img.src;
-        a.download = 'KC-Receipt.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      });
-  } catch(e) {
-    window.open(img.src, '_blank');
+    // ១. បំប្លែង Base64 ទៅជា Blob (Binary Data) ដើម្បីកុំឱ្យ Chrome Mobile ប្លុក
+    var res = await fetch(img.src);
+    var blob = await res.blob();
+    var fileName = 'KC-Receipt-' + Date.now() + '.png';
+
+    // 🍎 ២. សម្រាប់ iPhone / iPad៖ បើក Share Sheet ឱ្យរើស «Save Image» ចូល Photos ផ្ទាល់
+    var isIos = /iphone|ipad|ipod/.test((navigator.userAgent || '').toLowerCase());
+    if (isIos && navigator.share) {
+      var file = new File([blob], fileName, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'វិក្កយបត្រ KC WATER'
+        });
+        showToast("បានរក្សាទុកវិក្កយបត្រជោគជ័យ!", "success");
+        return;
+      }
+    }
+
+    // 🤖 ៣. សម្រាប់ Android & កុំព្យូទ័រ៖ ទាញយកតាម Blob URL ស្តង់ដារ
+    var blobUrl = window.URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = blobUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(function() {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    }, 3000);
+
+    showToast("បានទាញយកវិក្កយបត្រជោគជ័យ!", "success");
+
+  } catch(err) {
+    // ៤. ដំណោះស្រាយបម្រុង (Fallback)
+    try {
+      var w = window.open('');
+      if (w) {
+        w.document.write('<title>វិក្កយបត្រ KC WATER</title><body style="margin:0;display:flex;justify-content:center;align-items:center;background:#1e293b;min-height:100vh;"><div style="text-align:center;"><p style="color:white;font-family:sans-serif;font-size:13px;font-weight:bold;margin-bottom:10px;">សូមចុចសង្កត់លើរូបភាព រួចរើសយក «Save image / រក្សាទុករូបភាព»៖</p><img src="' + img.src + '" style="max-width:92vw;border-radius:16px;"></div></body>');
+      } else {
+        window.location.href = img.src;
+      }
+    } catch(e) {
+      window.location.href = img.src;
+    }
   }
 }
 
-function sharePOSReceiptImage() {
+// 📲 មុខងារផ្ញើ ឬចែករំលែកវិក្កយបត្រតាម Telegram / App ផ្សេងៗ
+async function sharePOSReceiptImage() {
   var img = document.getElementById('posModalReceiptImg');
-  if (img && navigator.share) {
-    fetch(img.src).then(r => r.blob()).then(blob => {
-      navigator.share({ files: [new File([blob], 'Receipt.png', { type: 'image/png' })], title: 'វិក្កយបត្រ KC WATER' });
-    }).catch(function() {
+  if (!img || !img.src) return;
+
+  try {
+    var res = await fetch(img.src);
+    var blob = await res.blob();
+    var file = new File([blob], 'KC-Receipt-' + Date.now() + '.png', { type: 'image/png' });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: 'វិក្កយបត្រ KC WATER',
+        text: 'វិក្កយបត្រទូទាត់ប្រាក់ KC WATER'
+      });
+    } else {
       downloadPOSReceiptImage();
-    });
-  } else {
+    }
+  } catch(e) {
     downloadPOSReceiptImage();
   }
 }
