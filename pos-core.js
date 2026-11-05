@@ -1054,7 +1054,7 @@ function renderProductGrid() {
 // ==========================================
 var currentModalCurrency = 'KHR';
 
-// 🔄 ១. មុខងារចុចប្តូររូបិយប័ណ្ណ & ប្តូរពណ៌ (ខៀវ / ទឹកក្រូច / បៃតង)
+// 🔄 ១. មុខងារចុចប្តូររូបិយប័ណ្ណ & គណនាតម្លៃតាមអត្រាប្តូរប្រាក់អូតូ (៦០០៛ ➔ ៥฿ ➔ 0.15$)
 function setModalCurrency(curr) {
   currentModalCurrency = curr;
 
@@ -1064,28 +1064,58 @@ function setModalCurrency(curr) {
   var suffixEl = document.getElementById('modalCurrencySymbolSuffix');
   var priceBox = document.getElementById('modalPriceInput');
 
-  // Reset ពណ៌ប៊ូតុងអត់ជ្រើសរើស
+  // Reset ពណ៌ប៊ូតុង
   ['KHR', 'THB', 'USD'].forEach(function(c) {
     var btn = document.getElementById('btnModalCurr_' + c);
     if (btn) btn.className = "py-2 rounded-xl text-xs font-black text-slate-600 hover:bg-white transition flex items-center justify-center gap-1";
   });
 
-  // 🎨 ប្តូរពណ៌តាមប្រភេទលុយនីមួយៗ
+  // 🪙 ទាញយកតម្លៃដើមជាលុយខ្មែរ (៛) របស់ទំនិញនេះ
+  var custNameEl = document.getElementById('posCustSelect');
+  var custName = custNameEl ? custNameEl.value.trim() : (currentUser.fullName || '');
+  var sp = (selectedModalProduct && specialPrices) ? specialPrices.find(s => s.customer_name === custName && s.product_name === selectedModalProduct.name) : null;
+  
+  var basePrice = sp ? parseFloat(sp.price) : (selectedModalProduct ? parseFloat(selectedModalProduct.price || 0) : 0);
+  var baseCurr = sp ? (sp.currency || 'KHR').toUpperCase() : (selectedModalProduct ? (selectedModalProduct.currency || 'KHR').toUpperCase() : 'KHR');
+
+  var rateU = (typeof exchangeRateUSD !== 'undefined' && exchangeRateUSD > 0) ? exchangeRateUSD : 4100;
+  var rateT = (typeof exchangeRateTHB !== 'undefined' && exchangeRateTHB > 0) ? exchangeRateTHB : 115;
+
+  // បំប្លែងតម្លៃគោលជាប្រាក់រៀល (KHR) ជាមុនសិន
+  var baseKhr = basePrice;
+  if (baseCurr === 'USD') baseKhr = Math.round(basePrice * rateU);
+  else if (baseCurr === 'THB') baseKhr = Math.round(basePrice * rateT);
+
+  // 🎨 ប្តូរពណ៌ និងគណនាតម្លៃបំប្លែងតាមអត្រាប្តូរប្រាក់
   if (curr === 'THB') {
-    // 🟠 លុយថៃ ពណ៌ទឹកក្រូច
+    // 🟠 លុយថៃ (៦០០៛ / ១១៥ = ៥฿)
+    var valThb = Math.round(baseKhr / rateT);
     if (btnThb) btnThb.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-amber-600 text-white transition flex items-center justify-center gap-1";
     if (suffixEl) { suffixEl.innerText = '฿'; suffixEl.className = "absolute right-3 top-3 font-black text-amber-600 text-sm"; }
-    if (priceBox) priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-amber-300 focus:border-amber-600 text-amber-950 outline-none pr-8";
+    if (priceBox) {
+      priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-amber-300 focus:border-amber-600 text-amber-950 outline-none pr-8";
+      priceBox.value = valThb > 0 ? valThb : "";
+      priceBox.placeholder = "0";
+    }
   } else if (curr === 'USD') {
-    // 🟢 លុយដុល្លារ ពណ៌បៃតង
+    // 🟢 លុយដុល្លារ (៦០០៛ / ៤១០០ = 0.15$)
+    var valUsd = parseFloat((baseKhr / rateU).toFixed(2));
     if (btnUsd) btnUsd.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-emerald-600 text-white transition flex items-center justify-center gap-1";
     if (suffixEl) { suffixEl.innerText = '$'; suffixEl.className = "absolute right-3 top-3 font-black text-emerald-600 text-sm"; }
-    if (priceBox) priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-emerald-300 focus:border-emerald-600 text-emerald-950 outline-none pr-8";
+    if (priceBox) {
+      priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-emerald-300 focus:border-emerald-600 text-emerald-950 outline-none pr-8";
+      priceBox.value = valUsd > 0 ? valUsd : "";
+      priceBox.placeholder = "0.00";
+    }
   } else {
-    // 🔵 លុយខ្មែរ ពណ៌ខៀវ
+    // 🔵 លុយខ្មែរ (៦០០៛)
     if (btnKhr) btnKhr.className = "py-2 rounded-xl text-xs font-black shadow-xs bg-blue-600 text-white transition flex items-center justify-center gap-1";
     if (suffixEl) { suffixEl.innerText = '៛'; suffixEl.className = "absolute right-3 top-3 font-black text-blue-600 text-sm"; }
-    if (priceBox) priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8";
+    if (priceBox) {
+      priceBox.className = "w-full text-center text-xl font-black bg-white py-2.5 rounded-xl border-2 border-blue-300 focus:border-blue-600 text-blue-950 outline-none pr-8";
+      priceBox.value = baseKhr > 0 ? baseKhr : "";
+      priceBox.placeholder = "0";
+    }
   }
 
   // បង្ហាញជួរប៊ូតុងជំនួយ +00 តែលើលុយខ្មែរ (KHR) ប៉ុណ្ណោះ
@@ -1103,6 +1133,7 @@ function setModalCurrency(curr) {
 
   updateModalSubtotal();
 }
+
 
 // ==========================================
 // 🪙 មុខងារជំនួយតម្លៃលើផ្ទាំង MODAL (ស្វ័យប្រវត្តិ 00 លើ KHR & ស្គាល់ , ឬ . លើ USD)
