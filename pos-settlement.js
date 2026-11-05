@@ -446,18 +446,34 @@ async function checkAdminPendingPayments() {
 }
 
 async function applyPendingPaymentToSettlement(pendingId, custName, amount, method) {
-  currentActivePendingPaymentId = pendingId;
-  await selectCustomerForSettlement(custName);
-
   try {
+    // 🛡️ ១. ពិនិត្យមើលថាតើសំណើនេះត្រូវបាន Admin ផ្សេងទូទាត់រួចហើយឬនៅ
     const { data: item } = await supabaseClient
       .from('pending_payments')
       .select('*')
       .eq('id', pendingId)
       .maybeSingle();
 
-    var kCash = item ? parseFloat(item.khr_cash || 0) : 0;
-    var kScan = item ? parseFloat(item.khr_scan || 0) : 0;
+    if (!item || item.status !== 'Pending') {
+      if (typeof kcAlert === 'function') {
+        await kcAlert({
+          title: "សំណើបានទូទាត់រួចហើយ!",
+          message: "សំណើបង់ប្រាក់របស់ [" + custName + "] នេះត្រូវបាន Admin ផ្សេងទូទាត់រួចរាល់ហើយ!",
+          type: "info"
+        });
+      } else {
+        showToast("សំណើនេះត្រូវបានទូទាត់រួចហើយ!", "info");
+      }
+      currentActivePendingPaymentId = null;
+      checkAdminPendingPayments();
+      return;
+    }
+
+    currentActivePendingPaymentId = pendingId;
+    await selectCustomerForSettlement(custName);
+
+    var kCash = parseFloat(item.khr_cash || 0);
+    var kScan = parseFloat(item.khr_scan || 0);
 
     if (kCash > 0 && kScan > 0) {
       setSettlePayMode('Split');
@@ -471,10 +487,14 @@ async function applyPendingPaymentToSettlement(pendingId, custName, amount, meth
 
     } else if (method && method.indexOf('ABA') !== -1) {
       setSettlePayMode('ABA');
-      document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+      if (document.getElementById('settlePaidInput')) {
+        document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+      }
     } else {
       setSettlePayMode('Cash');
-      document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+      if (document.getElementById('settlePaidInput')) {
+        document.getElementById('settlePaidInput').value = amount > 0 ? amount : "";
+      }
     }
 
     calcSettleChange();
@@ -780,7 +800,7 @@ function setSettlePayMode(mode) {
   calcSettleChange();
 }
 
-// 💾 មុខងារបញ្ជាក់ការទូទាត់លុយ & ចេញវិក្កយបត្រ (កែសម្រួលជួរទូទាត់បំណុលចាស់ច្បាស់លាស់)
+// 💾 មុខងារបញ្ជាក់ការទូទាត់លុយ & ចេញវិក្កយបត្រ (បិទបញ្ចប់សំណើ Pending ស្វ័យប្រវត្តិ)
 async function submitSettlementPayment() {
   if (isSubmittingSettleLock) return;
 
@@ -839,8 +859,10 @@ async function submitSettlementPayment() {
   }
 
   var btn = document.getElementById('btnSubmitSettlement');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងទូទាត់ប្រាក់...';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> កំពុងទូទាត់ប្រាក់...';
+  }
   isSubmittingSettleLock = true;
 
   try {
@@ -867,10 +889,24 @@ async function submitSettlementPayment() {
     }]);
     if (setErr) throw setErr;
 
-    // ៣. បិទបញ្ចប់សំណើ Pending Payment របស់ម៉ូយ (បើមាន)
-    if (currentActivePendingPaymentId) {
-      await supabaseClient.from('pending_payments').update({ status: 'Approved' }).eq('id', currentActivePendingPaymentId);
+    // ៣. 🔒 បិទបញ្ចប់រាល់សំណើ Pending ទាំងអស់របស់ម៉ូយនេះទៅជា 'Approved'
+    try {
+      if (currentActivePendingPaymentId) {
+        await supabaseClient
+          .from('pending_payments')
+          .update({ status: 'Approved' })
+          .eq('id', currentActivePendingPaymentId);
+      }
+      if (currentSettlementCustomer) {
+        await supabaseClient
+          .from('pending_payments')
+          .update({ status: 'Approved' })
+          .eq('customer_name', currentSettlementCustomer)
+          .eq('status', 'Pending');
+      }
       currentActivePendingPaymentId = null;
+    } catch(penErr) {
+      console.warn("Pending payment update warning:", penErr);
     }
 
     // ៤. ផ្ញើ Telegram Alert
@@ -886,14 +922,16 @@ async function submitSettlementPayment() {
                   "⚠️ <b>នៅជំពាក់សល់៖</b> <b>៛ " + remainingBalance.toLocaleString() + "</b>\n" +
                   "✍️ <b>អ្នកទទួល៖</b> " + (currentUser.fullName || "Admin") + "\n" +
                   "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
-      sendTelegramAlert(tgMsg);
+      if (typeof sendTelegramAlert === 'function') {
+        sendTelegramAlert(tgMsg);
+      }
     } catch(e) {}
 
     // ៥. សំឡេង Chime & បាញ់កាំជ្រួច
-    playPaymentSuccessAudio();
+    if (typeof playPaymentSuccessAudio === 'function') playPaymentSuccessAudio();
     if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
 
-    // ៦. 🧾 បង្កើតវិក្កយបត្ររូបភាព (បន្ថែមជួរបំណុលចាស់ឱ្យស៊ីគ្នានឹងសរុបប្រាក់ ១០០%)
+    // ៦. 🧾 បង្កើតវិក្កយបត្ររូបភាព
     var receiptItems = currentSettlementItems.filter(i => selectedIds.indexOf(i.id) !== -1);
     
     if (includeOldDebt && currentSettlementOldDebt > 0) {
@@ -905,12 +943,15 @@ async function submitSettlementPayment() {
       });
     }
 
-    generateReceiptImage("SET-" + new Date().getTime(), currentSettlementCustomer, totalDue, paid, receiptItems, "វិក្កយបត្រទូទាត់ប្រាក់ (SETTLEMENT)");
+    if (typeof generateReceiptImage === 'function') {
+      generateReceiptImage("SET-" + new Date().getTime(), currentSettlementCustomer, totalDue, paid, receiptItems, "វិក្កយបត្រទូទាត់ប្រាក់ (SETTLEMENT)");
+    }
 
     showToast("បានទូទាត់ប្រាក់ និងជម្រះបញ្ជីជោគជ័យ!", "success");
 
-    // ៧. Refresh ផ្ទាំង Settlement ឡើងវិញ
-    document.getElementById('settlement_ui').classList.add('hidden');
+    // ៧. 🔄 Refresh ផ្ទាំង Settlement & បាត់កាតលឿងភ្លាមៗ
+    var settleUi = document.getElementById('settlement_ui');
+    if (settleUi) settleUi.classList.add('hidden');
     checkAdminPendingPayments();
     fetchSettlementOverviewData();
     await loadSettlementDebtorsList();
@@ -919,7 +960,9 @@ async function submitSettlementPayment() {
     showToast("កំហុសទូទាត់ប្រាក់៖ " + err.message, "error");
   } finally {
     isSubmittingSettleLock = false;
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)';
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-file-invoice-dollar text-xl"></i> ទូទាត់ & ចេញវិក្កយបត្រ (Save Settlement)';
+    }
   }
 }
