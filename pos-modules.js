@@ -1727,7 +1727,7 @@ async function saveUserToSupabase() {
   // 🛒 ៥. បុគ្គលិកលក់នៅកន្លែង (Seller)
   } else if (roleType === 'SELLER') {
     role = 'Seller';
-    type = 'Retail';
+    type = 'Staff';
     user = getElVal('mem_user');
     pass = getElVal('mem_pass');
     if (!user || !pass) { 
@@ -1895,11 +1895,15 @@ function filterUsersModuleTable() {
 
   var html = '';
   filtered.forEach(function(u) {
-    var isOnlineRetail = (u.type === 'Retail' || u.role === 'Retail' || String(u.username || '').startsWith('online_'));
+    // 🛡️ ធានាថា Seller និង Admin មិនច្រឡំជាមួយភ្ញៀវ Online ឡើយ
+    var isSeller = (u.role === 'Seller');
+    var isOnlineRetail = !isSeller && u.role !== 'Admin' && (u.type === 'Retail' || u.role === 'Retail' || String(u.username || '').startsWith('online_'));
     var badgeHtml = '';
 
     if (u.type === 'Monthly') {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300">🏢 ប្រចាំខែ</span>';
+    } else if (isSeller) {
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-900 border border-blue-300">🛒 បុគ្គលិកលក់</span>';
     } else if (isOnlineRetail) {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🌐 ភ្ញៀវ Online</span>';
     } else if (u.type === 'CompanyDriver') {
@@ -1908,14 +1912,14 @@ function filterUsersModuleTable() {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-amber-100 text-amber-900 border border-amber-300">🛵 កូនចៅដកទឹក (មេ: ' + (u.linked_boss || '-') + ')</span>';
     } else if (u.role === 'Admin') {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-900">👑 Admin</span>';
-    } else if (u.role === 'Seller') {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-900">🛒 បុគ្គលិកលក់</span>';
     } else {
       badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800">🚚 អ្នកលក់បន្ត</span>';
     }
 
     var credsText = '';
-    if (isOnlineRetail) {
+    if (isSeller) {
+      credsText = '<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
+    } else if (isOnlineRetail) {
       var locInfo = u.linked_boss ? String(u.linked_boss).trim() : '';
       var mapDisplay = '';
       if (locInfo.indexOf('http') !== -1) {
