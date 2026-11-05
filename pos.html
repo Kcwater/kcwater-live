@@ -251,10 +251,14 @@
         <span id="modalSubtotalText" class="font-black text-base text-blue-700">0 ៛</span>
       </div>
 
-      <!-- ប៊ូតុង ២៖ គិតលុយភ្លាមៗ (Quick Pay) vs បញ្ចូលកន្ត្រក -->
+      <!-- ប៊ូតុង ២ ត្រឹមត្រូវ៖ គិតលុយភ្លាមៗ (Quick Pay) vs បញ្ចូលកន្ត្រក -->
       <div class="grid grid-cols-2 gap-2 pt-1">
-        <button type="button" onclick="sharePOSReceiptImage()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition"><i class="fas fa-share-nodes"></i> ផ្ញើ Telegram</button>
-        <button type="button" onclick="downloadPOSReceiptImage()" id="posModalReceiptDownloadBtn" class="py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 active:scale-95 transition"><i class="fas fa-download"></i> ទាញយក PNG</button>
+        <button type="button" id="btnModalQuickPay" onclick="quickCheckoutSingleItem()" class="py-3 bg-gradient-to-r from-blue-600 to-indigo-700 hover:opacity-95 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i class="fas fa-bolt text-yellow-300"></i> ទូទាត់រហ័ស
+        </button>
+        <button type="button" id="btnModalAddToCart" onclick="confirmAddToCart()" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i class="fas fa-cart-plus"></i> បញ្ចូលកន្ត្រក
+        </button>
       </div>
 
     </div>
