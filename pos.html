@@ -165,10 +165,17 @@
           <span id="navOnlineOrdersCount" class="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-red-600 text-white text-[9px] sm:text-[10px] flex items-center justify-center font-black animate-pulse">0</span>
         </button>
 
+        <!-- 🔔 ប៊ូតុងកណ្តឹងជូនដំណឹង (Notification Center) -->
+        <button type="button" id="navNotificationBellBtn" onclick="openNotificationCenterModal()" class="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-green-800 hover:bg-green-900 text-yellow-300 hover:text-yellow-200 flex items-center justify-center text-xs shadow-inner active:scale-90 transition border border-green-600 shrink-0" title="មជ្ឈមណ្ឌលជូនដំណឹង">
+          <i class="fas fa-bell"></i>
+          <span id="navNotificationTotalBadge" class="hidden absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center animate-pulse border border-white">0</span>
+        </button>
+
         <!-- 🔄 ប៊ូតុង Refresh Web -->
         <button type="button" onclick="triggerAppSmartRefresh()" ondblclick="triggerAppSmartRefresh(true)" id="navQuickRefreshBtn" title="ចុច ១ដង=ទាញទិន្នន័យថ្មី | ចុច ២ដង=ទាញកូដថ្មី" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-green-800 hover:bg-green-900 text-green-200 hover:text-white flex items-center justify-center text-xs shadow-inner active:scale-90 transition border border-green-600 shrink-0">
           <i id="navRefreshSpinIcon" class="fas fa-rotate"></i>
         </button>
+        ​​
 
         <!-- 👤 ប្រអប់ឈ្មោះ Admin (បង្រួមតូចល្មមលើទូរស័ព្ទ) -->
         <div id="userInfo" class="text-[9.5px] sm:text-[10px] bg-green-800 px-2 sm:px-3 py-1 rounded-full border border-green-600 font-bold uppercase shadow-inner whitespace-nowrap truncate max-w-[85px] sm:max-w-xs shrink-0" title="Admin KC WATER">Admin</div>
