@@ -262,9 +262,10 @@ function closeSidebar() {
   if (bd) bd.classList.remove('active');
 }
 
-// ⚙️ ៥. ទាញយកការកំណត់ SETTINGS & TELEGRAM BOT ពី SUPABASE
+// ⚙️ ៥. ទាញយកការកំណត់ SETTINGS, TELEGRAM BOT & រូប ABA QR ពី SUPABASE
 var exchangeRateUSD = 4100;
 var exchangeRateTHB = 115;
+var storeAbaQrCodeBase64 = "";
 
 async function loadSettingsAndTelegram() {
   try {
@@ -277,6 +278,15 @@ async function loadSettingsAndTelegram() {
         if (r.key === 'Telegram_Alert_Status') telegramConfig.status = r.value.toUpperCase();
         if (r.key === 'Exchange_Rate_USD') exchangeRateUSD = parseFloat(r.value) || 4100;
         if (r.key === 'Exchange_Rate_THB') exchangeRateTHB = parseFloat(r.value) || 115;
+
+        // 📱 ទាញយករូប ABA KHQR មកដាក់លើផ្ទាំងស្កេនលុយ POS និងសំណើម៉ូយភ្លាមៗ
+        if (r.key === 'Store_ABA_QR' && r.value && r.value.trim()) {
+          storeAbaQrCodeBase64 = r.value.trim();
+          var posModalQrImg = document.querySelector('#posKhqrModal img');
+          if (posModalQrImg) posModalQrImg.src = storeAbaQrCodeBase64;
+          var custModalQrImg = document.querySelector('#custQrSection img');
+          if (custModalQrImg) custModalQrImg.src = storeAbaQrCodeBase64;
+        }
       });
     }
   } catch(e) {
@@ -534,4 +544,27 @@ function kcPrompt(opts) {
     backdrop.onclick = function() { cleanUp(null); };
     inputEl.onkeyup = function(e) { if (e.key === 'Enter') cleanUp(inputEl.value.trim()); };
   });
+}
+
+// ==========================================
+// 👓 ប្រព័ន្ធកំណត់ទំហំអក្សរប្រព័ន្ធ (FONT SIZE SCALING ENGINE)
+// ==========================================
+function setAppFontSize(scalePercent) {
+  scalePercent = parseInt(scalePercent) || 100;
+  localStorage.setItem('kc_font_scale', scalePercent);
+  
+  // កែប្រែទំហំអក្សរគោល ធ្វើឱ្យគ្រប់ផ្ទាំងទាំងអស់រីកធំតាមសមមាត្រ ១០០%
+  document.documentElement.style.fontSize = (scalePercent * 0.16) + 'px';
+}
+
+function initAppFontSize() {
+  var savedScale = localStorage.getItem('kc_font_scale') || 100;
+  setAppFontSize(savedScale);
+}
+
+// ដំណើរការកំណត់ទំហំអក្សរភ្លាមៗពេលបើកទំព័រ
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppFontSize, { once: true });
+} else {
+  initAppFontSize();
 }
