@@ -7,208 +7,241 @@
 var editingProductId = null;
 var custPortalDataCache = null;
 var currentCustPayMode = "ABA";
+var currentPromoRules = [];
+var currentTelegramAlertStatus = "ON";
 
-// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (មានភ្ជាប់ប្រអប់រើសដេប៉ូដៃគូផ្គត់ផ្គង់)
+// ==========================================================================
+// 📦 ១. គ្រប់គ្រងស្តុក & បង្កើតទំនិញ (ពេញអេក្រង់ PC + ២ ជួរលើ Desktop + សមមាត្រលើទូរស័ព្ទ)
+// ==========================================================================
 function renderStockModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
   var aid = "P-" + Math.floor(Math.random() * 9000 + 1000);
   editingProductId = null;
 
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    '<div class="card border-t-4 border-green-700 shadow-xl">' +
-      '<div class="flex justify-between items-center mb-4 border-b pb-2">' +
-        '<h2 id="prodFormTitle" class="font-extrabold text-green-900 text-base sm:text-lg flex items-center gap-2">' +
-          '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (KC MART Products)' +
-        '</h2>' +
-        '<button type="button" id="btnCancelEditProd" onclick="cancelEditProduct()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
-          '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
-        '</button>' +
-      '</div>' +
-      '<div class="grid gap-3">' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="text" id="pI" value="' + aid + '" readonly class="bg-gray-100 font-bold text-blue-600 text-xs border p-2.5 rounded-xl">' +
-          '<input type="text" id="pN" placeholder="*ឈ្មោះទំនិញ (ឧ៖ ក្រដាស ត្រាដំរី ឬ អង្ករផ្កាម្លិះ)" class="font-bold border p-2.5 rounded-xl text-xs outline-none focus:border-green-600">' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    
+    // ជួរខាងលើ៖ បង្កើតទំនិញ (ឆ្វេង ៧ ភាគ) + បញ្ចូលស្តុក (ស្តាំ ៥ ភាគ) លើ PC ធំ
+    '<div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">' +
+      
+      // កាតទី ១៖ ទម្រង់បង្កើត & កែប្រែទំនិញ (lg:col-span-7)
+      '<div class="lg:col-span-7 card border-t-4 border-green-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<div class="flex justify-between items-center mb-3 border-b pb-2">' +
+          '<h2 id="prodFormTitle" class="font-extrabold text-green-900 text-xs sm:text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-boxes-stacked text-green-600"></i>គ្រប់គ្រងទំនិញ (KC MART Products)' +
+          '</h2>' +
+          '<button type="button" id="btnCancelEditProd" onclick="cancelEditProduct()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
+            '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
+          '</button>' +
         '</div>' +
-
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<select id="pTy" onchange="tCF()" class="border p-2.5 rounded-xl font-bold text-xs bg-white">' +
-            '<option value="ផលិតឯង">ផលិតខ្លួនឯង (ទឹកធុង)</option>' +
-            '<option value="ទិញគេ" selected>ទិញគេមកលក់បន្ត (គ្រឿងទេស/ក្រដាស/អង្ករ/បរិក្ខារ)</option>' +
-          '</select>' +
-          '<select id="pCu" onchange="updateProductCostPreviewLive()" class="border-2 border-blue-300 p-2.5 rounded-xl font-black text-xs bg-blue-50/50 text-blue-950">' +
-            '<option value="KHR">KHR (៛) - លុយខ្មែរ</option>' +
-            '<option value="THB">THB (฿) - លុយថៃ</option>' +
-            '<option value="USD">USD ($) - ដុល្លារ</option>' +
-          '</select>' +
-        '</div>' +
-
-        '<div id="cSec" style="display:block" class="space-y-2">' +
+        '<div class="grid gap-2.5">' +
           '<div class="grid grid-cols-2 gap-2">' +
-            '<div>' +
-              '<div class="flex justify-between items-center mb-1">' +
-                '<label class="text-[10px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>' +
-                '<span id="pCoPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
+            '<input type="text" id="pI" value="' + aid + '" readonly class="bg-gray-100 font-bold text-blue-600 text-xs border p-2 rounded-xl">' +
+            '<input type="text" id="pN" placeholder="*ឈ្មោះទំនិញ (ឧ៖ ក្រដាស ត្រាដំរី ឬ អង្ករផ្កាម្លិះ)" class="font-bold border p-2 rounded-xl text-xs outline-none focus:border-green-600">' +
+          '</div>' +
+
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<select id="pTy" onchange="tCF()" class="border p-2 rounded-xl font-bold text-xs bg-white">' +
+              '<option value="ផលិតឯង">ផលិតខ្លួនឯង (ទឹកធុង)</option>' +
+              '<option value="ទិញគេ" selected>ទិញគេមកលក់បន្ត (គ្រឿងទេស/ក្រដាស/បរិក្ខារ)</option>' +
+            '</select>' +
+            '<select id="pCu" onchange="updateProductCostPreviewLive()" class="border-2 border-blue-300 p-2 rounded-xl font-black text-xs bg-blue-50/50 text-blue-950">' +
+              '<option value="KHR">KHR (៛) - លុយខ្មែរ</option>' +
+              '<option value="THB">THB (฿) - លុយថៃ</option>' +
+              '<option value="USD">USD ($) - ដុល្លារ</option>' +
+            '</select>' +
+          '</div>' +
+
+          '<div id="cSec" style="display:block" class="space-y-2">' +
+            '<div class="grid grid-cols-2 gap-2">' +
+              '<div>' +
+                '<div class="flex justify-between items-center mb-0.5">' +
+                  '<label class="text-[9.5px] font-bold text-gray-500 uppercase">ថ្លៃដើមទិញចូល (Cost)</label>' +
+                  '<span id="pCoPreviewHint" class="text-[9.5px] font-black text-emerald-700"></span>' +
+                '</div>' +
+                '<input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
               '</div>' +
-              '<input type="number" id="pCo" oninput="updateProductCostPreviewLive()" placeholder="ថ្លៃដើម (ឧ៖ ៤,០០០)" class="border p-2.5 rounded-xl font-bold w-full text-xs outline-none focus:border-green-600">' +
+              '<div>' +
+                '<div class="flex justify-between items-center mb-0.5">' +
+                  '<label class="text-[9.5px] font-black text-blue-900 uppercase">📦 ស្តុកដំបូង *</label>' +
+                  '<span class="text-[9px] text-slate-400 font-bold">*លើ Web</span>' +
+                '</div>' +
+                '<input type="number" id="pInitialStock" placeholder="ឧ៖ 50" value="50" class="border-2 border-blue-300 focus:border-blue-600 p-2 rounded-xl font-black text-blue-900 w-full text-xs outline-none bg-blue-50/30">' +
+              '</div>' +
+            '</div>' +
+
+            // ដេប៉ូដៃគូផ្គត់ផ្គង់
+            '<div class="p-2 bg-rose-50/70 rounded-xl border border-rose-200 space-y-1">' +
+              '<div class="flex justify-between items-center">' +
+                '<label class="text-[9.5px] font-black text-rose-950 uppercase flex items-center gap-1">' +
+                  '<i class="fas fa-shop-lock text-rose-600"></i> ដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot) *' +
+                '</label>' +
+                '<span id="pDepotTermsBadge"></span>' +
+              '</div>' +
+              '<select id="pSupplierDepot" onchange="onProductDepotChange()" class="border-2 border-rose-300 focus:border-rose-600 p-1.5 rounded-xl font-black w-full text-xs bg-white text-rose-950 outline-none"></select>' +
+            '</div>' +
+          '</div>' +
+
+          // ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
+          '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ប៉ុស្តិ៍លក់ *</label>' +
+              '<select id="pChannel" onchange="toggleChannelPrices()" class="border-2 border-emerald-400 p-2 rounded-xl font-bold w-full text-xs bg-white">' +
+                '<option value="ALL">🔄 ទាំងពីរ (POS + Web)</option>' +
+                '<option value="POS">🚚 លក់តែលើ POS</option>' +
+                '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
+              '</select>' +
+            '</div>' +
+
+            '<div>' +
+              '<label class="text-[9.5px] font-black text-blue-900 uppercase block mb-0.5">📂 ប្រភេទ *</label>' +
+              '<select id="pCategory" class="border-2 border-blue-400 p-2 rounded-xl font-black w-full text-xs bg-blue-50/50 text-blue-950 outline-none">' +
+                '<option value="GROCERY">🍚 ស្បៀង & គ្រឿងទេស</option>' +
+                '<option value="HOUSEHOLD">🧻 របស់ប្រើប្រាស់</option>' +
+                '<option value="BARREL">💧 ទឹកធុង ២០L</option>' +
+                '<option value="PACK">📦 ទឹកយួរ / ដប</option>' +
+                '<option value="EQUIP">🛢️ បរិក្ខារ & ជើងទម្រ</option>' +
+              '</select>' +
+            '</div>' +
+
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">🏷️ ផ្លាក Web</label>' +
+              '<select id="pBadge" class="border p-2 rounded-xl font-bold w-full text-xs bg-white">' +
+                '<option value="គុណភាពខ្ពស់">🏆 គុណភាពខ្ពស់</option>' +
+                '<option value="ពេញនិយម">⭐ ពេញនិយម</option>' +
+                '<option value="លក់ដាច់">🔥 លក់ដាច់</option>' +
+                '<option value="ទំនិញថ្មី">✨ ទំនិញថ្មី</option>' +
+                '<option value="NONE">❌ គ្មានផ្លាក</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>' +
+
+          // ប្រអប់តម្លៃ (POS vs Online)
+          '<div id="priceInputsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-emerald-50/60 p-2.5 rounded-2xl border border-emerald-200">' +
+            '<div id="secPosPrice">' +
+              '<div class="flex justify-between items-center mb-0.5">' +
+                '<label class="text-[9.5px] font-extrabold text-amber-900 uppercase">🚚 តម្លៃបោះដុំ (POS) *</label>' +
+                '<span id="pPrPreviewHint" class="text-[9.5px] font-black text-amber-700"></span>' +
+              '</div>' +
+              '<input type="number" id="pPr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2 w-full outline-none text-xs sm:text-sm">' +
+            '</div>' +
+            '<div id="secOnlinePrice">' +
+              '<div class="flex justify-between items-center mb-0.5">' +
+                '<label class="text-[9.5px] font-extrabold text-emerald-900 uppercase">🌐 តម្លៃលក់លើ Web *</label>' +
+                '<span id="pOnlinePrPreviewHint" class="text-[9.5px] font-black text-emerald-700"></span>' +
+              '</div>' +
+              '<input type="number" id="pOnlinePr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2 w-full outline-none text-xs sm:text-sm">' +
+            '</div>' +
+          '</div>' +
+
+          // ការពិពណ៌នា
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-emerald-900 uppercase block mb-0.5"><i class="fas fa-file-lines text-emerald-600 mr-1"></i> ការរៀបរាប់ទំនិញ (Description លើ Web)</label>' +
+            '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ អង្ករផ្កាម្លិះគុណភាពលេខ១ ក្រអូប ស្រទន់ ឆ្ងាញ់..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
+          '</div>' +
+
+          '<div class="grid grid-cols-3 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-black text-blue-900 uppercase block mb-0.5">🔢 លេខ POS</label>' +
+              '<input type="number" id="pSortPos" placeholder="1" value="1" class="border-2 border-blue-300 focus:border-blue-600 p-1.5 rounded-xl font-black w-full text-xs text-center text-blue-900 bg-blue-50/50 outline-none">' +
             '</div>' +
             '<div>' +
-              '<div class="flex justify-between items-center mb-1">' +
-                '<label class="text-[10px] font-black text-blue-900 uppercase">📦 ចំនួនស្តុកដំបូង (Stock) *</label>' +
-                '<span class="text-[9px] text-slate-400 font-bold">*សម្រាប់លក់លើ Web</span>' +
+              '<label class="text-[9.5px] font-black text-emerald-900 uppercase block mb-0.5">🌐 លេខ Web</label>' +
+              '<input type="number" id="pSortOnline" placeholder="1" value="1" class="border-2 border-emerald-300 focus:border-emerald-600 p-1.5 rounded-xl font-black w-full text-xs text-center text-emerald-900 bg-emerald-50/50 outline-none">' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ដំណឹងស្តុកទាប</label>' +
+              '<input type="number" id="pMin" placeholder="5" value="5" class="border p-1.5 rounded-xl font-bold w-full text-xs text-center outline-none">' +
+            '</div>' +
+          '</div>' +
+
+          // រូបភាព
+          '<div class="p-2.5 bg-gray-50 border-2 border-dashed border-green-300 rounded-2xl flex items-center justify-between gap-2">' +
+            '<div class="flex items-center gap-2">' +
+              '<div class="w-12 h-12 rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-inner shrink-0">' +
+                '<img id="pImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-w-full max-h-full object-contain">' +
               '</div>' +
-              '<input type="number" id="pInitialStock" placeholder="ឧ៖ 50 ឬ 10" value="50" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black text-blue-900 w-full text-xs outline-none bg-blue-50/30">' +
+              '<div>' +
+                '<span class="text-[10px] font-bold text-gray-600 block">រូបភាពទំនិញ</span>' +
+                '<p id="pImgNote" class="text-[9px] text-gray-400">ថតរូប ឬរើសពីទូរស័ព្ទ</p>' +
+              '</div>' +
             '</div>' +
-          '</div>' +
-
-          // 🏬 ប្រអប់ជ្រើសរើសដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot)
-          '<div class="p-2.5 bg-rose-50/70 rounded-2xl border-2 border-rose-200 space-y-1">' +
-            '<div class="flex justify-between items-center">' +
-              '<label class="text-[10px] font-black text-rose-950 uppercase flex items-center gap-1">' +
-                '<i class="fas fa-shop-lock text-rose-600"></i> ដេប៉ូដៃគូផ្គត់ផ្គង់ (Supplier Depot) *' +
-              '</label>' +
-              '<span id="pDepotTermsBadge"></span>' +
-            '</div>' +
-            '<select id="pSupplierDepot" onchange="onProductDepotChange()" class="border-2 border-rose-300 focus:border-rose-600 p-2 rounded-xl font-black w-full text-xs bg-white text-rose-950 outline-none"></select>' +
-          '</div>' +
-        '</div>' +
-  
-        // 🏷️ ប៉ុស្តិ៍លក់, ប្រភេទទំនិញ, និង ផ្លាកសម្គាល់
-        '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប៉ុស្តិ៍លក់ (Channel) *</label>' +
-            '<select id="pChannel" onchange="toggleChannelPrices()" class="border-2 border-emerald-400 p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
-              '<option value="ALL">🔄 ទាំងពីរ (POS + Web)</option>' +
-              '<option value="POS">🚚 លក់តែលើ POS ដេប៉ូ</option>' +
-              '<option value="ONLINE">🌐 លក់តែលើ Web</option>' +
-            '</select>' +
-          '</div>' +
-
-          '<div>' +
-            '<label class="text-[10px] font-black text-blue-900 uppercase block mb-1">📂 ប្រភេទទំនិញ (Category) *</label>' +
-            '<select id="pCategory" class="border-2 border-blue-400 p-2.5 rounded-xl font-black w-full text-xs bg-blue-50/50 text-blue-950 outline-none">' +
-              '<option value="GROCERY">🍚 ស្បៀង & គ្រឿងទេស</option>' +
-              '<option value="HOUSEHOLD">🧻 របស់ប្រើប្រាស់ & អនាម័យ</option>' +
-              '<option value="BARREL">💧 ទឹកធុង ២០L</option>' +
-              '<option value="PACK">📦 ទឹកយួរ / ដប</option>' +
-              '<option value="EQUIP">🛢️ បរិក្ខារ & ជើងទម្រ</option>' +
-            '</select>' +
-          '</div>' +
-
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">🏷️ ផ្លាកលើ Web (Badge)</label>' +
-            '<select id="pBadge" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
-              '<option value="គុណភាពខ្ពស់">🏆 គុណភាពខ្ពស់</option>' +
-              '<option value="ពេញនិយម">⭐ ពេញនិយម (Popular)</option>' +
-              '<option value="លក់ដាច់">🔥 លក់ដាច់ (Best Seller)</option>' +
-              '<option value="ទំនិញថ្មី">✨ ទំនិញថ្មី (New Arrival)</option>' +
-              '<option value="NONE">❌ គ្មានផ្លាក</option>' +
-            '</select>' +
-          '</div>' +
-        '</div>' +
-
-        // 💵 ប្រអប់តម្លៃ (POS vs Online)
-        '<div id="priceInputsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200">' +
-          '<div id="secPosPrice">' +
-            '<div class="flex justify-between items-center mb-1">' +
-              '<label class="text-[10px] font-extrabold text-amber-900 uppercase">🚚 តម្លៃបោះដុំដេប៉ូ (POS) *</label>' +
-              '<span id="pPrPreviewHint" class="text-[10px] font-black text-amber-700"></span>' +
-            '</div>' +
-            '<input type="number" id="pPr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ៦០០" class="font-black text-amber-900 bg-white border border-amber-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
-          '</div>' +
-          '<div id="secOnlinePrice">' +
-            '<div class="flex justify-between items-center mb-1">' +
-              '<label class="text-[10px] font-extrabold text-emerald-900 uppercase">🌐 តម្លៃលក់លើ Web តាមផ្ទះ *</label>' +
-              '<span id="pOnlinePrPreviewHint" class="text-[10px] font-black text-emerald-700"></span>' +
-            '</div>' +
-            '<input type="number" id="pOnlinePr" oninput="updateProductCostPreviewLive()" placeholder="ឧ៖ ១៥០០" class="font-black text-emerald-800 bg-white border border-emerald-300 rounded-xl p-2.5 w-full outline-none text-sm">' +
-          '</div>' +
-        '</div>' +
-
-        // ការពិពណ៌នា
-        '<div>' +
-          '<label class="text-[10px] font-bold text-emerald-900 uppercase block mb-1"><i class="fas fa-file-lines text-emerald-600 mr-1"></i> ការរៀបរាប់ពីមុខទំនិញ (Description បង្ហាញលើ Web)</label>' +
-          '<textarea id="pDesc" rows="2" placeholder="ឧទាហរណ៍៖ អង្ករផ្កាម្លិះគុណភាពលេខ១ ក្រអូប ស្រទន់ ឆ្ងាញ់..." class="border-2 border-emerald-200 focus:border-emerald-600 p-2.5 rounded-xl font-bold w-full text-xs outline-none bg-white"></textarea>' +
-        '</div>' +
-
-        '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">' +
-          '<div>' +
-            '<label class="text-[10px] font-black text-blue-900 uppercase block mb-1">🔢 លេខ POS</label>' +
-            '<input type="number" id="pSortPos" placeholder="ឧ៖ 1" value="1" class="border-2 border-blue-300 focus:border-blue-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-blue-900 bg-blue-50/50 outline-none">' +
-          '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-black text-emerald-900 uppercase block mb-1">🌐 លេខ Web</label>' +
-            '<input type="number" id="pSortOnline" placeholder="ឧ៖ 1" value="1" class="border-2 border-emerald-300 focus:border-emerald-600 p-2.5 rounded-xl font-black w-full text-xs text-center text-emerald-900 bg-emerald-50/50 outline-none">' +
-          '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">កម្រិតដំណឹងស្តុកទាប</label>' +
-            '<input type="number" id="pMin" placeholder="ឧ៖ 5" value="5" class="border p-2.5 rounded-xl font-bold w-full text-xs text-center outline-none">' +
-          '</div>' +
-        '</div>' +
-
-        // រូបភាព
-        '<div class="p-3 bg-gray-50 border-2 border-dashed border-green-300 rounded-2xl text-center space-y-2">' +
-          '<div class="w-20 h-20 mx-auto rounded-xl bg-white border flex items-center justify-center overflow-hidden shadow-inner">' +
-            '<img id="pImgPreview" src="https://cdn-icons-png.flaticon.com/512/3100/3100566.png" class="max-w-full max-h-full object-contain">' +
-          '</div>' +
-          '<div>' +
-            '<label class="cursor-pointer px-4 py-2 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs shadow-md inline-flex items-center gap-1.5 active:scale-95 transition">' +
-              '<i class="fas fa-camera"></i> 📷 ជ្រើសរើសរូបភាព / ថតរូប' +
+            '<label class="cursor-pointer px-3 py-1.5 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs shadow-md inline-flex items-center gap-1 active:scale-95 transition whitespace-nowrap">' +
+              '<i class="fas fa-camera"></i> 📷 រើសរូប' +
               '<input type="file" id="pImgFileInput" accept="image/*" onchange="previewProductImageFile(this)" class="hidden">' +
             '</label>' +
             '<input type="hidden" id="pImgBase64" value="">' +
-            '<p id="pImgNote" class="text-[10px] text-gray-400 mt-1">អាចថតរូប ឬជ្រើសរូបភាពពីទូរស័ព្ទ</p>' +
           '</div>' +
-        '</div>' +
-        '<button onclick="saveProductToSupabase()" id="btnSaveProdAction" class="btn-green py-3 text-sm font-bold shadow-md">' +
-          'រក្សាទុកទំនិញ (Save Product)' +
-        '</button>' +
-      '</div>' +
-    '</div>' +
 
-    '<div class="card border-t-4 border-blue-500 shadow-lg">' +
-      '<h3 class="font-bold text-blue-900 mb-3 text-sm flex items-center gap-1.5"><i class="fas fa-plus-square text-blue-600"></i>បញ្ចូលស្តុកថ្មី (Restock In)</h3>' +
-      '<div class="grid grid-cols-2 gap-3">' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ជ្រើសរើសទំនិញទិញចូល</label>' +
-          '<select id="si_prod" onchange="onStockInProductSelected()" class="text-xs font-bold border p-2.5 rounded-xl w-full bg-white"><option value="">-- រើសទំនិញ --</option></select>' +
-        '</div>' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ចំនួនទិញចូលបន្ថែម (*)</label>' +
-          '<input type="number" id="si_qty" placeholder="ឧ៖ 50" class="border p-2.5 rounded-xl font-bold text-center w-full text-sm">' +
+          '<button onclick="saveProductToSupabase()" id="btnSaveProdAction" class="btn-green py-2.5 text-xs sm:text-sm font-bold shadow-md">' +
+            'រក្សាទុកទំនិញ (Save Product)' +
+          '</button>' +
         '</div>' +
       '</div>' +
-      '<div class="mt-2.5">' +
-        '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ថ្លៃដើមទិញចូលលើកនេះ (បើតម្លៃប្រែប្រួល)</label>' +
-        '<input type="number" id="si_cost" placeholder="ថ្លៃដើមថ្មី" class="border p-2.5 rounded-xl font-bold w-full text-xs bg-white">' +
-        '<p id="si_cost_hint" class="text-[10px] text-blue-600 font-bold mt-1"></p>' +
-      '</div>' +
-      '<button onclick="saveStockInToSupabase()" id="btnSaveStockInAction" class="btn-green bg-blue-600 hover:bg-blue-700 mt-3 font-bold py-3 text-xs">យល់ព្រមបញ្ចូលស្តុក</button>' +
-    '</div>' +
 
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2 px-1">' +
+      // កាតទី ២៖ ទម្រង់បញ្ចូលស្តុកថ្មី Restock In (lg:col-span-5)
+      '<div class="lg:col-span-5 card border-t-4 border-blue-500 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h3 class="font-bold text-blue-900 mb-2.5 text-xs sm:text-sm flex items-center gap-1.5">' +
+          '<i class="fas fa-plus-square text-blue-600"></i>បញ្ចូលស្តុកថ្មី (Restock In)' +
+        '</h3>' +
+        '<div class="space-y-2.5">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ជ្រើសរើសទំនិញទិញចូល (*)</label>' +
+            '<select id="si_prod" onchange="onStockInProductSelected()" class="text-xs font-bold border p-2 rounded-xl w-full bg-white outline-none"><option value="">-- រើសទំនិញ --</option></select>' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចំនួនទិញចូលបន្ថែម (*)</label>' +
+            '<input type="number" id="si_qty" placeholder="ឧ៖ 50" class="border p-2 rounded-xl font-bold text-center w-full text-xs sm:text-sm outline-none">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ថ្លៃដើមទិញចូលលើកនេះ (បើតម្លៃប្រែប្រួល)</label>' +
+            '<input type="number" id="si_cost" placeholder="ថ្លៃដើមថ្មី" class="border p-2 rounded-xl font-bold w-full text-xs bg-white outline-none">' +
+            '<p id="si_cost_hint" class="text-[9.5px] text-blue-600 font-bold mt-0.5"></p>' +
+          '</div>' +
+          '<button onclick="saveStockInToSupabase()" id="btnSaveStockInAction" class="btn-green bg-blue-600 hover:bg-blue-700 mt-2 font-bold py-2.5 text-xs shadow-md">' +
+            'យល់ព្រមបញ្ចូលស្តុក' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+
+    '</div>' + // បិទ grid ខាងលើ
+
+    // ជួរកណ្តាល៖ ប៊ូតុង Filter View & Auto-Fix
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-1 px-1">' +
       '<div class="flex items-center gap-1 bg-gray-100 p-1 rounded-xl text-xs">' +
         '<button type="button" onclick="switchStockSortView(\'WEB\')" id="btnSortViewWEB" class="px-3 py-1.5 rounded-lg transition bg-white text-emerald-800 shadow-xs font-black">🌐 មើលតាមលំដាប់ Web</button>' +
         '<button type="button" onclick="switchStockSortView(\'POS\')" id="btnSortViewPOS" class="px-3 py-1.5 rounded-lg transition text-gray-500 hover:text-gray-800 font-bold">🚚 មើលតាមលំដាប់ POS</button>' +
       '</div>' +
-      '<button type="button" onclick="autoFixAllSortDuplicates()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
-        '<i class="fas fa-wand-magic-sparkles text-yellow-300"></i> ⚡ រៀបលេខរៀងឡើងវិញកុំឱ្យស្ទួន (Auto-Fix)' +
+      '<button type="button" onclick="autoFixAllSortDuplicates()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5 self-end sm:self-auto">' +
+        '<i class="fas fa-wand-magic-sparkles text-yellow-300"></i> ⚡ រៀបលេខរៀងឡើងវិញកុំឱ្យស្ទួន' +
       '</button>' +
     '</div>' +
 
-    '<div class="card p-0 overflow-x-auto max-h-[500px] overflow-y-auto shadow-lg rounded-2xl border border-gray-200">' +
+    // ជួរក្រោម៖ តារាងទំនិញពេញទទឹងអេក្រង់ PC (Full Width Table)
+    '<div class="card p-0 overflow-x-auto max-h-[550px] overflow-y-auto shadow-xl rounded-2xl border border-gray-200 bg-white">' +
       '<table class="w-full text-left text-xs border-collapse">' +
-        '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs"><tr><th class="p-3 text-center w-16">🔢 លេខរៀង</th><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th><th class="p-3 text-center">តម្លៃដេប៉ូ / Web</th><th class="p-3 text-center">ស្តុក</th><th class="p-3 text-center">សកម្មភាព</th></tr></thead>' +
+        '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+          '<tr>' +
+            '<th class="p-2.5 sm:p-3 text-center w-16">🔢 លេខរៀង</th>' +
+            '<th class="p-2.5 sm:p-3 text-center w-14">រូប</th>' +
+            '<th class="p-2.5 sm:p-3">ឈ្មោះទំនិញ</th>' +
+            '<th class="p-2.5 sm:p-3 text-center">ប៉ុស្តិ៍ / ប្រភេទ</th>' +
+            '<th class="p-2.5 sm:p-3 text-center">តម្លៃដេប៉ូ / Web</th>' +
+            '<th class="p-2.5 sm:p-3 text-center">ស្តុក</th>' +
+            '<th class="p-2.5 sm:p-3 text-center w-20">សកម្មភាព</th>' +
+          '</tr>' +
+        '</thead>' +
         '<tbody id="stockModuleTableBody"></tbody>' +
       '</table>' +
     '</div>' +
+
   '</div>';
 
   tCF();
   toggleChannelPrices();
   initStockModuleDropdowns();
 
-  // 📂 ផ្ទុក Category & ដេប៉ូដៃគូ មកដាក់ក្នុង Dropdown ស្វ័យប្រវត្តិ
   loadCategoriesFromSupabase().then(function() {
     populateProductCategoryDropdown();
   });
@@ -233,7 +266,6 @@ function renderStockModule() {
     }
   }
 }
-
 
 // 🪙 មុខងារជំនួយគណនាបំប្លែងលុយថៃ ฿ និងដុល្លារ $ ចេញជាលុយខ្មែរ ៛ ភ្លាមៗ (Live Preview)
 function updateProductCostPreviewLive() {
@@ -423,12 +455,18 @@ function switchStockSortView(tab) {
   renderStockTableRows();
 }
 
-// 📋 មុខងារបង្ហាញតារាងទំនិញ (មានបង្ហាញឈ្មោះដេប៉ូផ្គត់ផ្គង់ & ប៊ូតុង ⬆️ ⬇️ រៀបលំដាប់)
+// 📋 មុខងារបង្ហាញតារាងទំនិញ (ចាក់សោរមិនឱ្យធ្លាក់អក្សរ «ទាំងពីរ» និងរៀបរយលើអេក្រង់តូច ១០០%)
 function renderStockTableRows() {
   var tbody = document.getElementById('stockModuleTableBody');
   if (!tbody) return;
-  var html = '';
 
+  // 🛡️ កំណត់ទទឹងអប្បបរមាកុំឱ្យតារាងច្របាច់ធ្លាក់អក្សរលើទូរស័ព្ទ (អាចរំកិល Scroll បានរលូន)
+  var tableEl = tbody.closest('table');
+  if (tableEl) {
+    tableEl.style.minWidth = "740px";
+  }
+
+  var html = '';
   var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
   var isWebTab = (currentStockViewTab === 'WEB');
@@ -464,7 +502,6 @@ function renderStockTableRows() {
     var rawOnline = parseFloat(p.online_price || p.price || 0);
     var rawCost = parseFloat(p.cost || 0);
 
-    // 🪙 គណនាបំប្លែងលុយខ្មែរ (៛) ស្វ័យប្រវត្តិតាមរូបិយប័ណ្ណ
     var wholesaleKhr = rawWholesale;
     var onlineKhr = rawOnline;
     var costKhr = rawCost;
@@ -477,29 +514,30 @@ function renderStockTableRows() {
       wholesaleKhr = Math.round(rawWholesale * rateUSD);
       onlineKhr = Math.round(rawOnline * rateUSD);
       costKhr = Math.round(rawCost * rateUSD);
-      prWholesaleText = '$ ' + rawWholesale.toFixed(2) + ' <span class="text-emerald-700 font-bold">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</span>';
-      prOnlineText = '$ ' + rawOnline.toFixed(2) + ' <span class="text-emerald-700 font-bold">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</span>';
+      prWholesaleText = '<span class="whitespace-nowrap">$ ' + rawWholesale.toFixed(2) + ' <b class="text-emerald-700">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</b></span>';
+      prOnlineText = '<span class="whitespace-nowrap">$ ' + rawOnline.toFixed(2) + ' <b class="text-emerald-700">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</b></span>';
       costText = rawCost > 0 ? ('$ ' + rawCost.toFixed(2) + ' <small class="text-slate-500 font-normal block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>') : '-';
     } else if (curr === 'THB') {
       wholesaleKhr = Math.round(rawWholesale * rateTHB);
       onlineKhr = Math.round(rawOnline * rateTHB);
       costKhr = Math.round(rawCost * rateTHB);
-      prWholesaleText = '฿ ' + rawWholesale.toLocaleString() + ' <span class="text-amber-800 font-bold">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</span>';
-      prOnlineText = '฿ ' + rawOnline.toLocaleString() + ' <span class="text-amber-800 font-bold">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</span>';
+      prWholesaleText = '<span class="whitespace-nowrap">฿ ' + rawWholesale.toLocaleString() + ' <b class="text-amber-800">(≈ ៛ ' + wholesaleKhr.toLocaleString() + ')</b></span>';
+      prOnlineText = '<span class="whitespace-nowrap">฿ ' + rawOnline.toLocaleString() + ' <b class="text-amber-800">(≈ ៛ ' + onlineKhr.toLocaleString() + ')</b></span>';
       costText = rawCost > 0 ? ('฿ ' + rawCost.toLocaleString() + ' <small class="text-slate-500 font-normal block">(≈ ៛ ' + costKhr.toLocaleString() + ')</small>') : '-';
     } else {
-      prWholesaleText = '៛ ' + wholesaleKhr.toLocaleString();
-      prOnlineText = '៛ ' + onlineKhr.toLocaleString();
+      prWholesaleText = '<span class="whitespace-nowrap">៛ ' + wholesaleKhr.toLocaleString() + '</span>';
+      prOnlineText = '<span class="whitespace-nowrap">៛ ' + onlineKhr.toLocaleString() + '</span>';
       costText = rawCost > 0 ? ('៛ ' + costKhr.toLocaleString()) : '-';
     }
 
     var ch = String(p.channel || 'ALL').toUpperCase();
-    var chBadge = (ch === 'ONLINE') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800 border border-sky-300">🌐 Web</span>' :
-                  (ch === 'POS') ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300">🚚 ដេប៉ូ</span>' :
-                  '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🔄 ទាំងពីរ</span>';
+    // 🏷️ ចាក់សោរ whitespace-nowrap inline-flex ដាច់ខាតមិនឱ្យធ្លាក់អក្សរ «ទាំងពីរ» ឡើយ
+    var chBadge = (ch === 'ONLINE') ? '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-sky-100 text-sky-800 border border-sky-300 whitespace-nowrap inline-flex items-center gap-1">🌐 Web</span>' :
+                  (ch === 'POS') ? '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap inline-flex items-center gap-1">🚚 ដេប៉ូ</span>' :
+                  '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 whitespace-nowrap inline-flex items-center gap-1">🔄 ទាំងពីរ</span>';
 
-    var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs">-</span>' : 
-      ('<span class="font-black ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
+    var stockDisplay = (p.type === 'ផលិតឯង') ? '<span class="text-blue-700 font-bold text-xs whitespace-nowrap">-</span>' : 
+      ('<span class="font-black whitespace-nowrap ' + (parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5) ? 'text-red-600' : 'text-blue-800') + '">' + p.stock + '</span>');
 
     var isForPos = (ch === 'ALL' || ch === 'POS');
     var isForWeb = (ch === 'ALL' || ch === 'ONLINE');
@@ -510,58 +548,58 @@ function renderStockTableRows() {
     var sortControlHtml = '';
     if (isWebTab) {
       if (isForWeb) {
-        sortControlHtml = '<div class="flex items-center justify-center gap-1">' +
+        sortControlHtml = '<div class="flex items-center justify-center gap-1 whitespace-nowrap">' +
           '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'UP\')" class="w-6 h-6 rounded-md bg-emerald-50 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញឡើងលើ"><i class="fas fa-chevron-up"></i></button>' +
           '<input type="number" value="' + sortWebNum + '" onchange="quickUpdateSortWeb(\'' + p.id + '\', this.value)" class="w-10 text-center font-black text-emerald-900 border-2 border-emerald-300 focus:border-emerald-600 rounded-lg py-0.5 text-xs outline-none bg-white shadow-2xs" title="វាយលេខរៀង Web ផ្ទាល់">' +
           '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'DOWN\')" class="w-6 h-6 rounded-md bg-emerald-50 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញចុះក្រោម"><i class="fas fa-chevron-down"></i></button>' +
         '</div>' +
-        '<span class="text-[9px] text-slate-400 block mt-0.5">POS: #' + sortPosNum + '</span>';
+        '<span class="text-[9px] text-slate-400 block mt-0.5 whitespace-nowrap">POS: #' + sortPosNum + '</span>';
       } else {
-        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded">មិនដាក់លើ Web</span>';
+        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded whitespace-nowrap">មិនដាក់លើ Web</span>';
       }
     } else {
       if (isForPos) {
-        sortControlHtml = '<div class="flex items-center justify-center gap-1">' +
+        sortControlHtml = '<div class="flex items-center justify-center gap-1 whitespace-nowrap">' +
           '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'UP\')" class="w-6 h-6 rounded-md bg-blue-50 hover:bg-blue-200 text-blue-800 border border-blue-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញឡើងលើ"><i class="fas fa-chevron-up"></i></button>' +
           '<input type="number" value="' + sortPosNum + '" onchange="quickUpdateSortPos(\'' + p.id + '\', this.value)" class="w-10 text-center font-black text-blue-900 border-2 border-blue-300 focus:border-blue-600 rounded-lg py-0.5 text-xs outline-none bg-white shadow-2xs" title="វាយលេខរៀង POS ផ្ទាល់">' +
           '<button type="button" onclick="moveProductSort(\'' + p.id + '\', \'DOWN\')" class="w-6 h-6 rounded-md bg-blue-50 hover:bg-blue-200 text-blue-800 border border-blue-300 flex items-center justify-center text-[10px] active:scale-90 transition shadow-2xs font-bold" title="រុញចុះក្រោម"><i class="fas fa-chevron-down"></i></button>' +
         '</div>' +
-        '<span class="text-[9px] text-slate-400 block mt-0.5">Web: #' + sortWebNum + '</span>';
+        '<span class="text-[9px] text-slate-400 block mt-0.5 whitespace-nowrap">Web: #' + sortWebNum + '</span>';
       } else {
-        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded">មិនដាក់លើ POS</span>';
+        sortControlHtml = '<span class="text-[9.5px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded whitespace-nowrap">មិនដាក់លើ POS</span>';
       }
     }
 
-    // 🏬 រកឈ្មោះដេប៉ូដែលផ្គត់ផ្គង់ទំនិញនេះ
+    // 🏬 ដេប៉ូផ្គត់ផ្គង់
     var depotBadge = '';
     if (p.type === 'ផលិតឯង') {
-      depotBadge = '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200 inline-flex items-center gap-1 mt-0.5"><i class="fas fa-droplet text-[8px] text-blue-500"></i> ឃ្លាំង KC</span>';
+      depotBadge = '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 inline-flex items-center gap-1 mt-0.5 whitespace-nowrap"><i class="fas fa-droplet text-[8px] text-blue-500"></i> ឃ្លាំង KC</span>';
     } else {
       var dObj = (activePartnerDepots || []).find(d => d.id === p.depot_id);
       var dName = dObj ? dObj.name : 'ដេប៉ូដៃគូ';
       var dTerm = (dObj && dObj.payTerms === 'CASH') ? '💵' : '📝';
-      depotBadge = '<span class="text-[9px] font-bold text-rose-800 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 inline-flex items-center gap-1 mt-0.5" title="' + dName + '"><i class="fas fa-shop-lock text-[8px] text-rose-500"></i> ' + dTerm + ' ' + dName + '</span>';
+      depotBadge = '<span class="text-[9px] font-bold text-rose-800 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 inline-flex items-center gap-1 mt-0.5 whitespace-nowrap truncate max-w-[170px]" title="' + dName + '"><i class="fas fa-shop-lock text-[8px] text-rose-500"></i> ' + dTerm + ' ' + dName + '</span>';
     }
 
     html += '<tr class="border-b hover:bg-gray-50">' +
       '<td class="p-2 text-center ' + (isWebTab ? 'bg-emerald-50/30' : 'bg-blue-50/30') + ' whitespace-nowrap">' +
         sortControlHtml +
       '</td>' +
-      '<td class="p-2.5"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border"></td>' +
+      '<td class="p-2 text-center whitespace-nowrap"><img src="' + imgUrl + '" class="w-9 h-9 object-contain rounded border mx-auto"></td>' +
       '<td class="p-2.5 font-bold text-gray-800">' + 
         p.name + 
-        '<br><span class="text-[9px] text-gray-400 font-normal">' + p.type + ' | ' + curr + '</span>' +
+        '<br><span class="text-[9px] text-gray-400 font-normal whitespace-nowrap">' + p.type + ' | ' + curr + '</span>' +
         '<br>' + depotBadge + 
       '</td>' +
-      '<td class="p-2.5 text-center">' + chBadge + '</td>' +
-      '<td class="p-2.5 text-center text-[10.5px] leading-tight">' + 
+      '<td class="p-2 text-center whitespace-nowrap">' + chBadge + '</td>' +
+      '<td class="p-2 text-center text-[10.5px] leading-tight whitespace-nowrap">' + 
         '<div>🚚 ' + prWholesaleText + '</div>' + 
         '<div class="mt-0.5">🌐 ' + prOnlineText + '</div>' + 
       '</td>' +
-      '<td class="p-2.5 text-center">' + stockDisplay + '</td>' +
-      '<td class="p-2.5 text-center"><div class="flex items-center justify-center gap-2">' +
-        '<button onclick="prepareEditProduct(\'' + p.id + '\')" class="text-blue-600 hover:text-blue-800 p-1" title="កែប្រែ"><i class="fas fa-edit text-xs"></i></button>' +
-        '<button onclick="delProductFromSupabase(\'' + p.id + '\')" class="text-red-500 hover:text-red-700 p-1" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
+      '<td class="p-2 text-center whitespace-nowrap">' + stockDisplay + '</td>' +
+      '<td class="p-2 text-center whitespace-nowrap"><div class="flex items-center justify-center gap-1.5">' +
+        '<button onclick="prepareEditProduct(\'' + p.id + '\')" class="p-1 text-blue-600 hover:text-blue-800" title="កែប្រែ"><i class="fas fa-edit text-xs"></i></button>' +
+        '<button onclick="delProductFromSupabase(\'' + p.id + '\')" class="p-1 text-red-500 hover:text-red-700" title="លុប"><i class="fas fa-trash-can text-xs"></i></button>' +
       '</div></td>' +
     '</tr>';
   });
@@ -1139,32 +1177,73 @@ async function delProductFromSupabase(id) {
     showToast("កំហុស៖ " + err.message, "error");
   }
 }
-// ==========================================
-// 🛢️ ២. ភ្ញៀវខ្ចីធុង / បរិក្ខារ (BOTTLE LOANS)
-// ==========================================
+// ==========================================================================
+// 🛢️ ២. ភ្ញៀវខ្ចីធុង / បរិក្ខារ (ពេញអេក្រង់ PC + សារដំណឹង kcAlert, kcPrompt)
+// ==========================================================================
 function renderBottleLoanModule() {
   var area = document.getElementById('contentArea');
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
+  if (!area) return;
+
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    // កាតទី ១៖ ទម្រង់កត់ត្រាការខ្ចី
+    '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
       '<div class="flex justify-between items-center mb-3">' +
-        '<h2 class="font-extrabold text-blue-900 text-base sm:text-lg flex items-center gap-2"><i class="fas fa-boxes-packing text-blue-600"></i>កត់ត្រាភ្ញៀវខ្ចីធុង / បរិក្ខារ</h2>' +
-        '<button onclick="fetchBottleLoansData()" class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1"><i class="fas fa-sync-alt"></i> Refresh</button>' +
+        '<h2 class="font-extrabold text-blue-900 text-xs sm:text-base flex items-center gap-1.5">' +
+          '<i class="fas fa-boxes-packing text-blue-600"></i>កត់ត្រាភ្ញៀវខ្ចីធុង / បរិក្ខារ' +
+        '</h2>' +
+        '<button onclick="fetchBottleLoansData()" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 active:scale-95 transition flex items-center gap-1 shadow-2xs">' +
+          '<i class="fas fa-sync-alt"></i> Refresh' +
+        '</button>' +
       '</div>' +
-      '<div class="space-y-3">' +
+      '<div class="space-y-2.5">' +
         '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' +
-          '<input type="text" id="bl_cust_name" placeholder="*ឈ្មោះអ្នកខ្ចី (ឧ៖ មីង សុខា)" class="font-bold border p-2.5 rounded-xl">' +
-          '<input type="text" id="bl_item_name" placeholder="*មុខអីវ៉ាន់ (ឧ៖ ធុង ២០L ពណ៌ស)" value="ធុង ២០L ពណ៌ស" class="font-bold border p-2.5 rounded-xl">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ឈ្មោះអ្នកខ្ចី (*)</label>' +
+            '<input type="text" id="bl_cust_name" placeholder="ឧ៖ មីង សុខា ឬ ហាង A" class="font-bold border p-2 rounded-xl text-xs sm:text-sm w-full outline-none focus:border-blue-500">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">មុខអីវ៉ាន់ខ្ចី (*)</label>' +
+            '<input type="text" id="bl_item_name" placeholder="ឧ៖ ធុង ២០L ពណ៌ស" value="ធុង ២០L ពណ៌ស" class="font-bold border p-2 rounded-xl text-xs sm:text-sm w-full outline-none focus:border-blue-500">' +
+          '</div>' +
         '</div>' +
         '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="number" id="bl_qty" placeholder="ចំនួនខ្ចី (*)" class="font-black text-blue-900 border p-2.5 rounded-xl">' +
-          '<input type="number" id="bl_deposit" placeholder="ប្រាក់កក់ (៛ បើមាន)" class="font-black text-green-700 border p-2.5 rounded-xl">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-black text-blue-900 uppercase block mb-0.5">ចំនួនខ្ចី (*)</label>' +
+            '<input type="number" id="bl_qty" placeholder="ឧ៖ 10" class="font-black text-blue-900 border-2 border-blue-300 focus:border-blue-600 p-2 rounded-xl text-center text-xs sm:text-sm w-full outline-none">' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-emerald-900 uppercase block mb-0.5">ប្រាក់កក់ (៛ បើមាន)</label>' +
+            '<input type="number" id="bl_deposit" placeholder="ឧ៖ 0" class="font-black text-emerald-700 border p-2 rounded-xl text-center text-xs sm:text-sm w-full outline-none focus:border-emerald-500">' +
+          '</div>' +
         '</div>' +
-        '<button onclick="submitBottleLoanToSupabase()" class="btn-green bg-blue-600 hover:bg-blue-700 py-3 text-sm font-bold">កត់ត្រាការខ្ចី (Save Loan)</button>' +
+        '<button onclick="submitBottleLoanToSupabase()" class="btn-green bg-blue-600 hover:bg-blue-700 py-2.5 sm:py-3 text-xs sm:text-sm font-bold shadow-md">' +
+          'កត់ត្រាការខ្ចី (Save Loan)' +
+        '</button>' +
       '</div>' +
     '</div>' +
-    '<div class="card border-t-4 border-orange-500 shadow-xl p-5 mb-0">' +
-      '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-clock-rotate-left text-orange-600"></i>បញ្ជីអ្នកកំពុងខ្ចីសំបកធុង</h3>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">ថ្ងៃខ្ចី</th><th class="p-2.5">អ្នកខ្ចី</th><th class="p-2.5">អីវ៉ាន់ខ្ចី</th><th class="p-2.5 text-center">ខ្ចី</th><th class="p-2.5 text-center">បានសង</th><th class="p-2.5 text-center">នៅខ្វះ</th><th class="p-2.5 text-center">សង</th></tr></thead><tbody id="blTableBody"></tbody></table></div>' +
+
+    // កាតទី ២៖ បញ្ជីអ្នកកំពុងខ្ចីសំបកធុង (Full Width Table)
+    '<div class="card border-t-4 border-orange-500 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+      '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
+        '<i class="fas fa-clock-rotate-left text-orange-600"></i>បញ្ជីអ្នកកំពុងខ្ចីសំបកធុង / បរិក្ខារ' +
+      '</h3>' +
+      '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200">' +
+        '<table class="w-full text-left text-xs border-collapse">' +
+          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+            '<tr>' +
+              '<th class="p-2 sm:p-2.5 text-center w-24">ថ្ងៃខ្ចី</th>' +
+              '<th class="p-2 sm:p-2.5">អ្នកខ្ចី</th>' +
+              '<th class="p-2 sm:p-2.5">អីវ៉ាន់ខ្ចី</th>' +
+              '<th class="p-2 sm:p-2.5 text-center">ខ្ចី</th>' +
+              '<th class="p-2 sm:p-2.5 text-center">បានសង</th>' +
+              '<th class="p-2 sm:p-2.5 text-center">នៅខ្វះ</th>' +
+              '<th class="p-2 sm:p-2.5 text-center w-20">សកម្មភាព</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody id="blTableBody"></tbody>' +
+        '</table>' +
+      '</div>' +
     '</div>' +
   '</div>';
 
@@ -1174,12 +1253,23 @@ function renderBottleLoanModule() {
 async function fetchBottleLoansData() {
   var tbody = document.getElementById('blTableBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr>';
+
+  var tableEl = tbody.closest('table');
+  if (tableEl) {
+    tableEl.style.minWidth = "650px"; // ការពារកុំឱ្យធ្លាក់ជួរលើទូរស័ព្ទ
+  }
+
+  tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1 text-blue-600"></i> កំពុងទាញទិន្នន័យ...</td></tr>';
 
   try {
-    const { data: list } = await supabaseClient.from('bottle_loans').select('*').eq('status', 'Borrowing').order('created_at', { ascending: false });
+    const { data: list } = await supabaseClient
+      .from('bottle_loans')
+      .select('*')
+      .eq('status', 'Borrowing')
+      .order('created_at', { ascending: false });
+
     if (!list || list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-green-600 font-bold"><i class="fas fa-check-circle mr-1"></i> គ្មានអ្នកជំពាក់សំបកធុងឡើយ</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-emerald-700 font-bold bg-emerald-50/50"><i class="fas fa-check-circle mr-1 text-base text-emerald-600"></i> អបអរសាទរ! គ្មានអ្នកជំពាក់សំបកធុងឡើយ</td></tr>';
       return;
     }
 
@@ -1188,30 +1278,53 @@ async function fetchBottleLoansData() {
       var remaining = Math.max(0, parseFloat(item.borrowed_qty || 0) - parseFloat(item.returned_qty || 0));
       var dateStr = new Date(item.created_at).toLocaleDateString('km-KH');
 
-      html += '<tr class="border-b hover:bg-gray-50">' +
-        '<td class="p-2.5 text-gray-500 text-[10px]">' + dateStr + '</td>' +
-        '<td class="p-2.5 font-bold text-gray-800">' + item.customer_name + '</td>' +
-        '<td class="p-2.5">' + item.item_name + '</td>' +
-        '<td class="p-2.5 text-center font-bold text-blue-700">' + item.borrowed_qty + '</td>' +
-        '<td class="p-2.5 text-center font-bold text-green-700">' + item.returned_qty + '</td>' +
-        '<td class="p-2.5 text-center font-black text-orange-700">' + remaining + '</td>' +
-        '<td class="p-2.5 text-center"><button onclick="quickReturnBottleLoan(\'' + item.loan_id + '\', ' + remaining + ', ' + item.returned_qty + ', ' + item.borrowed_qty + ')" class="px-2.5 py-1 bg-green-600 text-white rounded-lg font-bold text-xs active:scale-95 transition">សង</button></td>' +
+      html += '<tr class="border-b hover:bg-gray-50 transition">' +
+        '<td class="p-2 sm:p-2.5 text-gray-500 text-[10px] text-center whitespace-nowrap">' + dateStr + '</td>' +
+        '<td class="p-2 sm:p-2.5 font-bold text-gray-800 whitespace-nowrap">' + item.customer_name + '</td>' +
+        '<td class="p-2 sm:p-2.5 whitespace-nowrap">' + item.item_name + '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center font-bold text-blue-700 whitespace-nowrap">' + item.borrowed_qty + '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center font-bold text-emerald-700 whitespace-nowrap">' + item.returned_qty + '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center font-black text-orange-700 whitespace-nowrap">' + remaining + '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center whitespace-nowrap">' +
+          '<button onclick="quickReturnBottleLoan(\'' + item.loan_id + '\', ' + remaining + ', ' + item.returned_qty + ', ' + item.borrowed_qty + ', \'' + item.customer_name.replace(/'/g, "\\'") + '\', \'' + item.item_name.replace(/'/g, "\\'") + '\')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black text-xs active:scale-95 transition shadow-2xs flex items-center gap-1 mx-auto">' +
+            '<i class="fas fa-rotate-left text-[10px]"></i> សង' +
+          '</button>' +
+        '</td>' +
       '</tr>';
     });
     tbody.innerHTML = html;
-  } catch(e) {}
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">កំហុសទាញទិន្នន័យ៖ ' + e.message + '</td></tr>';
+  }
 }
 
 async function submitBottleLoanToSupabase() {
-  var name = document.getElementById('bl_cust_name').value.trim();
-  var item = document.getElementById('bl_item_name').value.trim();
-  var qty = parseFloat(document.getElementById('bl_qty').value || 0);
-  var deposit = parseFloat(document.getElementById('bl_deposit').value || 0);
+  var nameInp = document.getElementById('bl_cust_name');
+  var itemInp = document.getElementById('bl_item_name');
+  var qtyInp = document.getElementById('bl_qty');
+  var depositInp = document.getElementById('bl_deposit');
 
-  if (!name || !item || qty <= 0) { showToast("សូមបំពេញឈ្មោះ អីវ៉ាន់ និងចំនួនខ្ចី!", "error"); return; }
+  var name = nameInp ? nameInp.value.trim() : '';
+  var item = itemInp ? itemInp.value.trim() : '';
+  var qty = parseFloat(qtyInp ? qtyInp.value || 0 : 0);
+  var deposit = parseFloat(depositInp ? depositInp.value || 0 : 0);
+
+  // ⚠️ ប្រើ kcAlert បញ្ជាក់ពេលខ្វះទិន្នន័យ
+  if (!name || !item || qty <= 0) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះព័ត៌មាន",
+        message: "សូមបំពេញឈ្មោះអ្នកខ្ចី មុខអីវ៉ាន់ និងចំនួនខ្ចីធំជាង ០!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមបំពេញឈ្មោះ អីវ៉ាន់ និងចំនួនខ្ចី!", "error");
+    }
+    return;
+  }
 
   try {
-    await supabaseClient.from('bottle_loans').insert([{
+    const { error } = await supabaseClient.from('bottle_loans').insert([{
       loan_id: "BL-" + new Date().getTime(),
       customer_name: name,
       item_name: item,
@@ -1222,21 +1335,39 @@ async function submitBottleLoanToSupabase() {
       admin_name: currentUser.fullName || "Admin"
     }]);
 
-    showToast("បានកត់ត្រាការខ្ចីជោគជ័យ!", "success");
-    document.getElementById('bl_cust_name').value = "";
-    document.getElementById('bl_qty').value = "";
-    document.getElementById('bl_deposit').value = "";
+    if (error) throw error;
+
+    if (nameInp) nameInp.value = "";
+    if (qtyInp) qtyInp.value = "";
+    if (depositInp) depositInp.value = "";
+
+    // 🎉 ប្រើ kcAlert ជូនដំណឹងជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "កត់ត្រាជោគជ័យ! 🎉",
+        message: "បានកត់ត្រាការខ្ចី [" + item + " x " + qty + "] សម្រាប់ [" + name + "] រួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានកត់ត្រាការខ្ចីជោគជ័យ!", "success");
+    }
+
     fetchBottleLoansData();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
   }
 }
 
-async function quickReturnBottleLoan(loanId, remaining, returned, borrowed) {
-  // 🌟 ប្រើ Pop-up ថ្មីរបស់ KC POS មានប្រអប់វាយលេខធំៗ ស្រួលចុចលើទូរស័ព្ទ
+async function quickReturnBottleLoan(loanId, remaining, returned, borrowed, custName, itemName) {
+  // 🌟 ប្រើប្រអប់ kcPrompt វាយលេខធំៗស្រួលចុច
   var val = await kcPrompt({
-    title: "សងសំបកធុងទឹក",
-    message: "អតិថិជននៅជំពាក់ " + remaining + " ធុង។ សូមវាយចំនួនសងខាងក្រោម៖",
+    title: "សងសំបកធុង៖ " + (custName || "អតិថិជន"),
+    message: "កំពុងជំពាក់ " + remaining + " ធុង (" + (itemName || "អីវ៉ាន់") + ")\nសូមបញ្ចូលចំនួនសងខាងក្រោម៖",
     defaultValue: remaining,
     confirmText: "យល់ព្រមសង",
     inputType: "number"
@@ -1250,45 +1381,114 @@ async function quickReturnBottleLoan(loanId, remaining, returned, borrowed) {
   var newStatus = (newReturned >= borrowed) ? 'Returned' : 'Borrowing';
 
   try {
-    await supabaseClient.from('bottle_loans').update({
+    const { error } = await supabaseClient.from('bottle_loans').update({
       returned_qty: newReturned,
       status: newStatus
     }).eq('loan_id', loanId);
 
-    showToast("បានកត់ត្រាការសងសំបកធុងជោគជ័យ!", "success");
+    if (error) throw error;
+
+    // 🎉 ប្រើ kcAlert ជូនដំណឹងជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "សងរួចរាល់! 🎉",
+        message: "បានកត់ត្រាការសងចំនួន " + returnQty + " ធុងជោគជ័យ! " + (newStatus === 'Returned' ? "✅ (សងគ្រប់ចំនួន)" : "⚠️ (នៅខ្វះ " + (borrowed - newReturned) + " ធុង)"),
+        type: "success"
+      });
+    } else {
+      showToast("បានកត់ត្រាការសងសំបកធុងជោគជ័យ!", "success");
+    }
+
     fetchBottleLoansData();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
   }
 }
-// ==========================================
-// 💸 ៣. កត់ត្រាការចំណាយ (EXPENSES)
+
+// ==========================================================================
+// 💸 ៣. កត់ត្រាការចំណាយ (ពេញអេក្រង់ PC + ២ ជួរលើ Desktop + សារដំណឹង kcAlert, kcConfirm)
 // ==========================================
 function renderExpensesModule() {
   var area = document.getElementById('contentArea');
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    '<div class="card border-t-4 border-red-500 shadow-xl p-5 mb-0">' +
-      '<h2 class="font-extrabold text-red-900 text-base mb-3 flex items-center gap-2"><i class="fas fa-money-bill-wave text-red-600"></i>កត់ត្រាការចំណាយប្រចាំថ្ងៃ</h2>' +
-      '<div class="space-y-3">' +
-        '<select id="exp_cat" class="font-bold border p-2.5 rounded-xl w-full">' +
-          '<option value="ថ្លៃប្រេងសាំង (ឡាន/ម៉ូតូ)">⛽ ថ្លៃប្រេងសាំង (ឡាន/ម៉ូតូដឹកទឹក)</option>' +
-          '<option value="ថ្លៃអគ្គិសនី & ទឹក">⚡ ថ្លៃអគ្គិសនី & ទឹក</option>' +
-          '<option value="ថ្លៃជួសជុលម៉ាស៊ីន">🔧 ថ្លៃជួសជុលម៉ាស៊ីនចម្រោះ / បរិក្ខារ</option>' +
-          '<option value="ថ្លៃគម្របធុង & ផ្លាកសញ្ញា">🏷️ ថ្លៃគម្របធុង, ផ្លាកសញ្ញា, ថង់</option>' +
-          '<option value="ថ្លៃបាយទឹកបុគ្គលិក">🍚 ថ្លៃម្ហូបអាហារ / បាយទឹកបុគ្គលិក</option>' +
-          '<option value="ចំណាយផ្សេងៗ">📦 ចំណាយផ្សេងៗ...</option>' +
-        '</select>' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="number" id="exp_amt" placeholder="ចំនួនទឹកប្រាក់ (*)" class="font-black text-red-700 border p-2.5 rounded-xl">' +
-          '<select id="exp_curr" class="font-bold border p-2.5 rounded-xl"><option value="KHR">KHR (៛)</option><option value="THB">THB (฿)</option><option value="USD">USD ($)</option></select>' +
+  if (!area) return;
+
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    // ជួរខាងលើ៖ កត់ត្រាចំណាយ (ឆ្វេង ៥ ភាគ) + ប្រវត្តិចំណាយ (ស្តាំ ៧ ភាគ) លើ PC ធំ
+    '<div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">' +
+      
+      // កាតទី ១៖ ទម្រង់កត់ត្រាការចំណាយ (lg:col-span-5)
+      '<div class="lg:col-span-5 card border-t-4 border-red-500 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h2 class="font-extrabold text-red-900 text-xs sm:text-base mb-3 flex items-center gap-2">' +
+          '<i class="fas fa-money-bill-wave text-red-600"></i>កត់ត្រាការចំណាយប្រចាំថ្ងៃ' +
+        '</h2>' +
+        '<div class="space-y-2.5">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ប្រភេទការចំណាយ (*)</label>' +
+            '<select id="exp_cat" class="font-bold border p-2 rounded-xl w-full text-xs sm:text-sm bg-white outline-none focus:border-red-500">' +
+              '<option value="ថ្លៃប្រេងសាំង (ឡាន/ម៉ូតូ)">⛽ ថ្លៃប្រេងសាំង (ឡាន/ម៉ូតូដឹកទឹក)</option>' +
+              '<option value="ថ្លៃអគ្គិសនី & ទឹក">⚡ ថ្លៃអគ្គិសនី & ទឹក</option>' +
+              '<option value="ថ្លៃជួសជុលម៉ាស៊ីន">🔧 ថ្លៃជួសជុលម៉ាស៊ីនចម្រោះ / បរិក្ខារ</option>' +
+              '<option value="ថ្លៃគម្របធុង & ផ្លាកសញ្ញា">🏷️ ថ្លៃគម្របធុង, ផ្លាកសញ្ញា, ថង់</option>' +
+              '<option value="ថ្លៃបាយទឹកបុគ្គលិក">🍚 ថ្លៃម្ហូបអាហារ / បាយទឹកបុគ្គលិក</option>' +
+              '<option value="ទូទាត់ថ្លៃដើមដេប៉ូដៃគូ">🏬 ទូទាត់ថ្លៃដើមដេប៉ូដៃគូ</option>' +
+              '<option value="ចំណាយផ្សេងៗ">📦 ចំណាយផ្សេងៗ...</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-black text-red-700 uppercase block mb-0.5">ចំនួនទឹកប្រាក់ (*)</label>' +
+              '<input type="number" id="exp_amt" placeholder="ឧ៖ 20000" class="font-black text-red-700 border-2 border-red-200 focus:border-red-500 p-2 rounded-xl w-full text-xs sm:text-sm text-center outline-none">' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">រូបិយប័ណ្ណ</label>' +
+              '<select id="exp_curr" class="font-bold border p-2 rounded-xl w-full text-xs sm:text-sm bg-white outline-none">' +
+                '<option value="KHR">KHR (៛) - រៀល</option>' +
+                '<option value="THB">THB (฿) - បាត</option>' +
+                '<option value="USD">USD ($) - ដុល្លារ</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចំណាំលម្អិតបន្ថែម (បើមាន)</label>' +
+            '<input type="text" id="exp_note" placeholder="ឧ៖ ចាក់សាំងម៉ូតូដឹកជញ្ជូន ឬ ទិញម្ហូប..." class="border p-2 rounded-xl w-full text-xs outline-none focus:border-red-500 bg-slate-50 focus:bg-white">' +
+          '</div>' +
+          '<button onclick="submitExpenseToSupabase()" id="btnSaveExpenseAction" class="btn-green bg-red-600 hover:bg-red-700 py-2.5 sm:py-3 text-xs sm:text-sm font-bold shadow-md">' +
+            'រក្សាទុកការចំណាយ (Save Expense)' +
+          '</button>' +
         '</div>' +
-        '<input type="text" id="exp_note" placeholder="ចំណាំលម្អិត (បើមាន)..." class="border p-2.5 rounded-xl w-full text-xs">' +
-        '<button onclick="submitExpenseToSupabase()" class="btn-green bg-red-600 hover:bg-red-700 py-3 text-sm font-bold">រក្សាទុកការចំណាយ</button>' +
       '</div>' +
-    '</div>' +
-    '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0">' +
-      '<h3 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-history"></i>ប្រវត្តិការចំណាយ</h3>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">កាលបរិច្ឆេទ</th><th class="p-2.5">ប្រភេទចំណាយ</th><th class="p-2.5 text-right">ចំនួនទឹកប្រាក់</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="expTableBody"></tbody></table></div>' +
+
+      // កាតទី ២៖ ប្រវត្តិការចំណាយ (lg:col-span-7)
+      '<div class="lg:col-span-7 card border-t-4 border-gray-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<div class="flex justify-between items-center mb-2.5">' +
+          '<h3 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">' +
+            '<i class="fas fa-history text-blue-600"></i>ប្រវត្តិការចំណាយថ្មីៗ' +
+          '</h3>' +
+          '<button onclick="fetchExpensesHistory()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs">' +
+            '<i class="fas fa-sync-alt text-[10px]"></i> Refresh' +
+          '</button>' +
+        '</div>' +
+        '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+          '<table class="w-full text-left text-xs border-collapse">' +
+            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+              '<tr>' +
+                '<th class="p-2 sm:p-2.5 text-center w-24">កាលបរិច្ឆេទ</th>' +
+                '<th class="p-2 sm:p-2.5">ប្រភេទចំណាយ / ចំណាំ</th>' +
+                '<th class="p-2 sm:p-2.5 text-right w-28">ចំនួនទឹកប្រាក់</th>' +
+                '<th class="p-2 sm:p-2.5 text-center w-14">លុប</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody id="expTableBody"></tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+
     '</div>' +
   '</div>';
 
@@ -1299,37 +1499,88 @@ async function fetchExpensesHistory() {
   var tbody = document.getElementById('expTableBody');
   if (!tbody) return;
 
+  var tableEl = tbody.closest('table');
+  if (tableEl) {
+    tableEl.style.minWidth = "550px"; // ការពារកុំឱ្យធ្លាក់ជួរលើទូរស័ព្ទ
+  }
+
+  tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic"><i class="fas fa-spinner fa-spin mr-1 text-red-600"></i> កំពុងទាញទិន្នន័យ...</td></tr>';
+
   try {
-    const { data: list } = await supabaseClient.from('expenses').select('*').order('created_at', { ascending: false }).limit(20);
+    const { data: list, error } = await supabaseClient
+      .from('expenses')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (error) throw error;
+
     if (!list || list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">គ្មានទិន្នន័យចំណាយ</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-400 italic">មិនទាន់មានទិន្នន័យចំណាយនៅឡើយ</td></tr>';
       return;
     }
 
     var html = '';
     list.forEach(function(item) {
       var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
-      html += '<tr class="border-b hover:bg-gray-50">' +
-        '<td class="p-2.5 text-gray-500 text-[10px]">' + dateStr + '</td>' +
-        '<td class="p-2.5 font-bold text-gray-800">' + item.category + (item.note ? '<br><small class="text-gray-400 font-normal">' + item.note + '</small>' : '') + '</td>' +
-        '<td class="p-2.5 text-right font-black text-red-700">' + Number(item.amount).toLocaleString() + ' ' + item.currency + '</td>' +
-        '<td class="p-2.5 text-center"><button onclick="delExpenseFromSupabase(\'' + item.expense_id + '\')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-can"></i></button></td>' +
+      var currSymbol = item.currency === 'USD' ? '$' : (item.currency === 'THB' ? '฿' : '៛');
+
+      html += '<tr class="border-b hover:bg-gray-50 transition">' +
+        '<td class="p-2 sm:p-2.5 text-gray-500 text-[10px] text-center whitespace-nowrap">' + dateStr + '</td>' +
+        '<td class="p-2 sm:p-2.5 font-bold text-gray-800">' +
+          item.category + 
+          (item.note ? '<br><small class="text-gray-400 font-normal text-[10px]">' + item.note + '</small>' : '') + 
+        '</td>' +
+        '<td class="p-2 sm:p-2.5 text-right font-black text-red-700 whitespace-nowrap">' + 
+          currSymbol + ' ' + Number(item.amount).toLocaleString() + 
+        '</td>' +
+        '<td class="p-2 sm:p-2.5 text-center whitespace-nowrap">' +
+          '<button onclick="delExpenseFromSupabase(\'' + item.expense_id + '\', ' + item.amount + ', \'' + item.category.replace(/'/g, "\\'") + '\')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="លុបចំណាយនេះ">' +
+            '<i class="fas fa-trash-can"></i>' +
+          '</button>' +
+        '</td>' +
       '</tr>';
     });
     tbody.innerHTML = html;
-  } catch(e) {}
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-red-500 font-bold">កំហុសទាញទិន្នន័យ៖ ' + e.message + '</td></tr>';
+  }
 }
 
 async function submitExpenseToSupabase() {
-  var cat = document.getElementById('exp_cat').value;
-  var amt = parseFloat(document.getElementById('exp_amt').value || 0);
-  var curr = document.getElementById('exp_curr').value;
-  var note = document.getElementById('exp_note').value.trim();
+  var catInp = document.getElementById('exp_cat');
+  var amtInp = document.getElementById('exp_amt');
+  var currInp = document.getElementById('exp_curr');
+  var noteInp = document.getElementById('exp_note');
 
-  if (amt <= 0) { showToast("សូមបញ្ចូលចំនួនទឹកប្រាក់ធំជាង ០!", "error"); return; }
+  var cat = catInp ? catInp.value : 'ចំណាយផ្សេងៗ';
+  var amt = parseFloat(amtInp ? amtInp.value || 0 : 0);
+  var curr = currInp ? currInp.value : 'KHR';
+  var note = noteInp ? noteInp.value.trim() : '';
+
+  // ⚠️ ប្រើ kcAlert បញ្ជាក់ពេលខ្វះចំនួនទឹកប្រាក់
+  if (amt <= 0) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ខ្វះទឹកប្រាក់",
+        message: "សូមបញ្ចូលចំនួនទឹកប្រាក់ចំណាយធំជាង ០!",
+        type: "warning"
+      });
+    } else {
+      showToast("សូមបញ្ចូលចំនួនទឹកប្រាក់ធំជាង ០!", "error");
+    }
+    if (amtInp) amtInp.focus();
+    return;
+  }
+
+  var btn = document.getElementById('btnSaveExpenseAction');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
 
   try {
-    await supabaseClient.from('expenses').insert([{
+    const { error } = await supabaseClient.from('expenses').insert([{
       expense_id: "EXP-" + new Date().getTime(),
       category: cat,
       amount: amt,
@@ -1338,33 +1589,79 @@ async function submitExpenseToSupabase() {
       admin_name: currentUser.fullName || "Admin"
     }]);
 
-    showToast("បានកត់ត្រាការចំណាយជោគជ័យ!", "success");
-    document.getElementById('exp_amt').value = "";
-    document.getElementById('exp_note').value = "";
+    if (error) throw error;
+
+    if (amtInp) amtInp.value = "";
+    if (noteInp) noteInp.value = "";
+
+    // 🎉 ប្រើ kcAlert ជូនដំណឹងជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "កត់ត្រាជោគជ័យ! 🎉",
+        message: "បានកត់ត្រាការចំណាយ [" + cat + "] ចំនួន " + Number(amt).toLocaleString() + " " + curr + " រួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានកត់ត្រាការចំណាយជោគជ័យ!", "success");
+    }
+
     fetchExpensesHistory();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "រក្សាទុកការចំណាយ (Save Expense)";
+    }
   }
 }
 
-async function delExpenseFromSupabase(id) {
-  // 🌟 ប្រើ Pop-up បញ្ជាក់ការលុបបែប Danger ពណ៌ក្រហមរបស់ KC POS
+async function delExpenseFromSupabase(id, amt, cat) {
+  // 🌟 ប្រើប្រអប់ kcConfirm ប្រភេទ Danger ពណ៌ក្រហម ការពារកុំឱ្យច្រឡំដៃលុប
   var ok = await kcConfirm({
     title: "បញ្ជាក់ការលុបចំណាយ",
-    message: "តើអ្នកពិតជាចង់លុបកំណត់ត្រាចំណាយនេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។",
+    message: "តើអ្នកពិតជាចង់លុបកំណត់ត្រាចំណាយ [" + (cat || "ចំណាយ") + "] ចំនួន " + Number(amt || 0).toLocaleString() + " នេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។",
     type: "danger",
     confirmText: "យល់ព្រមលុប"
   });
+
   if (!ok) return;
 
   try {
-    await supabaseClient.from('expenses').delete().eq('expense_id', id);
-    showToast("បានលុបការចំណាយជោគជ័យ!", "success");
+    const { error } = await supabaseClient
+      .from('expenses')
+      .delete()
+      .eq('expense_id', id);
+
+    if (error) throw error;
+
+    // 🎉 ជូនដំណឹងតាម kcAlert ជោគជ័យ
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "បានលុបជោគជ័យ!",
+        message: "កំណត់ត្រាចំណាយត្រូវបានលុបចេញពីប្រព័ន្ធរួចរាល់។",
+        type: "success"
+      });
+    } else {
+      showToast("បានលុបការចំណាយជោគជ័យ!", "success");
+    }
+
     fetchExpensesHistory();
+
   } catch(err) {
-    showToast("កំហុស៖ " + err.message, "error");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
   }
 }
+
 // ==========================================
 // 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (ពេញលេញ ១០០%)
 // ==========================================
@@ -1390,7 +1687,7 @@ function renderCustomersModule() {
     prodOptions += '<option value="' + p.name + '">' + p.name + '</option>';
   });
 
-  // ៣. បញ្ជីឈ្មោះមេ (បង្ហាញតែអ្នកលក់បន្ត Reseller សម្រាប់កូនចៅដកទឹកជំនួសមេ)
+  // ៣. បញ្ជីឈ្មោះមេ (សម្រាប់កូនចៅដកទឹកជំនួសមេ)
   var bossOptions = '<option value="">-- ជ្រើសរើសពីបញ្ជីអ្នកលក់បន្ត (Reseller) ឬវាយខាងក្រោម --</option>';
   (allCustomers || []).forEach(function(c) {
     var isReseller = (c.type === 'Regular' || c.role === 'Customer') && c.type !== 'Monthly' && c.type !== 'Retail' && c.role !== 'Admin' && c.full_name !== 'Walk-in';
@@ -1399,7 +1696,7 @@ function renderCustomersModule() {
     }
   });
 
-  // ៤. បញ្ជីអតិថិជនប្រចាំខែ Monthly (សម្រាប់កំណត់តម្លៃកុងត្រាពិសេស)
+  // ៤. បញ្ជីអតិថិជនប្រចាំខែ Monthly
   var monthlyCustOptions = '<option value="">-- រើសអតិថិជនប្រចាំខែ (Monthly) --</option>';
   var monthlyCount = 0;
   (allCustomers || []).forEach(function(c) {
@@ -1412,98 +1709,120 @@ function renderCustomersModule() {
     monthlyCustOptions = '<option value="">-- មិនទាន់មានអតិថិជន Monthly ទេ (សូមបង្កើតខាងលើ) --</option>';
   }
 
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
-    // កាត ១៖ បង្កើត/កែប្រែគណនី
-    '<div class="card border-t-4 border-blue-600 shadow-xl p-5 mb-0">' +
-      '<div class="flex justify-between items-center mb-3">' +
-        '<h2 id="custFormTitle" class="font-extrabold text-blue-900 text-base flex items-center gap-2">' +
-          '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
-        '</h2>' +
-        '<button type="button" id="btnCancelEditCust" onclick="cancelEditCustomer()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
-          '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
-        '</button>' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    
+    // ជួរខាងលើ៖ បង្កើតគណនី (ឆ្វេង ៦ ភាគ) + កំណត់តម្លៃកុងត្រា (ស្តាំ ៦ ភាគ) លើ PC ធំ
+    '<div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">' +
+      
+      // កាត ១៖ បង្កើត/កែប្រែគណនី
+      '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<div class="flex justify-between items-center mb-3">' +
+          '<h2 id="custFormTitle" class="font-extrabold text-blue-900 text-xs sm:text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
+          '</h2>' +
+          '<button type="button" id="btnCancelEditCust" onclick="cancelEditCustomer()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
+            '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
+          '</button>' +
+        '</div>' +
+        '<div class="space-y-2.5">' +
+          '<div>' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
+            '<select id="mem_role_type" onchange="toggleCustTypeFields()" class="font-bold border-2 border-blue-200 p-2 rounded-xl w-full bg-white text-xs sm:text-sm outline-none">' +
+              '<option value="MONTHLY">🏢 អតិថិជនប្រចាំខែ (Monthly - គ្មាន Login, Admin បញ្ចូលឱ្យ)</option>' +
+              '<option value="RESELLER">🚚 អតិថិជនប្រចាំ - អ្នកលក់បន្ត (Reseller - មាន Login)</option>' +
+              '<option value="DRIVER">🛵 កូនចៅ/អ្នកដឹក (Driver - ដកទឹកជំនួសមេ)</option>' +
+              '<option value="COMPANY_DRIVER">🚚 អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)</option>' +
+              '<option value="SELLER">🛒 បុគ្គលិកលក់នៅកន្លែង (Seller / Cashier)</option>' +
+              '<option value="ADMIN">👑 Admin អ្នកគ្រប់គ្រង (Admin)</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<input type="text" id="mem_name" placeholder="*ឈ្មោះពេញ (ឧ៖ ក្រុមហ៊ុន A ឬ តារា)" class="font-bold border p-2 rounded-xl text-xs sm:text-sm outline-none focus:border-blue-500">' +
+            '<input type="text" id="mem_phone" placeholder="លេខទូរស័ព្ទ (បើមាន)" class="border p-2 rounded-xl text-xs sm:text-sm outline-none focus:border-blue-500 font-mono">' +
+          '</div>' +
+          '<div id="driverBossContainer" class="p-2.5 bg-amber-50 rounded-2xl border border-amber-300 space-y-1 hidden">' +
+            '<label class="text-[9.5px] font-black text-amber-950 uppercase block">ឈ្មោះមេ (អ្នកលក់បន្តដែលកូនចៅនេះមកដកទឹកជំនួស) *</label>' +
+            '<select id="mem_boss_select" onchange="document.getElementById(\'mem_boss_custom\').value=this.value" class="font-bold text-amber-950 border border-amber-300 bg-white rounded-xl p-1.5 w-full text-xs">' +
+              bossOptions +
+            '</select>' +
+            '<input type="text" id="mem_boss_custom" placeholder="ឬវាយឈ្មោះមេនៅទីនេះ (បើមិនទាន់មានក្នុងបញ្ជី)..." class="font-bold border border-amber-300 bg-white rounded-xl p-1.5 w-full text-xs">' +
+          '</div>' +
+          '<div id="loginCredsContainer" class="grid grid-cols-2 gap-2 p-2.5 bg-blue-50/60 rounded-2xl border border-blue-200 hidden">' +
+            '<div>' +
+              '<label class="text-[9px] font-bold text-blue-900 uppercase block mb-0.5">Username ចូលប្រើ *</label>' +
+              '<input type="text" id="mem_user" placeholder="ឧ៖ user123" class="font-bold border p-1.5 rounded-xl w-full bg-white text-xs">' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9px] font-bold text-blue-900 uppercase block mb-0.5">Password លេខសម្ងាត់ *</label>' +
+              '<input type="text" id="mem_pass" placeholder="លេខសម្ងាត់" class="font-bold border p-1.5 rounded-xl w-full bg-white text-xs">' +
+            '</div>' +
+          '</div>' +
+          '<button onclick="saveUserToSupabase()" id="btnSaveUserAction" class="btn-green shadow-lg py-2.5 text-xs sm:text-sm font-bold">' +
+            'រក្សាទុកគណនី (Save Account)' +
+          '</button>' +
+        '</div>' +
       '</div>' +
-      '<div class="space-y-3">' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
-          '<select id="mem_role_type" onchange="toggleCustTypeFields()" class="font-bold border-2 border-blue-200 p-2.5 rounded-xl w-full bg-white">' +
-            '<option value="MONTHLY">🏢 អតិថិជនប្រចាំខែ (Monthly - គ្មាន Login, Admin បញ្ចូលឱ្យ)</option>' +
-            '<option value="RESELLER">🚚 អតិថិជនប្រចាំ - អ្នកលក់បន្ត (Reseller - មាន Login)</option>' +
-            '<option value="DRIVER">🛵 កូនចៅ/អ្នកដឹក (Driver - ដកទឹកជំនួសមេ)</option>' +
-            '<option value="COMPANY_DRIVER">🚚 អ្នកដឹកជញ្ជូនរោងចក្រ (Company Driver)</option>' +
-            '<option value="SELLER">🛒 បុគ្គលិកលក់នៅកន្លែង (Seller / Cashier)</option>' +
-            '<option value="ADMIN">👑 Admin អ្នកគ្រប់គ្រង (Admin)</option>' +
-          '</select>' +
-        '</div>' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<input type="text" id="mem_name" placeholder="*ឈ្មោះពេញ (ឧ៖ ក្រុមហ៊ុន A ឬ តារា)" class="font-bold border p-2.5 rounded-xl">' +
-          '<input type="text" id="mem_phone" placeholder="លេខទូរស័ព្ទ (បើមាន)" class="border p-2.5 rounded-xl">' +
-        '</div>' +
-        '<div id="driverBossContainer" class="p-3 bg-amber-50 rounded-2xl border border-amber-300 space-y-1.5 hidden">' +
-          '<label class="text-[10px] font-black text-amber-950 uppercase block">ឈ្មោះមេ (អ្នកលក់បន្តដែលកូនចៅនេះមកដកទឹកជំនួស) *</label>' +
-          '<select id="mem_boss_select" onchange="document.getElementById(\'mem_boss_custom\').value=this.value" class="font-bold text-amber-950 border border-amber-300 bg-white rounded-xl p-2 w-full text-xs">' +
-            bossOptions +
-          '</select>' +
-          '<input type="text" id="mem_boss_custom" placeholder="ឬវាយឈ្មោះមេនៅទីនេះ (បើមិនទាន់មានក្នុងបញ្ជី)..." class="font-bold border border-amber-300 bg-white rounded-xl p-2 w-full text-xs">' +
-        '</div>' +
-        '<div id="loginCredsContainer" class="grid grid-cols-2 gap-2 p-3 bg-blue-50/60 rounded-2xl border border-blue-200 hidden">' +
+
+      // កាត ២៖ កំណត់តម្លៃពិសេសសម្រាប់អតិថិជន Monthly
+      '<div class="card border-t-4 border-orange-500 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h3 class="font-extrabold text-orange-900 text-xs sm:text-base mb-1 flex items-center gap-1.5">' +
+          '<i class="fas fa-tags text-orange-600"></i>កំណត់តម្លៃកុងត្រាសម្រាប់ម៉ូយប្រចាំខែ (Contract Prices)' +
+        '</h3>' +
+        '<p class="text-[10px] text-gray-500 mb-2.5 leading-relaxed">' +
+          '💡 <b>ចំណាំ៖</b> កំណត់មុខទំនិញ និងតម្លៃនៅទីនេះ ដើម្បីឱ្យទំនិញនោះបង្ហាញ និងចាក់សោរតម្លៃពេលលក់ឱ្យគាត់។' +
+        '</p>' +
+        '<div class="space-y-2.5">' +
           '<div>' +
-            '<label class="text-[9.5px] font-bold text-blue-900 uppercase block mb-1">Username ចូលប្រើ *</label>' +
-            '<input type="text" id="mem_user" placeholder="ឧ៖ user123" class="font-bold border p-2 rounded-xl w-full bg-white text-xs">' +
+            '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">១. ជ្រើសរើសម៉ូយប្រចាំខែ (Monthly)</label>' +
+            '<select id="spCustSelect" class="w-full font-bold border p-2 rounded-xl bg-white text-blue-950 text-xs sm:text-sm outline-none">' + monthlyCustOptions + '</select>' +
           '</div>' +
-          '<div>' +
-            '<label class="text-[9.5px] font-bold text-blue-900 uppercase block mb-1">Password លេខសម្ងាត់ *</label>' +
-            '<input type="text" id="mem_pass" placeholder="លេខសម្ងាត់" class="font-bold border p-2 rounded-xl w-full bg-white text-xs">' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">២. ជ្រើសរើសទំនិញ</label>' +
+              '<select id="spProdSelect" class="font-bold border p-2 rounded-xl bg-white w-full text-xs sm:text-sm outline-none">' + prodOptions + '</select>' +
+            '</div>' +
+            '<div>' +
+              '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">៣. តម្លៃពិសេស (៛)</label>' +
+              '<input type="number" id="spPriceInput" placeholder="ឧ៖ ៥០០" class="font-black text-orange-700 border p-2 rounded-xl text-center w-full text-xs sm:text-sm outline-none">' +
+            '</div>' +
           '</div>' +
+          '<button onclick="saveSpecialPriceToSupabase()" class="btn-green bg-orange-600 hover:bg-orange-700 py-2.5 text-xs sm:text-sm font-bold shadow-md">' +
+            'រក្សាទុកតម្លៃពិសេស (Save Price)' +
+          '</button>' +
         '</div>' +
-        '<button onclick="saveUserToSupabase()" id="btnSaveUserAction" class="btn-green shadow-lg py-3 text-sm font-bold">រក្សាទុកគណនី (Save Account)</button>' +
+      '</div>' +
+
+    '</div>' + // បិទ grid ខាងលើ
+
+    // កាត ៣៖ តារាងតម្លៃពិសេសដែលបានកំណត់
+    '<div class="card border-t-4 border-orange-400 shadow-lg p-4 sm:p-5 mb-0 bg-white">' +
+      '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2 flex items-center gap-1.5">' +
+        '<i class="fas fa-list-check text-orange-600"></i>បញ្ជីតម្លៃកុងត្រាដែលបានកំណត់' +
+      '</h4>' +
+      '<div class="overflow-x-auto max-h-56 overflow-y-auto rounded-xl border border-gray-100">' +
+        '<table class="w-full text-left text-xs border-collapse">' +
+          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10">' +
+            '<tr><th class="p-2 sm:p-2.5">អតិថិជន</th><th class="p-2 sm:p-2.5">មុខទំនិញ</th><th class="p-2 sm:p-2.5 text-right">តម្លៃពិសេស</th><th class="p-2 sm:p-2.5 text-center w-14">លុប</th></tr>' +
+          '</thead>' +
+          '<tbody id="specialPricesTableBody"></tbody>' +
+        '</table>' +
       '</div>' +
     '</div>' +
 
-    // កាត ២៖ កំណត់តម្លៃពិសេស (សម្រាប់តែអតិថិជន Monthly)
-    '<div class="card border-t-4 border-orange-500 shadow-xl p-5 mb-0">' +
-      '<h3 class="font-extrabold text-orange-900 text-base mb-1 flex items-center gap-2">' +
-        '<i class="fas fa-tags text-orange-600"></i>កំណត់តម្លៃពិសេសសម្រាប់អតិថិជនប្រចាំខែ (Contract Prices)' +
-      '</h3>' +
-      '<p class="text-[11px] text-gray-500 mb-3 leading-relaxed">' +
-        '💡 <b>ចំណាំ៖</b> កំណត់មុខទំនិញ និងតម្លៃនៅទីនេះ ដើម្បីឱ្យទំនិញនោះបង្ហាញ និងចាក់សោរតម្លៃពេលលក់ឱ្យគាត់។' +
-      '</p>' +
-      '<div class="space-y-3">' +
-        '<div>' +
-          '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">១. ជ្រើសរើសម៉ូយប្រចាំខែ (Monthly)</label>' +
-          '<select id="spCustSelect" class="w-full font-bold border p-2.5 rounded-xl bg-white text-blue-950">' + monthlyCustOptions + '</select>' +
-        '</div>' +
-        '<div class="grid grid-cols-2 gap-2">' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">២. ជ្រើសរើសទំនិញ</label>' +
-            '<select id="spProdSelect" class="font-bold border p-2.5 rounded-xl bg-white w-full">' + prodOptions + '</select>' +
-          '</div>' +
-          '<div>' +
-            '<label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">៣. តម្លៃពិសេស (៛)</label>' +
-            '<input type="number" id="spPriceInput" placeholder="ឧ៖ ៥០០" class="font-black text-orange-700 border p-2.5 rounded-xl text-center w-full">' +
-          '</div>' +
-        '</div>' +
-        '<button onclick="saveSpecialPriceToSupabase()" class="btn-green bg-orange-600 hover:bg-orange-700 py-3 text-sm font-bold">រក្សាទុកតម្លៃពិសេស (Save Price)</button>' +
-      '</div>' +
-    '</div>' +
-
-    // កាត ៣៖ តារាងតម្លៃពិសេស
-    '<div class="card border-t-4 border-orange-400 shadow-lg p-5 mb-0">' +
-      '<h4 class="font-bold text-gray-800 text-sm mb-2"><i class="fas fa-list-check text-orange-600 mr-1.5"></i>បញ្ជីតម្លៃពិសេសដែលបានកំណត់</h4>' +
-      '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-2.5">អតិថិជន</th><th class="p-2.5">មុខទំនិញ</th><th class="p-2.5 text-right">តម្លៃពិសេស</th><th class="p-2.5 text-center">លុប</th></tr></thead><tbody id="specialPricesTableBody"></tbody></table></div>' +
-    '</div>' +
-
-    // កាត ៤៖ 🔍 បញ្ជីគណនីទាំងអស់ (តារាងធំខាងក្រោមបង្អស់)
-    '<div class="card border-t-4 border-gray-700 shadow-xl p-5 mb-0 space-y-3">' +
+    // កាត ៤៖ បញ្ជីគណនីទាំងអស់ (Full Width Table)
+    '<div class="card border-t-4 border-gray-700 shadow-xl p-4 sm:p-5 mb-0 space-y-3 bg-white">' +
       '<div class="flex justify-between items-center">' +
-        '<h3 class="font-bold text-gray-800 text-sm flex items-center gap-2"><i class="fas fa-users text-blue-600"></i>បញ្ជីគណនីទាំងអស់</h3>' +
+        '<h3 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">' +
+          '<i class="fas fa-users text-blue-600"></i>បញ្ជីគណនីទាំងអស់' +
+        '</h3>' +
         '<span id="userTotalCountBadge" class="text-xs font-black bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-full">0 នាក់</span>' +
       '</div>' +
       '<div class="relative">' +
         '<input type="text" id="custModuleSearchInp" oninput="filterUsersModuleTable()" placeholder="🔍 វាយឈ្មោះ, លេខទូរស័ព្ទ ឬ Username ដើម្បីស្វែងរកភ្លាមៗ..." class="w-full border-2 border-gray-200 rounded-xl p-2.5 pl-9 outline-none focus:border-blue-500 font-bold text-xs bg-slate-50 focus:bg-white">' +
         '<i class="fas fa-search absolute left-3 top-3.5 text-gray-400 text-xs pointer-events-none"></i>' +
       '</div>' +
-      '<div class="flex flex-wrap gap-1.5 text-xs">' +
+      '<div class="flex flex-wrap gap-1 text-xs">' +
         '<button type="button" onclick="switchUserTab(\'ALL\')" id="uTab_ALL" class="px-2.5 py-1.5 rounded-xl font-bold bg-blue-700 text-white shadow-2xs active:scale-95 transition">ទាំងអស់</button>' +
         '<button type="button" onclick="switchUserTab(\'RESELLER\')" id="uTab_RESELLER" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🚚 អ្នកលក់បន្ត</button>' +
         '<button type="button" onclick="switchUserTab(\'MONTHLY\')" id="uTab_MONTHLY" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🏢 ប្រចាំខែ</button>' +
@@ -1511,15 +1830,21 @@ function renderCustomersModule() {
         '<button type="button" onclick="switchUserTab(\'DRIVER\')" id="uTab_DRIVER" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">🛵 អ្នកដឹក</button>' +
         '<button type="button" onclick="switchUserTab(\'STAFF\')" id="uTab_STAFF" class="px-2.5 py-1.5 rounded-xl font-bold bg-white text-gray-700 border hover:bg-gray-50 active:scale-95 transition">👑 Staff/Admin</button>' +
       '</div>' +
-      '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+      '<div class="overflow-x-auto max-h-[450px] overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
         '<table class="w-full text-left text-xs border-collapse">' +
           '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
-            '<tr><th class="p-2.5">ឈ្មោះ / ទូរស័ព្ទ</th><th class="p-2.5">ព័ត៌មានគណនី (Login)</th><th class="p-2.5 text-center">តួនាទី / ប្រភេទ</th><th class="p-2.5 text-center">សកម្មភាព</th></tr>' +
+            '<tr>' +
+              '<th class="p-2 sm:p-2.5">ឈ្មោះ / ទូរស័ព្ទ</th>' +
+              '<th class="p-2 sm:p-2.5">ព័ត៌មានគណនី (Login)</th>' +
+              '<th class="p-2 sm:p-2.5 text-center">តួនាទី / ប្រភេទ</th>' +
+              '<th class="p-2 sm:p-2.5 text-center w-28">សកម្មភាព</th>' +
+            '</tr>' +
           '</thead>' +
           '<tbody id="usersModuleTableBody"></tbody>' +
         '</table>' +
       '</div>' +
     '</div>' +
+
   '</div>';
 
   toggleCustTypeFields();
@@ -1857,12 +2182,17 @@ function switchUserTab(tab) {
   filterUsersModuleTable();
 }
 
-// 📋 បង្ហាញតារាងបញ្ជីគណនី (មានប៊ូតុង [✏️ កែប្រែ] ច្បាស់ៗ & [🗑️ លុប])
+// 📋 បង្ហាញតារាងបញ្ជីគណនី (ការពារបិទបាំង Password & រៀបរយលើអេក្រង់តូច)
 function filterUsersModuleTable() {
   var tbody = document.getElementById('usersModuleTableBody');
   var searchInp = document.getElementById('custModuleSearchInp');
   var badgeCount = document.getElementById('userTotalCountBadge');
   if (!tbody) return;
+
+  var tableEl = tbody.closest('table');
+  if (tableEl) {
+    tableEl.style.minWidth = "580px";
+  }
 
   var q = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
@@ -1895,60 +2225,66 @@ function filterUsersModuleTable() {
 
   var html = '';
   filtered.forEach(function(u) {
-    // 🛡️ ធានាថា Seller និង Admin មិនច្រឡំជាមួយភ្ញៀវ Online ឡើយ
     var isSeller = (u.role === 'Seller');
     var isOnlineRetail = !isSeller && u.role !== 'Admin' && (u.type === 'Retail' || u.role === 'Retail' || String(u.username || '').startsWith('online_'));
     var badgeHtml = '';
 
     if (u.type === 'Monthly') {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300">🏢 ប្រចាំខែ</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-orange-100 text-orange-800 border border-orange-300 whitespace-nowrap inline-flex items-center gap-1">🏢 ប្រចាំខែ</span>';
     } else if (isSeller) {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-900 border border-blue-300">🛒 បុគ្គលិកលក់</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-blue-100 text-blue-900 border border-blue-300 whitespace-nowrap inline-flex items-center gap-1">🛒 អ្នកលក់</span>';
     } else if (isOnlineRetail) {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🌐 ភ្ញៀវ Online</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap inline-flex items-center gap-1">🌐 ភ្ញៀវ Online</span>';
     } else if (u.type === 'CompanyDriver') {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">🚚 អ្នកដឹក KC WATER</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap inline-flex items-center gap-1">🚚 អ្នកដឹក KC</span>';
     } else if (u.type === 'Driver' || u.role === 'Driver') {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-amber-100 text-amber-900 border border-amber-300">🛵 កូនចៅដកទឹក (មេ: ' + (u.linked_boss || '-') + ')</span>';
+      var bossClean = u.linked_boss ? u.linked_boss.replace(/\s*\(.*?\)/g, '') : '-';
+      badgeHtml = '<span class="px-2 py-0.5 rounded-lg font-bold text-[9.5px] bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap inline-block leading-tight text-center">🛵 អ្នកដឹក<br><small class="text-[9px] text-amber-700 font-normal">(' + bossClean + ')</small></span>';
     } else if (u.role === 'Admin') {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-900">👑 Admin</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-100 text-purple-900 whitespace-nowrap inline-flex items-center gap-1">👑 Admin</span>';
     } else {
-      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800">🚚 អ្នកលក់បន្ត</span>';
+      badgeHtml = '<span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-green-100 text-green-800 whitespace-nowrap inline-flex items-center gap-1">🚚 អ្នកលក់បន្ត</span>';
     }
 
     var credsText = '';
-    if (isSeller) {
-      credsText = '<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
-    } else if (isOnlineRetail) {
+    if (isOnlineRetail) {
       var locInfo = u.linked_boss ? String(u.linked_boss).trim() : '';
       var mapDisplay = '';
       if (locInfo.indexOf('http') !== -1) {
-        mapDisplay = '<a href="' + locInfo + '" target="_blank" class="text-blue-600 hover:underline font-bold text-[10px] flex items-center gap-1"><i class="fas fa-map-location-dot text-emerald-600"></i> បើកផែនទី Google Maps</a>';
+        mapDisplay = '<a href="' + locInfo + '" target="_blank" class="text-blue-600 hover:underline font-bold text-[10px] flex items-center gap-1 whitespace-nowrap"><i class="fas fa-map-location-dot text-emerald-600"></i> បើកផែនទី Maps</a>';
       } else if (locInfo) {
-        mapDisplay = '<span class="text-gray-700 font-bold text-[10px] flex items-center gap-1"><i class="fas fa-location-dot text-red-500"></i> ' + locInfo + '</span>';
+        mapDisplay = '<span class="text-gray-700 font-bold text-[10px] flex items-center gap-1 truncate max-w-[160px]"><i class="fas fa-location-dot text-red-500"></i> ' + locInfo + '</span>';
       } else {
         mapDisplay = '<span class="text-gray-400 text-[10px] italic">មិនមានទីតាំង</span>';
       }
-      credsText = '<div class="space-y-1 text-left"><div class="text-[10px] text-emerald-800 font-black flex items-center gap-1"><i class="fas fa-bag-shopping text-emerald-600"></i> ភ្ញៀវកុម្ម៉ង់លើ Web</div>' + mapDisplay + '</div>';
+      credsText = '<div class="space-y-0.5 text-left"><div class="text-[10px] text-emerald-800 font-black flex items-center gap-1 whitespace-nowrap"><i class="fas fa-bag-shopping text-emerald-600"></i> ភ្ញៀវ Online</div>' + mapDisplay + '</div>';
     } else if (u.type === 'Monthly') {
-      credsText = '<span class="text-gray-400 text-[11px] italic">ម៉ូយប្រចាំខែ (គ្មាន Login)</span>';
+      credsText = '<span class="text-gray-400 text-[10.5px] italic whitespace-nowrap">🔒 ម៉ូយប្រចាំខែ (គ្មាន Login)</span>';
     } else {
-      credsText = '<span class="font-mono text-xs"><b>' + (u.username || '-') + '</b> / ' + (u.password || '-') + '</span>';
+      // 🛡️ បិទបាំង Password ដោយសញ្ញាចុចៗ •••••••• និងមានប៊ូតុងភ្នែកចុចមើល
+      var safePass = u.password || '-';
+      credsText = '<div class="flex items-center gap-1.5 font-mono text-xs whitespace-nowrap">' +
+        '<span><b>' + (u.username || '-') + '</b> / </span>' +
+        '<span id="passMask_' + u.id + '" class="tracking-widest text-slate-500 font-black">••••••••</span>' +
+        '<span id="passReal_' + u.id + '" class="hidden text-blue-900 font-bold">' + safePass + '</span>' +
+        '<button type="button" onclick="togglePasswordRowVisibility(' + u.id + ')" class="text-slate-400 hover:text-blue-600 p-0.5 active:scale-90 transition" title="ចុចបង្ហាញ/លាក់ លេខសម្ងាត់">' +
+          '<i id="passEyeIcon_' + u.id + '" class="fas fa-eye text-[11px]"></i>' +
+        '</button>' +
+      '</div>';
     }
 
-    var phoneDisplay = u.phone ? ('<span class="text-emerald-700 font-bold text-xs"><i class="fas fa-phone text-[10px] mr-1"></i>' + u.phone + '</span>') : '<span class="text-gray-400 text-[10px]">-</span>';
+    var phoneDisplay = u.phone ? ('<span class="text-emerald-700 font-bold text-xs whitespace-nowrap"><i class="fas fa-phone text-[10px] mr-1"></i>' + u.phone + '</span>') : '<span class="text-gray-400 text-[10px]">-</span>';
 
-    // 🌟 ប៊ូតុង [✏️ កែប្រែ] ធំៗច្បាស់ៗ & [🗑️ លុប]
     html += '<tr class="border-b hover:bg-gray-50 transition">' +
-      '<td class="p-2.5"><b class="text-gray-800 text-xs">' + u.full_name + '</b><br>' + phoneDisplay + '</td>' +
-      '<td class="p-2.5">' + credsText + '</td>' +
-      '<td class="p-2.5 text-center">' + badgeHtml + '</td>' +
-      '<td class="p-2.5 text-center whitespace-nowrap">' +
+      '<td class="p-2 sm:p-2.5 whitespace-nowrap"><b class="text-gray-800 text-xs">' + u.full_name + '</b><br>' + phoneDisplay + '</td>' +
+      '<td class="p-2 sm:p-2.5">' + credsText + '</td>' +
+      '<td class="p-2 sm:p-2.5 text-center whitespace-nowrap">' + badgeHtml + '</td>' +
+      '<td class="p-2 sm:p-2.5 text-center whitespace-nowrap">' +
         '<div class="flex items-center justify-center gap-1.5">' +
-          '<button type="button" onclick="prepareEditCustomer(' + u.id + ')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1" title="ចុចដើម្បីកែប្រែគណនី">' +
+          '<button type="button" onclick="prepareEditCustomer(' + u.id + ')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1" title="ចុចដើម្បីកែប្រែគណនី">' +
             '<i class="fas fa-pen-to-square text-amber-600"></i> កែប្រែ' +
           '</button>' +
-          '<button type="button" onclick="delUserFromSupabase(' + u.id + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs active:scale-90 transition" title="លុបគណនី">' +
+          '<button type="button" onclick="delUserFromSupabase(' + u.id + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="លុបគណនី">' +
             '<i class="fas fa-trash-can"></i>' +
           '</button>' +
         '</div>' +
@@ -1956,7 +2292,25 @@ function filterUsersModuleTable() {
     '</tr>';
   });
 
- tbody.innerHTML = html;
+  tbody.innerHTML = html;
+}
+
+// 👁️ មុខងារចុចបង្ហាញ/លាក់ Password ក្នុងតារាងបញ្ជីគណនី
+function togglePasswordRowVisibility(userId) {
+  var maskEl = document.getElementById('passMask_' + userId);
+  var realEl = document.getElementById('passReal_' + userId);
+  var iconEl = document.getElementById('passEyeIcon_' + userId);
+  if (!maskEl || !realEl || !iconEl) return;
+
+  if (realEl.classList.contains('hidden')) {
+    realEl.classList.remove('hidden');
+    maskEl.classList.add('hidden');
+    iconEl.className = "fas fa-eye-slash text-blue-600 text-[11px]";
+  } else {
+    realEl.classList.add('hidden');
+    maskEl.classList.remove('hidden');
+    iconEl.className = "fas fa-eye text-slate-400 text-[11px]";
+  }
 }
 
 async function fetchSpecialPricesTable() {
@@ -2111,9 +2465,8 @@ async function delUserFromSupabase(id) {
 }
 
 // ==========================================================================
-// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារ (មានបន្ថែម ៧. ដេប៉ូដៃគូផ្គត់ផ្គង់ PARTNER DEPOTS)
+// ⚙️ ផ្ទាំង SETTINGS ស្តង់ដារ (មានកាត ABA QR + FONT SIZE + SETTINGS ទាំងអស់)
 // ==========================================================================
-
 function renderSettingsModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -2121,118 +2474,148 @@ function renderSettingsModule() {
   var curUsd = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
   var curThb = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
   var tgStatus = (telegramConfig && telegramConfig.status) ? telegramConfig.status : 'ON';
+  var curScale = parseInt(localStorage.getItem('kc_font_scale')) || 100;
 
-  area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // ក្បាលទំព័រ
-    '<div class="flex justify-between items-center bg-white p-4 rounded-3xl border shadow-sm">' +
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-3xl border shadow-sm gap-2">' +
       '<div>' +
         '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
           '<i class="fas fa-gear text-emerald-600"></i>' +
           '<span>ការកំណត់ប្រព័ន្ធ (System Settings)</span>' +
         '</h2>' +
-        '<p class="text-xs text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
+        '<p class="text-[11px] text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
       '</div>' +
-      '<button onclick="renderSettingsModule()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5">' +
+      '<button onclick="renderSettingsModule()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5 self-end sm:self-auto">' +
         '<i class="fas fa-sync-alt"></i> Refresh' +
       '</button>' +
     '</div>' +
 
-    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៧ (រួមបញ្ចូលដេប៉ូដៃគូផ្គត់ផ្គង់)
-    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">' +
+    // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៩
+    '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">' +
       
       // កាត ១៖ ប្រភេទទំនិញ
-      '<div onclick="openCategoryManagerModal()" class="card border-l-4 border-emerald-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      '<div onclick="openCategoryManagerModal()" class="card border-l-4 border-emerald-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-layer-group"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-emerald-700 transition">ប្រភេទទំនិញ (Categories)</b>' +
-            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">បង្កើត ប្តូរឈ្មោះ & Emoji រហ័ស</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-emerald-700 transition">ប្រភេទទំនិញ (Categories)</b>' +
+            '<span class="text-[10px] text-slate-500 font-bold block mt-0.5">បង្កើត ប្តូរឈ្មោះ & Emoji</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
       // កាត ២៖ អត្រាប្តូរប្រាក់
-      '<div onclick="openExchangeRatesModal()" class="card border-l-4 border-blue-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      '<div onclick="openExchangeRatesModal()" class="card border-l-4 border-blue-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-money-bill-transfer"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-blue-700 transition">អត្រាប្តូរប្រាក់ (Exchange Rates)</b>' +
-            '<span class="text-[11px] text-blue-700 font-bold block mt-0.5">$1=' + curUsd.toLocaleString() + '៛ | 1฿=' + curThb.toLocaleString() + '៛</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-blue-700 transition">អត្រាប្តូរប្រាក់ (Rates)</b>' +
+            '<span class="text-[10px] text-blue-700 font-bold block mt-0.5">$1=' + curUsd.toLocaleString() + '៛ | 1฿=' + curThb.toLocaleString() + '៛</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // 🌟 កាត ៣ (ថ្មី)៖ ដេប៉ូដៃគូផ្គត់ផ្គង់ (PARTNER DEPOTS)
-      '<div onclick="openDepotManagerModal()" class="card border-l-4 border-rose-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-rose-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // កាត ៣៖ រូបភាព ABA KHQR ផ្ទាល់ខ្លួន
+      '<div onclick="openAbaQrSettingsModal()" class="card border-l-4 border-red-600 p-3.5 bg-red-50/30 rounded-2xl shadow-sm hover:shadow-xl hover:border-red-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
+            '<i class="fas fa-qrcode"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-red-700 transition">រូប ABA KHQR</b>' +
+            '<span class="text-[10px] text-red-700 font-bold block mt-0.5">ផ្ទុក QR ផ្ទាល់ខ្លួនក្នុង DB 📱</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-red-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៤៖ ដេប៉ូដៃគូផ្គត់ផ្គង់
+      '<div onclick="openDepotManagerModal()" class="card border-l-4 border-rose-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-rose-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-shop-lock"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-rose-700 transition">ដេប៉ូដៃគូផ្គត់ផ្គង់ (Depots)</b>' +
-            '<span class="text-[11px] text-rose-700 font-bold block mt-0.5">ដេប៉ូអង្ករ, គ្រឿងទេស, ទីតាំង & វិធីទូទាត់</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-rose-700 transition">ដេប៉ូផ្គត់ផ្គង់ (Depots)</b>' +
+            '<span class="text-[10px] text-rose-700 font-bold block mt-0.5">ដេប៉ូអង្ករ, គ្រឿងទេស & ទីតាំង</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-rose-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៤៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
-      '<div onclick="openDeliverySettingsModal()" class="card border-l-4 border-indigo-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // កាត ៥៖ កម្រិតទំហំអក្សរ
+      '<div onclick="openFontSizeModal()" class="card border-l-4 border-purple-600 p-3.5 bg-purple-50/40 rounded-2xl shadow-sm hover:shadow-xl hover:border-purple-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
+            '<i class="fas fa-glasses"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-purple-700 transition">ទំហំអក្សរ (Font Size)</b>' +
+            '<span class="text-[10px] text-purple-700 font-bold block mt-0.5">បច្ចុប្បន្ន៖ ' + curScale + '% (ចុចប្តូរ 👓)</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-purple-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៦៖ សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ
+      '<div onclick="openDeliverySettingsModal()" class="card border-l-4 border-indigo-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-truck-fast"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-indigo-700 transition">សេវាដឹកជញ្ជូន & ម៉ោងធ្វើការ</b>' +
-            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">កំណត់ថ្លៃដឹក & ម៉ោងបើក/បិទហាង</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-indigo-700 transition">សេវាដឹក & ម៉ោងធ្វើការ</b>' +
+            '<span class="text-[10px] text-slate-500 font-bold block mt-0.5">ថ្លៃដឹក & ម៉ោងបើក/បិទហាង</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៥៖ ប្រព័ន្ធ Promotion
-      '<div onclick="openPromoSettingsModal()" class="card border-l-4 border-amber-500 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-amber-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // កាត ៧៖ ប្រព័ន្ធ Promotion
+      '<div onclick="openPromoSettingsModal()" class="card border-l-4 border-amber-500 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-amber-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-gift"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-amber-700 transition">ប្រូម៉ូសិនលើ Web (Promotions)</b>' +
-            '<span class="text-[11px] text-amber-700 font-bold block mt-0.5">កាដូថែមទំនិញ & Banner ផ្សាយ</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-amber-700 transition">ប្រូម៉ូសិនលើ Web</b>' +
+            '<span class="text-[10px] text-amber-700 font-bold block mt-0.5">កាដូថែមទំនិញ & Banner ផ្សាយ</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-amber-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៦៖ ផ្ទាំងស្លាយ Web
-      '<div onclick="openSlidesSettingsModal()" class="card border-l-4 border-teal-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-teal-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // កាត ៨៖ ផ្ទាំងស្លាយ Web
+      '<div onclick="openSlidesSettingsModal()" class="card border-l-4 border-teal-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-teal-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fas fa-images"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-teal-700 transition">ផ្ទាំងស្លាយលើ Web (Slides)</b>' +
-            '<span class="text-[11px] text-slate-500 font-bold block mt-0.5">ដាក់រូបភាព & អក្សរស្លាយទាំង ៤</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-teal-700 transition">ស្លាយលើ Web (Slides)</b>' +
+            '<span class="text-[10px] text-slate-500 font-bold block mt-0.5">រូបភាព & អក្សរស្លាយទាំង ៤</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-teal-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
-      // កាត ៧៖ Telegram Bot Alert
-      '<div onclick="openTelegramSettingsModal()" class="card border-l-4 border-green-600 p-4 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0 sm:col-span-2">' +
-        '<div class="flex items-center gap-3">' +
-          '<div class="w-12 h-12 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-xl shadow-inner group-hover:scale-110 transition">' +
+      // កាត ៩៖ Telegram Bot Alert
+      '<div onclick="openTelegramSettingsModal()" class="card border-l-4 border-green-600 p-3.5 bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-green-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
             '<i class="fab fa-telegram text-blue-500"></i>' +
           '</div>' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900 block group-hover:text-green-700 transition">Telegram Bot Alerts</b>' +
-            '<span class="text-[11px] font-bold block mt-0.5 ' + (tgStatus === 'ON' ? 'text-green-700' : 'text-slate-400') + '">ស្ថានភាព៖ ' + (tgStatus === 'ON' ? '🔔 បើក (ON)' : '🔕 បិទ (OFF)') + '</span>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-green-700 transition">Telegram Alerts</b>' +
+            '<span class="text-[10px] font-bold block mt-0.5 ' + (tgStatus === 'ON' ? 'text-green-700' : 'text-slate-400') + '">ស្ថានភាព៖ ' + (tgStatus === 'ON' ? '🔔 បើក' : '🔕 បិទ') + '</span>' +
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-green-600 group-hover:translate-x-1 transition text-xs"></i>' +
@@ -2240,6 +2623,98 @@ function renderSettingsModule() {
 
     '</div>' +
   '</div>';
+}
+
+// ==========================================================================
+// 👓 មុខងារ POP-UP MODAL ជ្រើសរើសទំហំអក្សរ (FONT SIZE DIALOG)
+// ==========================================================================
+function openFontSizeModal() {
+  var existing = document.getElementById('fontSizeManagerModal');
+  if (existing) existing.remove();
+
+  var curScale = parseInt(localStorage.getItem('kc_font_scale')) || 100;
+
+  var html = '<div id="fontSizeManagerModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeFontSizeModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-glasses text-purple-600"></i> កម្រិតទំហំអក្សរ (Font Size)' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">ចុចជ្រើសរើសដើម្បីរីកធំទូទាំងប្រព័ន្ធភ្លាមៗ</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeFontSizeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      // ៤ កម្រិតទំហំអក្សរ
+      '<div class="grid grid-cols-2 gap-2 text-xs font-bold">' +
+        '<button type="button" onclick="selectAppFontSize(90)" id="btnFont_90" class="p-2.5 rounded-2xl border-2 transition active:scale-95 text-center ' + (curScale === 90 ? 'border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50') + '">' +
+          '<div class="text-xs">តូចល្មម (90%)</div>' +
+          '<span class="text-[9.5px] text-slate-400 font-normal">សម្រាប់អេក្រង់ធំ</span>' +
+        '</button>' +
+        '<button type="button" onclick="selectAppFontSize(100)" id="btnFont_100" class="p-2.5 rounded-2xl border-2 transition active:scale-95 text-center ' + (curScale === 100 ? 'border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50') + '">' +
+          '<div class="text-sm">ធម្មតា (100%)</div>' +
+          '<span class="text-[9.5px] text-slate-400 font-normal">ទំហំស្តង់ដារ</span>' +
+        '</button>' +
+        '<button type="button" onclick="selectAppFontSize(115)" id="btnFont_115" class="p-2.5 rounded-2xl border-2 transition active:scale-95 text-center ' + (curScale === 115 ? 'border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50') + '">' +
+          '<div class="text-base text-purple-700">ធំ (115%)</div>' +
+          '<span class="text-[9.5px] text-slate-400 font-normal">ងាយស្រួលអាន</span>' +
+        '</button>' +
+        '<button type="button" onclick="selectAppFontSize(130)" id="btnFont_130" class="p-2.5 rounded-2xl border-2 transition active:scale-95 text-center ' + (curScale === 130 ? 'border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50') + '">' +
+          '<div class="text-lg text-purple-800">ធំបំផុត (130%)</div>' +
+          '<span class="text-[9.5px] text-slate-400 font-normal">សម្រាប់ភ្នែកខ្សោយ</span>' +
+        '</button>' +
+      '</div>' +
+
+      // គំរូអក្សរផ្ទាល់ភ្នែក (Live Preview)
+      '<div class="p-3 bg-purple-50/70 rounded-2xl border border-purple-200 text-left space-y-1">' +
+        '<div class="text-[10px] font-black text-purple-950 uppercase">គំរូអក្សរពេលនេះ (Live Preview)៖</div>' +
+        '<div class="text-sm font-black text-slate-900">រោងចក្រទឹក ខេ ស៊ី វ៉ត់ធ័រ (KC WATER)</div>' +
+        '<div class="text-xs text-slate-600 font-bold">លក់បានថ្ងៃនេះ៖ ៛ 572,000 | បង់គ្រប់ចំនួន</div>' +
+      '</div>' +
+
+      '<button type="button" onclick="confirmFontSizeSave()" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition">' +
+        'យល់ព្រមរក្សាទុក' +
+      '</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function selectAppFontSize(scale) {
+  if (typeof setAppFontSize === 'function') {
+    setAppFontSize(scale);
+  }
+  [90, 100, 115, 130].forEach(function(s) {
+    var btn = document.getElementById('btnFont_' + s);
+    if (!btn) return;
+    if (s === scale) {
+      btn.className = "p-2.5 rounded-2xl border-2 transition active:scale-95 text-center border-purple-600 bg-purple-50 text-purple-900 font-black shadow-xs";
+    } else {
+      btn.className = "p-2.5 rounded-2xl border-2 transition active:scale-95 text-center border-slate-200 bg-white text-slate-700 hover:bg-slate-50";
+    }
+  });
+}
+
+function confirmFontSizeSave() {
+  closeFontSizeModal();
+  renderSettingsModule();
+  if (typeof kcAlert === 'function') {
+    kcAlert({
+      title: "កំណត់ទំហំអក្សរជោគជ័យ! 🎉",
+      message: "កម្រិតទំហំអក្សរថ្មីត្រូវបានកំណត់ និងរក្សាទុកក្នុងប្រព័ន្ធរួចរាល់!",
+      type: "success"
+    });
+  } else {
+    showToast("បានប្តូរទំហំអក្សរជោគជ័យ!", "success");
+  }
+}
+
+function closeFontSizeModal() {
+  var modal = document.getElementById('fontSizeManagerModal');
+  if (modal) modal.remove();
 }
 
 // ==========================================================================
@@ -4694,6 +5169,166 @@ async function submitUpdateMyPhone() {
     if (btn) {
       btn.disabled = false;
       btn.innerText = "រក្សាទុកលេខទូរស័ព្ទ";
+    }
+  }
+}
+
+// ==========================================================================
+// 📱 មុខងារ POP-UP UPLOAD រូប ABA KHQR ផ្ទាល់ខ្លួន (SELF-HOSTED ABA QR ENGINE)
+// ==========================================================================
+
+async function openAbaQrSettingsModal() {
+  var existing = document.getElementById('abaQrSettingsModal');
+  if (existing) existing.remove();
+
+  // ១. ទាញយករូប QR ដែលមានស្រាប់ពី Supabase Settings
+  var currentQrBase64 = "";
+  try {
+    const { data } = await supabaseClient
+      .from('settings')
+      .select('value')
+      .eq('key', 'Store_ABA_QR')
+      .maybeSingle();
+    if (data && data.value) {
+      currentQrBase64 = data.value;
+    }
+  } catch(e) {}
+
+  var previewSrc = currentQrBase64 || "https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg";
+
+  var html = '<div id="abaQrSettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeAbaQrSettingsModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-sm p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto">' +
+      '<div class="flex justify-between items-center border-b pb-2">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-qrcode text-red-600"></i> កំណត់រូប ABA KHQR ហាង' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">រូបនេះនឹងបង្ហាញលើ POS និង Web ភ្ញៀវស្វ័យប្រវត្តិ</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeAbaQrSettingsModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      // 🖼️ ប្រអប់ Preview រូបភាព QR
+      '<div class="p-3 bg-red-50/60 rounded-2xl border-2 border-dashed border-red-300 space-y-2">' +
+        '<div class="p-2 bg-white rounded-xl border border-red-200 shadow-sm max-w-[190px] mx-auto overflow-hidden">' +
+          '<img id="abaQrPreviewImg" src="' + previewSrc + '" class="w-full h-auto rounded-lg object-contain shadow-xs" alt="ABA QR">' +
+        '</div>' +
+        '<span id="abaQrUploadStatusText" class="text-[10.5px] text-slate-600 font-bold block">' +
+          (currentQrBase64 ? '✅ បានភ្ជាប់រូប QR ផ្ទាល់ខ្លួនរួចរាល់' : '⚠️ កំពុងប្រើប្រាស់រូប QR លំនាំដើម') +
+        '</span>' +
+        '<input type="hidden" id="inpHiddenAbaQrBase64" value="' + currentQrBase64 + '">' +
+      '</div>' +
+
+      // ប៊ូតុងរើសរូប និងថតរូប
+      '<div class="grid grid-cols-2 gap-2">' +
+        '<label class="py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+          '<i class="fas fa-image"></i> 📷 ផ្លាស់ប្តូររូប QR' +
+          '<input type="file" id="inpAbaQrFileInput" accept="image/*" onchange="previewAbaQrUpload(this)" class="hidden">' +
+        '</label>' +
+        '<button type="button" onclick="removeAbaQrSettings()" class="py-2.5 px-3 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-xl font-bold text-xs border border-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5">' +
+          '<i class="fas fa-trash-can"></i> កំណត់ឡើងវិញ' +
+        '</button>' +
+      '</div>' +
+
+      '<div class="grid grid-cols-2 gap-2 pt-1 border-t">' +
+        '<button type="button" onclick="closeAbaQrSettingsModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បោះបង់</button>' +
+        '<button type="button" id="btnSaveAbaQrAction" onclick="saveAbaQrSettings()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-1">' +
+          '<i class="fas fa-floppy-disk"></i> រក្សាទុក QR' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeAbaQrSettingsModal() {
+  var modal = document.getElementById('abaQrSettingsModal');
+  if (modal) modal.remove();
+}
+
+// 🖼️ មុខងារបំប្លែងរូប QR ឱ្យតូចល្មម (Canvas Resizer) ដើម្បីកុំឱ្យធ្ងន់ Database
+function previewAbaQrUpload(input) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var maxDim = 600; // ទំហំ 600px ច្បាស់ស្អាត ស្កេនបានលឿន និងស្រាល
+        var w = img.width, h = img.height;
+        if (w > h) {
+          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        } else {
+          if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        document.getElementById('abaQrPreviewImg').src = base64;
+        document.getElementById('inpHiddenAbaQrBase64').value = base64;
+        document.getElementById('abaQrUploadStatusText').innerHTML = '<span class="text-emerald-700 font-black">✔️ បានរើសរូបភាពថ្មីរួចរាល់ (សូមចុចរក្សាទុក)</span>';
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeAbaQrSettings() {
+  document.getElementById('inpHiddenAbaQrBase64').value = '';
+  document.getElementById('abaQrPreviewImg').src = "https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg";
+  document.getElementById('abaQrUploadStatusText').innerHTML = '<span class="text-amber-700 font-bold">⚠️ បានត្រឡប់ទៅរូប QR លំនាំដើម</span>';
+}
+
+// 💾 រក្សាទុករូប QR ចូលក្នុង Supabase Database
+async function saveAbaQrSettings() {
+  var base64 = document.getElementById('inpHiddenAbaQrBase64') ? document.getElementById('inpHiddenAbaQrBase64').value.trim() : '';
+  var btn = document.getElementById('btnSaveAbaQrAction');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_ABA_QR', value: base64 }
+    ]);
+
+    if (error) throw error;
+
+    // ធ្វើបច្ចុប្បន្នភាពលើផ្ទាំង POS KHQR Modal ភ្លាមៗបើមានបើក
+    var posKhqrImg = document.querySelector('#posKhqrModal img');
+    if (posKhqrImg && base64) {
+      posKhqrImg.src = base64;
+    }
+
+    closeAbaQrSettingsModal();
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: "រូបភាព ABA KHQR ត្រូវបានរក្សាទុកក្នុងប្រព័ន្ធរួចរាល់! ទាំងលើ POS និងលើ Web ភ្ញៀវនឹងបង្ហាញរូបថ្មីនេះភ្លាមៗ។",
+        type: "success"
+      });
+    } else {
+      showToast("បានរក្សាទុករូប ABA QR ជោគជ័យ!", "success");
+    }
+
+  } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុក QR';
     }
   }
 }
