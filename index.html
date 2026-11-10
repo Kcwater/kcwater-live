@@ -145,26 +145,15 @@
 
   <script>
     (function() {
-      var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
-      var isAndroid = ua.includes('android');
-      
-      // ១. ពិនិត្យដឹង Messenger / Facebook
-      var isMeta = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
+      // 🤖 ១. ភ្ជាប់ទំនាក់ទំនងជាមួយ Telegram Mini App ឱ្យដំណើរការពេញអេក្រង់ទូរស័ព្ទ
+      if (window.Telegram && window.Telegram.WebApp) {
+        try {
+          window.Telegram.WebApp.ready();  // ប្រាប់ Telegram ឱ្យបើកបង្ហាញទំព័រភ្លាម
+          window.Telegram.WebApp.expand(); // ពង្រីកពេញអេក្រង់ទូរស័ព្ទ
+        } catch(e) {}
+      }
 
-      // ២. ពិនិត្យដឹង Telegram Browser ធម្មតា (ដែលមិនទាន់ចូលដល់ Mini App)
-      var isTelegram = ua.includes('telegram') || typeof window.TelegramWebview !== 'undefined';
-      var isAlreadyMiniApp = !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
-
-    // 🤖 ១. ភ្ជាប់ទំនាក់ទំនងជាមួយ Telegram Mini App ឱ្យដំណើរការពេញអេក្រង់ទូរស័ព្ទ
-    if (window.Telegram && window.Telegram.WebApp) {
-      try {
-        window.Telegram.WebApp.ready();  // ប្រាប់ Telegram ឱ្យបើកបង្ហាញទំព័រភ្លាម
-        window.Telegram.WebApp.expand(); // ពង្រីកពេញអេក្រង់ទូរស័ព្ទ
-      } catch(e) {}
-    }
-
-    // 💬 ២. ពិនិត្យបង្ហាញ Pop-up សួរទៅ Chrome តែពេលភ្ញៀវបើកតាម Messenger / Facebook លើ Android ប៉ុណ្ណោះ
-    (function() {
+      // 💬 ២. ពិនិត្យបង្ហាញ Pop-up សួរទៅ Chrome តែពេលភ្ញៀវបើកតាម Messenger / Facebook លើ Android ប៉ុណ្ណោះ
       var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
       var isAndroid = ua.includes('android');
       var isMeta = ua.includes('fban') || ua.includes('fbios') || ua.includes('messenger') || ua.includes('fb_iab');
@@ -2102,14 +2091,56 @@ function filterCatalog(cat, btn) {
       activeModalProduct = null;
     }
 
-    function adjustDetailQty(delta) {
-      var display = document.getElementById('modalQtyDisplay');
-      if (!display || !activeModalProduct) return;
-      var val = (parseInt(display.innerText) || 1) + delta;
-      if (val < 1) val = 1;
-      display.innerText = val;
-      updateModalButtonText(val);
+    // ==========================================================================
+// 🔔 មុខងារ TOAST ជូនដំណឹងលើ WEB STORE (ស្អាត រលូន មិនគាំង TELEGRAM)
+// ==========================================================================
+function showStoreToast(msg, type) {
+  var existing = document.getElementById('storeLiveToast');
+  if (existing) existing.remove();
+
+  var isError = (type === 'error' || type === 'warning');
+  var bgColor = isError ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900 text-white border-emerald-500';
+  var icon = isError ? '<i class="fas fa-triangle-exclamation text-yellow-300 mr-2 text-sm"></i>' : '<i class="fas fa-circle-check text-emerald-400 mr-2 text-sm"></i>';
+
+  var toastHtml = '<div id="storeLiveToast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-[9999] max-w-xs w-full px-4 animate-in slide-in-from-top duration-300 pointer-events-none">' +
+    '<div class="' + bgColor + ' p-3 rounded-2xl shadow-2xl border-2 flex items-center justify-center text-center text-xs font-black">' +
+      icon + '<span>' + msg + '</span>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', toastHtml);
+
+  setTimeout(function() {
+    var t = document.getElementById('storeLiveToast');
+    if (t) {
+      t.style.opacity = '0';
+      t.style.transition = 'opacity 0.4s ease';
+      setTimeout(function() { if (t) t.remove(); }, 400);
     }
+  }, 2500);
+}
+
+    // ➕➖ ១. មុខងារទប់ស្កាត់កុំឱ្យចុចលើសស្តុក (ប្រើ Toast ជំនួស alert)
+function adjustDetailQty(delta) {
+  var display = document.getElementById('modalQtyDisplay');
+  if (!display || !activeModalProduct) return;
+  var val = (parseInt(display.innerText) || 1) + delta;
+  if (val < 1) val = 1;
+
+  if (activeModalProduct.type === 'ទិញគេ') {
+    var maxStock = parseFloat(activeModalProduct.stock || 0);
+    if (delta > 0 && val > maxStock) {
+      val = maxStock;
+      var alertMsg = (currentLang === 'en') ? ("Only " + maxStock + " available in stock!") :
+                     ((currentLang === 'zh') ? ("该商品库存仅剩 " + maxStock + " 件！") :
+                     ("អភ័យទោស ទំនិញនេះនៅសល់ត្រឹមតែ " + maxStock + " ក្នុងស្តុកប៉ុណ្ណោះ!"));
+      showStoreToast(alertMsg, "warning");
+    }
+  }
+
+  display.innerText = val;
+  updateModalButtonText(val);
+}
 
     // 🔘 មុខងារប៊ូតុង "បញ្ចូលកន្ត្រក" (ខ្លី ស្អាត គ្មានតម្លៃរញ៉េរញ៉ៃ)
     function updateModalButtonText(qty) {
@@ -2120,21 +2151,35 @@ function filterCatalog(cat, btn) {
       }
     }
 
-    function confirmAddToCart() {
-      if (!activeModalProduct) return;
-      var q = parseInt(document.getElementById('modalQtyDisplay').innerText) || 1;
+    // 🛒 ២. ផ្ទៀងផ្ទាត់ស្តុកមុនបញ្ចូលកន្ត្រក (ប្រើ Toast ជំនួស alert)
+function confirmAddToCart() {
+  if (!activeModalProduct) return;
+  var q = parseInt(document.getElementById('modalQtyDisplay').innerText) || 1;
 
-      cartItems[activeModalProduct.id] = {
-        raw_name: activeModalProduct.raw_name,
-        price: activeModalProduct.price,
-        qty: q,
-        isBarrel20L: activeModalProduct.isBarrel20L || false
-      };
-
-      closeProductDetailModal();
-      renderCatalogGrid();
-      recalcCartDock();
+  if (activeModalProduct.type === 'ទិញគេ') {
+    var maxStock = parseFloat(activeModalProduct.stock || 0);
+    if (q > maxStock) {
+      q = maxStock;
+      var alertMsg = (currentLang === 'en') ? ("Only " + maxStock + " available in stock!") :
+                     ((currentLang === 'zh') ? ("该商品库存仅剩 " + maxStock + " 件！") :
+                     ("អភ័យទោស ទំនិញនេះនៅសល់ត្រឹមតែ " + maxStock + " ក្នុងស្តុកប៉ុណ្ណោះ!"));
+      showStoreToast(alertMsg, "warning");
     }
+    if (q <= 0) return;
+  }
+
+  cartItems[activeModalProduct.id] = {
+    raw_name: activeModalProduct.raw_name,
+    price: activeModalProduct.price,
+    qty: q,
+    isBarrel20L: activeModalProduct.isBarrel20L || false
+  };
+
+  closeProductDetailModal();
+  renderCatalogGrid();
+  recalcCartDock();
+  showStoreToast("បានបញ្ចូលកន្ត្រកជោគជ័យ!", "success");
+}
 
     // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត ជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
     function recalcCartDock() {
@@ -2470,23 +2515,35 @@ function updateCheckoutCalculation() {
   };
 }
     
-        // ➕➖ មុខងារបន្ថែម ឬបន្ថយចំនួនទំនិញផ្ទាល់ពីលើផ្ទាំង Checkout
-    function adjustCheckoutItemQty(id, delta) {
-      if (cartItems[id]) {
-        cartItems[id].qty += delta;
-        if (cartItems[id].qty <= 0) {
-          delete cartItems[id];
-        }
-      }
-      updateCheckoutCalculation();
-      recalcCartDock();
-      renderCatalogGrid();
-
-      // បើលុបទំនិញអស់ពីកន្ត្រក ឱ្យបិទផ្ទាំង Checkout អូតូ
-      if (Object.keys(cartItems).length === 0) {
-        closeCheckoutModal();
+        /// ➕➖ ៣. ពិនិត្យស្តុកពេលភ្ញៀវចុច (+) ក្នុង Checkout (ប្រើ Toast ជំនួស alert)
+function adjustCheckoutItemQty(id, delta) {
+  if (cartItems[id]) {
+    var prodObj = STORE_CATALOG.find(function(p) { return p.id === id; });
+    
+    if (delta > 0 && prodObj && prodObj.type === 'ទិញគេ') {
+      var maxStock = parseFloat(prodObj.stock || 0);
+      if (cartItems[id].qty + delta > maxStock) {
+        var alertMsg = (currentLang === 'en') ? ("[" + prodObj.raw_name + "] only has " + maxStock + " in stock!") :
+                       ((currentLang === 'zh') ? ("[" + prodObj.raw_name + "] 库存仅剩 " + maxStock + " 件！") :
+                       ("អភ័យទោស ទំនិញ [" + prodObj.raw_name + "] នៅសល់ត្រឹមតែ " + maxStock + " ក្នុងស្តុកប៉ុណ្ណោះ!"));
+        showStoreToast(alertMsg, "warning");
+        return;
       }
     }
+
+    cartItems[id].qty += delta;
+    if (cartItems[id].qty <= 0) {
+      delete cartItems[id];
+    }
+  }
+  updateCheckoutCalculation();
+  recalcCartDock();
+  renderCatalogGrid();
+
+  if (Object.keys(cartItems).length === 0) {
+    closeCheckoutModal();
+  }
+}
 
     // 🗑️ មុខងារលុបទំនិញចោលចេញពីកន្ត្រក
     function removeCheckoutItem(id) {
@@ -2616,28 +2673,22 @@ function updateCheckoutCalculation() {
 
         autoSaveCustomerInput();
 
-        // 🔔 ផ្ញើ Telegram Alert
+        // 🔔 ផ្ញើ Telegram Alert តាមប្រព័ន្ធសុវត្ថិភាព Database (លែងបែកធ្លាយ Token 100%)
         try {
-          if (telegramSettings.token && telegramSettings.chatId && telegramSettings.status !== 'OFF') {
-            function escapeTg(t) { return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-            var tgMsg = "🔔 <b>[KC WATER - មានការកុម្ម៉ង់ទឹកថ្មីតាម ONLINE!]</b>\n\n" +
-                        "🆔 <b>លេខកូដ៖</b> <code>" + orderId + "</code>\n" +
-                        "👤 <b>អតិថិជន៖</b> " + escapeTg(name) + " (📞 " + escapeTg(phone) + ")\n" +
-                        "⏰ <b>ម៉ោងចង់ទទួល៖</b> <b>" + escapeTg(timeDetail) + "</b>\n" +
-                        "🏢 <b>ទីកន្លែង៖</b> <b>" + escapeTg(floorDetail) + "</b>\n" +
-                        "📦 <b>ទំនិញកុម្ម៉ង់៖</b> " + escapeTg(itemsSummaryText) + "\n" +
-                        "💰 <b>តម្លៃសរុប៖</b> <b>៛ " + Number(grandTotal).toLocaleString() + "</b>\n" +
-                        "💳 <b>វិធីបង់ប្រាក់៖</b> " + escapeTg(payMethodText) + "\n" +
-                        (mapUrl ? "🗺️ <b>ទីតាំងផែនទី GPS៖</b> <a href='" + mapUrl + "'>ចុចបើក Google Maps</a>\n" : "") +
-                        "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
-
-            fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ chat_id: telegramSettings.chatId, text: tgMsg, parse_mode: "HTML" })
-            }).catch(function(){});
-          }
-        } catch(tgE) {}
+          await supabaseClient.rpc('send_order_telegram_alert', {
+            p_order_id: orderId,
+            p_customer_name: name,
+            p_phone: phone,
+            p_items: itemsSummaryText,
+            p_total: grandTotal,
+            p_pay_method: payMethodText,
+            p_time_detail: timeDetail,
+            p_floor_detail: floorDetail,
+            p_map_url: mapUrl || ''
+          });
+        } catch(tgE) {
+          console.warn("Telegram alert handled securely in DB:", tgE);
+        }
         
         // 💾 ចងចាំទំនិញដែលបានទិញ ដើម្បីឱ្យមុខងារ 1-Click Reorder ដំណើរការ
         localStorage.setItem('kc_last_order_items', JSON.stringify(cartItems));
@@ -3152,7 +3203,7 @@ async function checkActiveOrderLiveStatus() {
       }
     }
     
-    // ⚡ មុខងារកំណត់ Settings ហាង (ទាញយកពី Cache ភ្លាមៗ 0ms មិនទាញ Database ជាន់គ្នាឡើយ)
+   // ⚡ មុខងារកំណត់ Settings ហាង (ទាញយកពី Database និងស្គាល់រូប ABA QR ផ្ទាល់ខ្លួន)
 async function loadStoreSettingsFromSupabase() {
   try {
     var sMap = window.__kcCachedSettingsMap;
@@ -3166,7 +3217,15 @@ async function loadStoreSettingsFromSupabase() {
       window.__kcCachedSettingsMap = sMap;
     }
 
-    // 📂 ទាញយក Category ពី Cloud Supabase
+    // 📱 ១. ទាញយករូប ABA KHQR ផ្ទាល់ខ្លួនមកបង្ហាញស្វ័យប្រវត្តិ (លែងពឹង Link ក្រៅ)
+    if (sMap['Store_ABA_QR'] && sMap['Store_ABA_QR'].trim()) {
+      var abaImg = document.getElementById('abaKhqrImgPreview');
+      if (abaImg) {
+        abaImg.src = sMap['Store_ABA_QR'].trim();
+      }
+    }
+
+    // 📂 ២. ទាញយក Category ពី Cloud Supabase
     if (sMap['Store_Categories']) {
       try {
         var parsedCats = JSON.parse(sMap['Store_Categories']);
@@ -3176,17 +3235,17 @@ async function loadStoreSettingsFromSupabase() {
       } catch(e) {}
     }
 
-    // ១. កំណត់ Telegram Bot Settings
-    if (sMap['Telegram_Token']) telegramSettings.token = sMap['Telegram_Token'];
-    if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'];
-    if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'];
+    // 🔔 ៣. ទាញយក Telegram Bot Settings សម្រាប់ទទួលដំណឹងពេលភ្ញៀវ Cancel Order
+    if (sMap['Telegram_Token']) telegramSettings.token = sMap['Telegram_Token'].trim();
+    if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'].trim();
+    if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'].toUpperCase();
 
-    // ២. កំណត់ថ្លៃដឹកជញ្ជូន
+    // ៤. កំណត់ថ្លៃដឹកជញ្ជូន
     if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
     if (sMap['Delivery_Free_Min_Qty']) storeDeliveryConfig.freeMinQty = parseInt(sMap['Delivery_Free_Min_Qty']) || 2;
     storeDeliveryConfig.freeMinAmount = parseFloat(sMap['Delivery_Free_Min_Amount'] || 50000);
 
-    // ៣. កំណត់ម៉ោងបើក និងបិទហាង (Store Hours)
+    // ៥. កំណត់ម៉ោងបើក និងបិទហាង (Store Hours)
     var openTime = sMap['Store_Open_Time'] || "07:00";
     var closeTime = sMap['Store_Close_Time'] || "18:00";
     var storeStatus = (sMap['Store_Open_Status'] || "AUTO").toUpperCase();
@@ -3208,7 +3267,7 @@ async function loadStoreSettingsFromSupabase() {
       if (banner) banner.classList.add('hidden');
     }
 
-    // ៤. កំណត់ប្រព័ន្ធ Promotion
+    // ៦. កំណត់ប្រព័ន្ធ Promotion
     var promoStatus = (sMap['Promo_Status'] || "OFF").toUpperCase();
     var startTimeStr = sMap['Promo_Start_Time'] || '';
     var endTimeStr = sMap['Promo_End_Time'] || '';
@@ -3231,7 +3290,7 @@ async function loadStoreSettingsFromSupabase() {
       activePromoConfig = null;
     }
 
-    // ៥. បង្ហាញស្លាយដែលបានកំណត់ (Slides & Banner)
+    // ៧. បង្ហាញស្លាយដែលបានកំណត់ (Slides & Banner)
     if (typeof applyCustomSlidesFromSettings === 'function') {
       applyCustomSlidesFromSettings(sMap);
     }
@@ -3782,46 +3841,47 @@ function applyCustomSlidesFromSettings(sMap) {
       if (modal) modal.classList.add('hidden');
     }
 
-    // ៤. មុខងារបោះបង់ការកុម្ម៉ង់ដោយខ្លួនឯងសម្រាប់ភ្ញៀវ (Cancel Order ពេល Pending)
-    async function cancelCustomerActiveOrder(orderId) {
-      if (!confirm("តើលោកអ្នកពិតជាចង់បោះបង់ការកុម្ម៉ង់ទឹកលេខកូដ [" + orderId + "] នេះមែនទេ?")) return;
+   // ❌ ៤. មុខងារបោះបង់ការកុម្ម៉ង់របស់ភ្ញៀវ (មានសុវត្ថិភាព មិនគាំងទូរស័ព្ទ)
+async function cancelCustomerActiveOrder(orderId) {
+  var ok = window.confirm("តើលោកអ្នកពិតជាចង់បោះបង់ការកុម្ម៉ង់ទឹកលេខកូដ [" + orderId + "] នេះមែនទេ?");
+  if (!ok) return;
 
-      try {
-        const { error } = await supabaseClient
-          .from('orders')
-          .update({ status: 'Cancelled' })
-          .eq('order_id', orderId);
+  try {
+    const { error } = await supabaseClient
+      .from('orders')
+      .update({ status: 'Cancelled' })
+      .eq('order_id', orderId);
 
-        if (error) throw error;
+    if (error) throw error;
 
-        localStorage.removeItem('kc_active_order_id');
-        currentTrackingOrderId = null;
-        var box = document.getElementById('activeOrderCardBox');
-        if (box) box.classList.add('hidden');
+    localStorage.removeItem('kc_active_order_id');
+    currentTrackingOrderId = null;
+    var box = document.getElementById('activeOrderCardBox');
+    if (box) box.classList.add('hidden');
 
-        var badge = document.getElementById('bnavTrackBadge');
-        if (badge) badge.classList.add('hidden');
+    var badge = document.getElementById('bnavTrackBadge');
+    if (badge) badge.classList.add('hidden');
 
-        alert("ការកុម្ម៉ង់របស់អ្នកត្រូវបានបោះបង់ជោគជ័យ!");
+    showStoreToast("ការកុម្ម៉ង់ត្រូវបានបោះបង់ជោគជ័យ!", "info");
 
-        // ផ្ញើ Telegram Alert ទៅរោងចក្រ
-        try {
-          if (telegramSettings && telegramSettings.token && telegramSettings.chatId) {
-            var msg = "🔔 <b>[KC WATER - ភ្ញៀវបានបោះបង់ការកុម្ម៉ង់ដោយខ្លួនឯង]</b>\n\n" +
-                      "🆔 <b>កូដ៖</b> <code>" + orderId + "</code>\n" +
-                      "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
-            fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ chat_id: telegramSettings.chatId, text: msg, parse_mode: "HTML" })
-            }).catch(function(){});
-          }
-        } catch(tgE) {}
-
-      } catch(err) {
-        alert("កំហុសបោះបង់ការកុម្ម៉ង់៖ " + err.message);
+    // ផ្ញើសារ Telegram ជូនដំណឹងទៅរោងចក្រ
+    try {
+      if (telegramSettings && telegramSettings.token && telegramSettings.chatId) {
+        var msg = "🔔 <b>[KC WATER - ភ្ញៀវបានបោះបង់ការកុម្ម៉ង់ដោយខ្លួនឯង]</b>\n\n" +
+                  "🆔 <b>កូដ៖</b> <code>" + orderId + "</code>\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+        fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: telegramSettings.chatId, text: msg, parse_mode: "HTML" })
+        }).catch(function(){});
       }
-    }
+    } catch(tgE) {}
+
+  } catch(err) {
+    showStoreToast("កំហុស៖ " + err.message, "error");
+  }
+}
 
    // ==========================================
 // 🔗 មុខងារចែករំលែក KC MART (TELEGRAM MINI APP @KC_water_pos_bot, LINE, MESSENGER & QR)
