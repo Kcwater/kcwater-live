@@ -8,7 +8,7 @@ var stmtCurrentFilter = 'ALL';
 var allDebtorsCache = [];
 
 // ==========================================
-// 📊 ១. របាយការណ៍ប្រចាំខែ & កាតគ្រី (MONTHLY & STATEMENT)
+// 📊 ១. របាយការណ៍ប្រចាំខែ & កាតគ្រី (មានដើមទុនទឹកយួរ & ការលក់តាមអ្នកលក់)
 // ==========================================
 function renderMonthlyRepModule() {
   var area = document.getElementById('contentArea');
@@ -18,48 +18,114 @@ function renderMonthlyRepModule() {
   var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   var today = now.toISOString().split('T')[0];
 
-  area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
-    '<div class="flex bg-white p-1.5 rounded-2xl border shadow-sm gap-1.5">' +
-      '<button id="tabBtnCompany" onclick="switchRepTab(\'company\')" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-green-700 text-white shadow-md flex items-center justify-center gap-2"><i class="fas fa-chart-line"></i> របាយការណ៍អាជីវកម្មសរុប</button>' +
-      '<button id="tabBtnCustomer" onclick="switchRepTab(\'customer\')" class="flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center gap-2"><i class="fas fa-user-tag"></i> កាតគ្រីអតិថិជនម្នាក់ៗ</button>' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    // របារប្តូរផ្ទាំង ២ (របាយការណ៍សរុប vs កាតគ្រីម៉ូយ)
+    '<div class="flex bg-white p-1 rounded-2xl border shadow-xs gap-1.5 text-xs font-bold">' +
+      '<button id="tabBtnCompany" onclick="switchRepTab(\'company\')" class="flex-1 py-2 sm:py-2.5 rounded-xl transition-all bg-green-700 text-white shadow-md flex items-center justify-center gap-1.5">' +
+        '<i class="fas fa-chart-line"></i> របាយការណ៍អាជីវកម្មសរុប' +
+      '</button>' +
+      '<button id="tabBtnCustomer" onclick="switchRepTab(\'customer\')" class="flex-1 py-2 sm:py-2.5 rounded-xl transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center gap-1.5">' +
+        '<i class="fas fa-user-tag"></i> កាតគ្រីអតិថិជន & Walk-in' +
+      '</button>' +
     '</div>' +
     
     // 🏢 កាតរបាយការណ៍រោងចក្រសរុប
-    '<div id="secCompanyRep" class="space-y-4">' +
-      '<div class="card border-t-4 border-green-700 shadow-xl p-5 mb-0">' +
-        '<h3 class="font-extrabold text-green-900 text-base mb-3 flex items-center gap-2"><i class="fas fa-building text-green-600"></i>របាយការណ៍សរុបទូទាំងសហគ្រាស KC WATER</h3>' +
-        '<div class="grid grid-cols-2 gap-3 mb-3">' +
-          '<div><label class="text-[10px] font-bold text-gray-500 uppercase">ចាប់ពីថ្ងៃ</label><input type="date" id="compStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full"></div>' +
-          '<div><label class="text-[10px] font-bold text-gray-500 uppercase">ដល់ថ្ងៃ</label><input type="date" id="compEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full"></div>' +
+    '<div id="secCompanyRep" class="space-y-3.5">' +
+      '<div class="card border-t-4 border-green-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h3 class="font-extrabold text-green-900 text-xs sm:text-base mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-building text-green-600"></i>របាយការណ៍សរុបទូទាំងសហគ្រាស KC WATER' +
+        '</h3>' +
+        '<div class="grid grid-cols-2 gap-2 sm:gap-3 mb-2.5">' +
+          '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចាប់ពីថ្ងៃ</label><input type="date" id="compStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600"></div>' +
+          '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ដល់ថ្ងៃ</label><input type="date" id="compEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600"></div>' +
         '</div>' +
-        '<button onclick="fetchCompanySummaryFromSupabase()" class="btn-green shadow-lg flex items-center justify-center gap-2 py-3 text-sm font-bold"><i class="fas fa-filter"></i> គណនារបាយការណ៍អាជីវកម្ម</button>' +
+        '<button onclick="fetchCompanySummaryFromSupabase()" class="btn-green shadow-lg flex items-center justify-center gap-1.5 py-2.5 text-xs sm:text-sm font-bold">' +
+          '<i class="fas fa-filter"></i> គណនារបាយការណ៍អាជីវកម្ម' +
+        '</button>' +
       '</div>' +
-      '<div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="compCardsArea">' +
-        '<div class="dash-card border-l-4 border-blue-600 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">ចំណូលលក់សរុប</div><div id="compSalesTotal" class="mt-2 text-base sm:text-lg font-black text-blue-900">0 ៛</div></div>' +
-        '<div class="dash-card border-l-4 border-green-600 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">សាច់ប្រាក់ប្រមូលបាន</div><div id="compCashTotal" class="mt-2 text-base sm:text-lg font-black text-green-900">0 ៛</div></div>' +
-        '<div class="dash-card border-l-4 border-red-500 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">បំណុលជំពាក់ថ្មី</div><div id="compDebtTotal" class="mt-2 text-base sm:text-lg font-black text-red-700">0 ៛</div></div>' +
+
+      // កាតសង្ខេប ៤ (មានបន្ថែមដើមទុនទំនិញ/ទឹកយួរ)
+      '<div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3" id="compCardsArea">' +
+        '<div class="dash-card border-l-4 border-blue-600 p-3.5 bg-white rounded-2xl">' +
+          '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ចំណូលលក់សរុប</div>' +
+          '<div id="compSalesTotal" class="mt-1 text-base sm:text-lg font-black text-blue-900">0 ៛</div>' +
+        '</div>' +
+        '<div class="dash-card border-l-4 border-amber-500 p-3.5 bg-white rounded-2xl">' +
+          '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">ដើមទុនទំនិញ/ទឹកយួរ</div>' +
+          '<div id="compCogsTotal" class="mt-1 text-base sm:text-lg font-black text-amber-800">0 ៛</div>' +
+        '</div>' +
+        '<div class="dash-card border-l-4 border-green-600 p-3.5 bg-white rounded-2xl">' +
+          '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">សាច់ប្រាក់ប្រមូលបាន</div>' +
+          '<div id="compCashTotal" class="mt-1 text-base sm:text-lg font-black text-green-900">0 ៛</div>' +
+        '</div>' +
+        '<div class="dash-card border-l-4 border-red-500 p-3.5 bg-white rounded-2xl">' +
+          '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase truncate">បំណុលជំពាក់ថ្មី</div>' +
+          '<div id="compDebtTotal" class="mt-1 text-base sm:text-lg font-black text-red-700">0 ៛</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="card border-t-4 border-blue-600 shadow-lg p-5 mb-0">' +
-        '<h4 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2"><i class="fas fa-boxes-stacked text-blue-600"></i>បរិមាណទឹក និងទំនិញលក់បានសរុប</h4>' +
-        '<div class="overflow-x-auto rounded-xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3">មុខទំនិញ</th><th class="p-3 text-center">ចំនួនលក់បាន</th></tr></thead><tbody id="compQtyTableBody"></tbody></table></div>' +
+
+      // តារាងបរិមាណលក់ & ដើមទុនតាមមុខទំនិញ (Full Width Table)
+      '<div class="card border-t-4 border-blue-600 shadow-lg p-4 sm:p-5 mb-0 bg-white">' +
+        '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-boxes-stacked text-blue-600"></i>បរិមាណលក់, ដើមទុនទឹកយួរ/ទំនិញ & ចំណូល' +
+        '</h4>' +
+        '<div class="overflow-x-auto max-h-80 overflow-y-auto rounded-xl border border-gray-200">' +
+          '<table class="w-full text-left text-xs border-collapse">' +
+            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+              '<tr>' +
+                '<th class="p-2.5 sm:p-3">មុខទំនិញ</th>' +
+                '<th class="p-2.5 sm:p-3 text-center w-28">ចំនួនលក់</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-36">ដើមទុនសរុប (COGS)</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-36">ចំណូលលក់សរុប</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody id="compQtyTableBody"></tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+
+      // 🛒 តារាងការលក់តាមអ្នកលក់នៅកន្លែង & បុគ្គលិក (Sales by Cashier / Seller)
+      '<div class="card border-t-4 border-emerald-600 shadow-lg p-4 sm:p-5 mb-0 bg-white">' +
+        '<h4 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-user-check text-emerald-600"></i>ការលក់សរុបតាមអ្នកលក់នៅកន្លែង / បុគ្គលិក (Sales by Cashier / Seller)' +
+        '</h4>' +
+        '<div class="overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-gray-200">' +
+          '<table class="w-full text-left text-xs border-collapse">' +
+            '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+              '<tr>' +
+                '<th class="p-2.5 sm:p-3">ឈ្មោះអ្នកលក់ / អ្នកកត់ត្រា</th>' +
+                '<th class="p-2.5 sm:p-3 text-center w-28">ចំនួនលើក</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-32">លុយសុទ្ធ (Cash)</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-32">ស្កេន (ABA)</th>' +
+                '<th class="p-2.5 sm:p-3 text-right w-36">លក់បានសរុប</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody id="compSellerTableBody"></tbody>' +
+          '</table>' +
+        '</div>' +
       '</div>' +
     '</div>' +
 
-    // 👤 កាតកាតគ្រីអតិថិជន
-    '<div id="secCustomerRep" class="space-y-4 hidden">' +
-      '<div class="card border-t-4 border-green-700 shadow-xl p-5 mb-0">' +
-        '<h3 class="font-extrabold text-green-900 text-base mb-3 flex items-center gap-2"><i class="fas fa-file-invoice text-green-600"></i>ស្វែងរកកាតគ្រីអតិថិជន</h3>' +
-        '<div class="space-y-3">' +
+    // 👤 កាតកាតគ្រីអតិថិជន & Walk-in
+    '<div id="secCustomerRep" class="space-y-3.5 hidden">' +
+      '<div class="card border-t-4 border-green-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<h3 class="font-extrabold text-green-900 text-xs sm:text-base mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-file-invoice text-green-600"></i>ស្វែងរកកាតគ្រីអតិថិជន & ការលក់នៅកន្លែង (Walk-in)' +
+        '</h3>' +
+        '<div class="space-y-2.5">' +
           '<div>' +
-            '<label class="text-[10px] font-bold text-gray-600 uppercase block mb-1">ជ្រើសរើសឈ្មោះអតិថិជន</label>' +
-            '<select id="custSelectDropdown" onchange="document.getElementById(\'custSearchInp\').value=this.value" class="font-bold text-blue-900 text-sm border-2 border-blue-200 rounded-xl p-2.5 w-full bg-white"></select>' +
+            '<label class="text-[9.5px] font-bold text-gray-600 uppercase block mb-0.5">ជ្រើសរើសឈ្មោះអតិថិជន ឬ លក់នៅកន្លែង</label>' +
+            '<select id="custSelectDropdown" onchange="document.getElementById(\'custSearchInp\').value=this.value" class="font-bold text-blue-900 text-xs sm:text-sm border-2 border-blue-200 rounded-xl p-2 w-full bg-white outline-none focus:border-blue-500"></select>' +
           '</div>' +
-          '<input type="text" id="custSearchInp" placeholder="🔍 ឬវាយឈ្មោះម៉ូយ..." class="font-bold border p-2.5 rounded-xl w-full text-xs">' +
-          '<div class="grid grid-cols-2 gap-3">' +
-            '<div><label class="text-[10px] font-bold text-gray-500 uppercase">ចាប់ពីថ្ងៃ</label><input type="date" id="custStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full"></div>' +
-            '<div><label class="text-[10px] font-bold text-gray-500 uppercase">ដល់ថ្ងៃ</label><input type="date" id="custEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full"></div>' +
+          '<input type="text" id="custSearchInp" placeholder="🔍 ឬវាយឈ្មោះម៉ូយ ឬវាយ Walk-in..." class="font-bold border p-2 rounded-xl w-full text-xs outline-none focus:border-green-600">' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ចាប់ពីថ្ងៃ</label><input type="date" id="custStartDate" value="' + firstDay + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none"></div>' +
+            '<div><label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ដល់ថ្ងៃ</label><input type="date" id="custEndDate" value="' + today + '" class="font-bold border p-2 rounded-xl w-full text-xs outline-none"></div>' +
           '</div>' +
-          '<button onclick="fetchFullStatementFromSupabase()" class="btn-green shadow-lg flex items-center justify-center gap-2 py-3 text-sm font-bold"><i class="fas fa-file-invoice"></i> បង្ហាញកាតគ្រី</button>' +
+          '<button onclick="fetchFullStatementFromSupabase()" class="btn-green shadow-lg flex items-center justify-center gap-1.5 py-2.5 text-xs sm:text-sm font-bold">' +
+            '<i class="fas fa-file-invoice"></i> បង្ហាញកាតគ្រី / វិក្កយបត្រលក់' +
+          '</button>' +
         '</div>' +
       '</div>' +
       '<div id="statementReportContainer"></div>' +
@@ -87,10 +153,12 @@ function switchRepTab(tab) {
   }
 }
 
+// 👥 បង្ហាញបញ្ជីឈ្មោះម៉ូយ & បើកជម្រើសលក់នៅកន្លែង (Walk-in)
 function populateCustSelectDropdown() {
   var sel = document.getElementById('custSelectDropdown');
   if (!sel) return;
-  sel.innerHTML = '<option value="">-- រើសឈ្មោះម៉ូយ --</option>';
+  sel.innerHTML = '<option value="">-- រើសឈ្មោះម៉ូយ --</option>' +
+    '<option value="Walk-in">🛒 -- លក់នៅកន្លែងទាំងអស់ (Walk-in) --</option>';
   allCustomers.forEach(function(c) {
     if (c.role !== 'Admin' && c.full_name !== 'Walk-in') {
       sel.innerHTML += '<option value="' + c.full_name + '">' + c.full_name + '</option>';
@@ -99,7 +167,7 @@ function populateCustSelectDropdown() {
 }
 
 // ==========================================
-// 🏢 គណនារបាយការណ៍អាជីវកម្មសរុប (ប្រើម៉ោងកម្ពុជា UTC+7 ពេញលេញ ២៤ ម៉ោង)
+// 🏢 គណនារបាយការណ៍អាជីវកម្មសរុប (គណនាដើមទុនទំនិញ COGS & ចំណូលតាមអ្នកលក់)
 // ==========================================
 async function fetchCompanySummaryFromSupabase() {
   var sd = document.getElementById('compStartDate').value;
@@ -107,62 +175,144 @@ async function fetchCompanySummaryFromSupabase() {
   if (!sd || !ed) return;
 
   try {
-    // 🇰🇭 កំណត់ម៉ោងកម្ពុជា UTC+7 ចាប់ពី 00:00:00 ដល់ 23:59:59 នៃថ្ងៃដែលបានជ្រើសរើស
     var startIso = sd + 'T00:00:00+07:00';
     var endIso = ed + 'T23:59:59.999+07:00';
 
-    // ១. ទាញទិន្នន័យប្រតិបត្តិការលក់ (Transactions) ក្នុងចន្លោះម៉ោងកម្ពុជា
+    if (!allProducts || allProducts.length === 0) {
+      const { data: pList } = await supabaseClient.from('products').select('*');
+      if (pList) allProducts = pList;
+    }
+
+    var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+    // ១. ទាញប្រតិបត្តិការលក់ (Transactions) ក្នុងចន្លោះម៉ោងកម្ពុជា
     const { data: trans } = await supabaseClient
       .from('transactions')
       .select('*')
       .gte('created_at', startIso)
       .lte('created_at', endIso);
 
-    // ២. ទាញទិន្នន័យសាច់ប្រាក់ដែលប្រមូលបានពីការទូទាត់បំណុល (Settlements) ក្នុងចន្លោះម៉ោងកម្ពុជា
+    // ២. ទាញសាច់ប្រាក់សងបំណុល (Settlements) ក្នុងចន្លោះម៉ោងកម្ពុជា
     const { data: settles } = await supabaseClient
       .from('settlements')
       .select('*')
       .gte('settled_at', startIso)
       .lte('settled_at', endIso);
 
-    var salesTotal = 0, cashTotal = 0, debtTotal = 0;
-    var prodQty = {};
+    var salesTotal = 0, cashTotal = 0, debtTotal = 0, totalCogs = 0;
+    var prodSummaryMap = {};
+    var sellerSummaryMap = {};
 
-    // គណនាពីការលក់ទំនិញ
     if (trans) {
       trans.forEach(function(t) {
         var tot = parseFloat(t.total || 0);
         var paid = parseFloat(t.paid_khr || 0);
+        var qty = parseFloat(t.qty || 0);
+        var pName = (t.product_name || '').trim();
+
         salesTotal += tot;
-        cashTotal += paid; // សាច់ប្រាក់បានទទួលពេលលក់ភ្លាមៗ
+        cashTotal += paid;
         if (t.status === 'Unpaid') debtTotal += tot;
-        if (t.product_name) {
-          prodQty[t.product_name] = (prodQty[t.product_name] || 0) + parseFloat(t.qty || 0);
+
+        // 📦 គណនាថ្លៃដើមទំនិញ (COGS) ពិសេសទឹកយួរ & គ្រឿងទេស
+        var pObj = allProducts.find(p => p.name.trim().toLowerCase() === pName.toLowerCase());
+        var itemCostKhr = 0;
+        if (pObj && pObj.type === 'ទិញគេ' && pObj.cost > 0) {
+          itemCostKhr = parseFloat(pObj.cost);
+          if (pObj.currency === 'USD') itemCostKhr = itemCostKhr * rateUSD;
+          else if (pObj.currency === 'THB') itemCostKhr = itemCostKhr * rateTHB;
+        }
+
+        var lineCogs = itemCostKhr * qty;
+        totalCogs += lineCogs;
+
+        // សង្ខេបតាមមុខទំនិញ
+        if (pName) {
+          if (!prodSummaryMap[pName]) {
+            prodSummaryMap[pName] = { 
+              qty: 0, 
+              cogs: 0, 
+              sales: 0, 
+              isProduced: (pObj && pObj.type === 'ផលិតឯង') 
+            };
+          }
+          prodSummaryMap[pName].qty += qty;
+          prodSummaryMap[pName].cogs += lineCogs;
+          prodSummaryMap[pName].sales += tot;
+        }
+
+        // 🛒 សង្ខេបតាមអ្នកលក់នៅកន្លែង / បុគ្គលិកកត់ត្រា (Sales by Seller / Staff)
+        var rawSeller = (t.recorded_by || 'Admin').trim();
+        var sellerKey = rawSeller.replace(/\s*\(.*?\)/g, '').trim() || 'Admin';
+
+        if (!sellerSummaryMap[sellerKey]) {
+          sellerSummaryMap[sellerKey] = { count: 0, total: 0, cash: 0, aba: 0 };
+        }
+        sellerSummaryMap[sellerKey].count += 1;
+        sellerSummaryMap[sellerKey].total += tot;
+
+        if (t.payment_method === 'ABA') {
+          sellerSummaryMap[sellerKey].aba += paid;
+        } else if (t.payment_method === 'Cash') {
+          sellerSummaryMap[sellerKey].cash += paid;
         }
       });
     }
 
-    // បូកបន្ថែមសាច់ប្រាក់ពីការទូទាត់បំណុលរបស់ម៉ូយ (Settlements)
     if (settles) {
       settles.forEach(function(s) {
         cashTotal += parseFloat(s.paid_khr || 0);
       });
     }
 
-    document.getElementById('compSalesTotal').innerText = '៛ ' + salesTotal.toLocaleString();
-    document.getElementById('compCashTotal').innerText = '៛ ' + cashTotal.toLocaleString();
-    document.getElementById('compDebtTotal').innerText = '៛ ' + debtTotal.toLocaleString();
+    if (document.getElementById('compSalesTotal')) document.getElementById('compSalesTotal').innerText = '៛ ' + salesTotal.toLocaleString();
+    if (document.getElementById('compCogsTotal')) document.getElementById('compCogsTotal').innerText = '៛ ' + Math.round(totalCogs).toLocaleString();
+    if (document.getElementById('compCashTotal')) document.getElementById('compCashTotal').innerText = '៛ ' + cashTotal.toLocaleString();
+    if (document.getElementById('compDebtTotal')) document.getElementById('compDebtTotal').innerText = '៛ ' + debtTotal.toLocaleString();
 
-    var tbody = document.getElementById('compQtyTableBody');
-    var html = '';
-    for (var p in prodQty) {
-      html += '<tr class="border-b hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">' + p + '</td><td class="p-3 text-center font-black text-blue-700">' + prodQty[p].toLocaleString() + '</td></tr>';
+    // 📋 បង្ហាញតារាងបរិមាណ & ដើមទុនទំនិញ
+    var tbodyProd = document.getElementById('compQtyTableBody');
+    if (tbodyProd) {
+      var pHtml = '';
+      for (var p in prodSummaryMap) {
+        var info = prodSummaryMap[p];
+        var cogsText = info.isProduced ? 
+          '<span class="text-slate-400 font-bold text-[10px]">ផលិតឯង</span>' : 
+          ('៛ ' + Math.round(info.cogs).toLocaleString());
+
+        pHtml += '<tr class="border-b hover:bg-gray-50">' +
+          '<td class="p-2.5 font-bold text-gray-800">' + p + '</td>' +
+          '<td class="p-2.5 text-center font-black text-blue-700">' + info.qty.toLocaleString() + '</td>' +
+          '<td class="p-2.5 text-right font-black text-amber-800">' + cogsText + '</td>' +
+          '<td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(info.sales).toLocaleString() + '</td>' +
+        '</tr>';
+      }
+      tbodyProd.innerHTML = pHtml || '<tr><td colspan="4" class="p-4 text-center text-gray-400 italic">គ្មានការលក់ក្នុងចន្លោះថ្ងៃនេះ</td></tr>';
     }
-    tbody.innerHTML = html || '<tr><td colspan="2" class="p-4 text-center text-gray-400 italic">គ្មានការលក់ក្នុងចន្លោះថ្ងៃនេះ</td></tr>';
+
+    // 🛒 បង្ហាញតារាងការលក់តាមអ្នកលក់នៅកន្លែង / បុគ្គលិក
+    var tbodySeller = document.getElementById('compSellerTableBody');
+    if (tbodySeller) {
+      var sHtml = '';
+      for (var s in sellerSummaryMap) {
+        var sInfo = sellerSummaryMap[s];
+        sHtml += '<tr class="border-b hover:bg-gray-50">' +
+          '<td class="p-2.5 font-bold text-gray-800"><i class="fas fa-user-circle text-emerald-600 mr-1.5"></i>' + s + '</td>' +
+          '<td class="p-2.5 text-center font-bold text-slate-700">' + sInfo.count + ' លើក</td>' +
+          '<td class="p-2.5 text-right font-bold text-emerald-800">៛ ' + Number(sInfo.cash).toLocaleString() + '</td>' +
+          '<td class="p-2.5 text-right font-bold text-blue-800">៛ ' + Number(sInfo.aba).toLocaleString() + '</td>' +
+          '<td class="p-2.5 text-right font-black text-green-700">៛ ' + Number(sInfo.total).toLocaleString() + '</td>' +
+        '</tr>';
+      }
+      tbodySeller.innerHTML = sHtml || '<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">គ្មានទិន្នន័យអ្នកលក់</td></tr>';
+    }
+
   } catch(e) {
     console.error("Company summary error:", e);
   }
 }
+
 // 👤 មុខងារទាញកាតគ្រីអតិថិជន (គណនាស៊ីសង្វាក់គ្នា ១០០% មិនឱ្យលើសលុយជំពាក់ឡើយ)
 async function fetchFullStatementFromSupabase() {
   var nameInp = document.getElementById('custSearchInp');
@@ -622,7 +772,7 @@ function executePdfGeneration() {
 }
 
 // ==========================================
-// 📉 ២. របាយការណ៍បញ្ជីជំពាក់ (DEBTORS REPORT - ម៉ូយជំពាក់ & យើងជំពាក់ដេប៉ូ)
+// 📉 ២. របាយការណ៍បញ្ជីជំពាក់ (ពេញអេក្រង់ PC + ២-៣ ជួរលើ Desktop + សមមាត្រលើទូរស័ព្ទ)
 // ==========================================
 var activeDebtorsTab = 'CUSTOMERS'; // 'CUSTOMERS' ឬ 'DEPOTS'
 
@@ -630,56 +780,62 @@ async function renderDebtorsReportModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
 
-  area.innerHTML = '<div class="max-w-2xl mx-auto space-y-4">' +
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // ក្បាលទំព័រ
-    '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm gap-2">' +
       '<div>' +
         '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
           '<i class="fas fa-hand-holding-dollar text-red-600"></i>' +
           '<span>របាយការណ៍បំណុលជំពាក់ (Debts & Payables)</span>' +
         '</h2>' +
-        '<p class="text-xs text-slate-500 mt-0.5">គ្រប់គ្រងបំណុលម៉ូយជំពាក់យើង & បំណុលយើងជំពាក់ដេប៉ូដៃគូ</p>' +
+        '<p class="text-[11px] text-slate-500 mt-0.5">គ្រប់គ្រងបំណុលម៉ូយជំពាក់យើង & បំណុលយើងជំពាក់ដេប៉ូដៃគូ</p>' +
       '</div>' +
-      '<button onclick="renderDebtorsReportModule()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1.5 shadow-2xs">' +
+      '<button onclick="renderDebtorsReportModule()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1.5 shadow-2xs self-end sm:self-auto">' +
         '<i class="fas fa-sync-alt"></i> Refresh' +
       '</button>' +
     '</div>' +
 
     // របារប្តូរផ្ទាំង ២ (Tabs: ម៉ូយជំពាក់យើង vs យើងជំពាក់ដេប៉ូ)
-    '<div class="flex bg-white p-1.5 rounded-2xl border shadow-xs gap-1.5 text-xs font-bold">' +
-      '<button type="button" id="tabBtnDebtorCust" onclick="switchDebtorsTab(\'CUSTOMERS\')" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-red-600 text-white shadow">' +
+    '<div class="flex bg-white p-1 rounded-2xl border shadow-xs gap-1.5 text-xs font-bold">' +
+      '<button type="button" id="tabBtnDebtorCust" onclick="switchDebtorsTab(\'CUSTOMERS\')" class="flex-1 py-2 sm:py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-red-600 text-white shadow">' +
         '<i class="fas fa-users text-sm"></i> ១. ម៉ូយជំពាក់យើង (Receivables)' +
       '</button>' +
-      '<button type="button" id="tabBtnDebtorDepot" onclick="switchDebtorsTab(\'DEPOTS\')" class="flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200">' +
+      '<button type="button" id="tabBtnDebtorDepot" onclick="switchDebtorsTab(\'DEPOTS\')" class="flex-1 py-2 sm:py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200">' +
         '<i class="fas fa-shop-lock text-sm text-rose-600"></i> ២. យើងជំពាក់ដេប៉ូ (Payables)' +
       '</button>' +
     '</div>' +
 
     // ផ្នែកទី ១៖ ម៉ូយជំពាក់យើង (Customers Debt Section)
-    '<div id="secDebtorsCustomers" class="space-y-3">' +
-      '<div class="card border-t-4 border-red-600 shadow-xl p-5 mb-0 space-y-3">' +
-        '<div class="bg-red-50 p-3.5 rounded-2xl border border-red-200 text-center">' +
-          '<div class="text-[11px] font-bold text-red-700 uppercase mb-1">ទឹកប្រាក់ដែលម៉ូយជំពាក់រោងចក្រសរុប</div>' +
-          '<div id="debtorsGrandTotalText" class="text-xl font-black text-red-800">0 ៛</div>' +
+    '<div id="secDebtorsCustomers" class="space-y-3.5">' +
+      '<div class="card border-t-4 border-red-600 shadow-xl p-4 sm:p-5 mb-0 space-y-2.5 bg-white">' +
+        '<div class="bg-red-50 p-3 rounded-2xl border border-red-200 text-center">' +
+          '<div class="text-[10px] sm:text-[11px] font-bold text-red-700 uppercase mb-0.5">ទឹកប្រាក់ដែលម៉ូយជំពាក់រោងចក្រសរុប</div>' +
+          '<div id="debtorsGrandTotalText" class="text-lg sm:text-xl font-black text-red-800">0 ៛</div>' +
         '</div>' +
-        '<input type="text" id="debtorSearchInp" onkeyup="filterDebtorsCards()" placeholder="🔍 វាយឈ្មោះម៉ូយដើម្បីស្វែងរក..." class="font-bold border p-2.5 rounded-xl w-full text-xs outline-none focus:border-red-500 bg-slate-50 focus:bg-white">' +
+        '<div class="relative">' +
+          '<input type="text" id="debtorSearchInp" onkeyup="filterDebtorsCards()" placeholder="🔍 វាយឈ្មោះម៉ូយដើម្បីស្វែងរកភ្លាមៗ..." class="font-bold border p-2.5 pl-9 rounded-xl w-full text-xs outline-none focus:border-red-500 bg-slate-50 focus:bg-white shadow-2xs">' +
+          '<i class="fas fa-search absolute left-3 top-3.5 text-gray-400 text-xs pointer-events-none"></i>' +
+        '</div>' +
       '</div>' +
-      '<div class="space-y-2.5" id="debtorsCardsContainer">' +
-        '<div class="card text-center py-8 italic text-slate-400 text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញទិន្នន័យ...</div>' +
+      // 📱 រៀបជាក្រឡាចត្រង្គ ២-៣ ជួរលើ PC ធំ និង ១ ជួរលើទូរស័ព្ទ
+      '<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3" id="debtorsCardsContainer">' +
+        '<div class="col-span-full card text-center py-8 italic text-slate-400 text-xs bg-white"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញទិន្នន័យ...</div>' +
       '</div>' +
     '</div>' +
 
     // ផ្នែកទី ២៖ យើងជំពាក់ដេប៉ូដៃគូ (Partner Depots Debt Section)
-    '<div id="secDebtorsDepots" class="space-y-3 hidden">' +
-      '<div class="card border-t-4 border-rose-600 shadow-xl p-5 mb-0 space-y-3">' +
-        '<div class="bg-rose-50 p-3.5 rounded-2xl border border-rose-200 text-center">' +
-          '<div class="text-[11px] font-bold text-rose-800 uppercase mb-1">ថ្លៃដើមដែលយើងត្រូវទូទាត់សងដេប៉ូដៃគូសរុប</div>' +
-          '<div id="depotDebtsGrandTotalText" class="text-xl font-black text-rose-800">0 ៛</div>' +
+    '<div id="secDebtorsDepots" class="space-y-3.5 hidden">' +
+      '<div class="card border-t-4 border-rose-600 shadow-xl p-4 sm:p-5 mb-0 space-y-2.5 bg-white">' +
+        '<div class="bg-rose-50 p-3 rounded-2xl border border-rose-200 text-center">' +
+          '<div class="text-[10px] sm:text-[11px] font-bold text-rose-800 uppercase mb-0.5">ថ្លៃដើមដែលយើងត្រូវទូទាត់សងដេប៉ូដៃគូសរុប</div>' +
+          '<div id="depotDebtsGrandTotalText" class="text-lg sm:text-xl font-black text-rose-800">0 ៛</div>' +
         '</div>' +
-        '<p class="text-[11px] text-slate-500 italic text-center">*គណនាពីទំនិញដែលបានដកពីដេប៉ូនានាដោយ «កត់ជំពាក់» ដែលមិនទាន់បានទូទាត់សង</p>' +
+        '<p class="text-[10.5px] text-slate-500 italic text-center">*គណនាពីទំនិញដែលបានដកពីដេប៉ូនានាដោយ «កត់ជំពាក់» ដែលមិនទាន់បានទូទាត់សង</p>' +
       '</div>' +
-      '<div class="space-y-2.5" id="depotDebtsCardsContainer">' +
-        '<div class="card text-center py-8 italic text-slate-400 text-xs"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងគណនាបំណុលដេប៉ូ...</div>' +
+      // 📱 រៀបជាក្រឡាចត្រង្គ ២-៣ ជួរលើ PC ធំ
+      '<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3" id="depotDebtsCardsContainer">' +
+        '<div class="col-span-full card text-center py-8 italic text-slate-400 text-xs bg-white"><i class="fas fa-spinner fa-spin mr-1"></i> កំពុងគណនាបំណុលដេប៉ូ...</div>' +
       '</div>' +
     '</div>' +
 
@@ -777,20 +933,56 @@ function goToSettleCustomerFromReport(name) {
 }
 
 // ==========================================
-// 📦 ៣. របាយការណ៍ស្តុក & ដើមទុន (STOCK REPORT & VALUATION)
+// 📦 ៣. របាយការណ៍ស្តុក & ដើមទុន (ពេញអេក្រង់ PC + សមមាត្រលើទូរស័ព្ទ)
 // ==========================================
 async function renderStockRepModule() {
   var area = document.getElementById('contentArea');
-  area.innerHTML = '<div class="max-w-4xl mx-auto space-y-4">' +
-    '<div class="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">' +
-      '<div><h2 class="text-base sm:text-xl font-extrabold text-green-900 flex items-center gap-2"><i class="fas fa-boxes-stacked text-green-600"></i>របាយការណ៍ស្តុក និងដើមទុនក្នុងឃ្លាំង (Stock Report)</h2><p class="text-xs text-gray-500 mt-0.5">តាមដានដើមទុនសរុប និងចលនាស្តុក Realtime</p></div>' +
-      '<button onclick="renderStockRepModule()" class="px-3.5 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1"><i class="fas fa-sync-alt"></i> Refresh</button>' +
+  if (!area) return;
+
+  // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
+  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
+    // ក្បាលទំព័រ
+    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm gap-2">' +
+      '<div>' +
+        '<h2 class="text-base sm:text-lg font-black text-green-900 flex items-center gap-2">' +
+          '<i class="fas fa-boxes-stacked text-green-600"></i>' +
+          '<span>របាយការណ៍ស្តុក និងដើមទុនក្នុងឃ្លាំង (Stock Report)</span>' +
+        '</h2>' +
+        '<p class="text-[11px] text-gray-500 mt-0.5">តាមដានដើមទុនសរុប និងចលនាស្តុក Realtime</p>' +
+      '</div>' +
+      '<button onclick="renderStockRepModule()" class="px-3.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs self-end sm:self-auto">' +
+        '<i class="fas fa-sync-alt"></i> Refresh' +
+      '</button>' +
     '</div>' +
+
+    // កាតសង្ខេប ២
     '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
-      '<div class="dash-card border-l-4 border-blue-600 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">តម្លៃដើមទុនក្នុងស្តុកសរុប</div><div id="repStockValuation" class="mt-2 font-black text-blue-900 text-lg">0 ៛</div></div>' +
-      '<div class="dash-card border-l-4 border-orange-500 p-4 bg-white rounded-2xl"><div class="text-xs font-bold text-gray-500 uppercase">ទំនិញជិតអស់ស្តុក</div><div id="repStockAlertCount" class="mt-2 font-black text-orange-700 text-lg">0 មុខ</div></div>' +
+      '<div class="dash-card border-l-4 border-blue-600 p-3.5 bg-white rounded-2xl">' +
+        '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase">តម្លៃដើមទុនក្នុងស្តុកសរុប</div>' +
+        '<div id="repStockValuation" class="mt-1 font-black text-blue-900 text-base sm:text-lg">0 ៛</div>' +
+      '</div>' +
+      '<div class="dash-card border-l-4 border-orange-500 p-3.5 bg-white rounded-2xl">' +
+        '<div class="text-gray-500 text-[10px] sm:text-xs font-bold uppercase">ទំនិញជិតអស់ស្តុក</div>' +
+        '<div id="repStockAlertCount" class="mt-1 font-black text-orange-700 text-base sm:text-lg">0 មុខ</div>' +
+      '</div>' +
     '</div>' +
-    '<div class="card p-0 overflow-x-auto shadow-lg rounded-2xl border"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-gray-100 text-gray-700 font-bold border-b"><th class="p-3">រូប</th><th class="p-3">ឈ្មោះទំនិញ</th><th class="p-3 text-right">ថ្លៃដើម</th><th class="p-3 text-center">សល់ក្នុងស្តុក</th><th class="p-3 text-right">ដើមទុនសរុប</th><th class="p-3 text-center">ស្ថានភាព</th></tr></thead><tbody id="stockRepTableBody"></tbody></table></div>' +
+
+    // តារាងស្តុកពេញទទឹងអេក្រង់ (Full Width Table)
+    '<div class="card p-0 overflow-x-auto max-h-[550px] overflow-y-auto shadow-xl rounded-2xl border border-gray-200 bg-white">' +
+      '<table class="w-full text-left text-xs border-collapse">' +
+        '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+          '<tr>' +
+            '<th class="p-2.5 sm:p-3 text-center w-14">រូប</th>' +
+            '<th class="p-2.5 sm:p-3">ឈ្មោះទំនិញ</th>' +
+            '<th class="p-2.5 sm:p-3 text-right">ថ្លៃដើមទិញចូល</th>' +
+            '<th class="p-2.5 sm:p-3 text-center">សល់ក្នុងស្តុក</th>' +
+            '<th class="p-2.5 sm:p-3 text-right">ដើមទុនសរុប</th>' +
+            '<th class="p-2.5 sm:p-3 text-center w-24">ស្ថានភាព</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody id="stockRepTableBody"></tbody>' +
+      '</table>' +
+    '</div>' +
   '</div>';
 
   await loadStockRepDataFromSupabase();
@@ -870,21 +1062,19 @@ async function loadStockRepDataFromSupabase() {
 }
 
 // ==========================================================================
-// 🏬 មុខងារគ្រប់គ្រងបំណុលជំពាក់ដេប៉ូដៃគូ (PARTNER DEPOT PAYABLES & SETTLEMENT)
+// 🏬 មុខងារគ្រប់គ្រងបំណុលជំពាក់ដេប៉ូដៃគូ (កាត់បំណុលតាំងពី Departed & Telegram រាយមុខទំនិញ)
 // ==========================================================================
-
 var cachedDepotDebtsBreakdown = {};
 
-// 📥 ១. ទាញយក និងគណនាបំណុលដែលយើងជំពាក់ដេប៉ូនីមួយៗ
+// 📥 ១. ទាញយក និងគណនាបំណុលដេប៉ូ (កាត់តាំងពី Departed ឬ Delivered)
 async function fetchPartnerDepotDebts() {
   var container = document.getElementById('depotDebtsCardsContainer');
   var grandTotalEl = document.getElementById('depotDebtsGrandTotalText');
   if (!container) return;
 
-  container.innerHTML = '<div class="card text-center py-8 italic text-slate-400 text-xs"><i class="fas fa-spinner fa-spin mr-1 text-rose-600"></i> កំពុងគណនាបំណុលជំពាក់ដេប៉ូដៃគូ...</div>';
+  container.innerHTML = '<div class="card text-center py-8 italic text-slate-400 text-xs bg-white"><i class="fas fa-spinner fa-spin mr-1 text-rose-600"></i> កំពុងគណនាបំណុលជំពាក់ដេប៉ូដៃគូ...</div>';
 
   try {
-    // ក. ធានាថាមានទិន្នន័យដេប៉ូ & ទំនិញក្នុង Memory
     if (typeof loadDepotsFromSupabase === 'function') {
       await loadDepotsFromSupabase();
     }
@@ -893,7 +1083,6 @@ async function fetchPartnerDepotDebts() {
       if (prods) allProducts = prods;
     }
 
-    // ខ. ទាញយកការភ្ជាប់ដេប៉ូជាមួយទំនិញ (DEPOT_...)
     const { data: depotSettings } = await supabaseClient
       .from('settings')
       .select('key, value')
@@ -904,15 +1093,14 @@ async function fetchPartnerDepotDebts() {
       prodDepotMap[r.key.replace('DEPOT_', '')] = r.value;
     });
 
-    // គ. ទាញយកការកុម្ម៉ង់ដែលបានដឹកដល់ (Delivered Orders)
-    const { data: deliveredOrders, error: ordErr } = await supabaseClient
+    // ⚡ កាត់ចូលបំណុលដេប៉ូតាំងពីពេលអ្នកដឹកចុច «ចេញដំណើរ (Departed)» ឬ «ដឹកដល់ (Delivered)»
+    const { data: activeOrders, error: ordErr } = await supabaseClient
       .from('orders')
-      .select('order_id, items, customer_name, created_at')
-      .eq('status', 'Delivered');
+      .select('order_id, items, customer_name, created_at, status')
+      .in('status', ['Departed', 'Delivered', 'EnRoute']);
 
     if (ordErr) throw ordErr;
 
-    // ឃ. ទាញយកប្រវត្តិដែលយើងធ្លាប់បានសងដេប៉ូនានា (ពីតារាង Expenses)
     const { data: depotExpenses, error: expErr } = await supabaseClient
       .from('expenses')
       .select('amount, note, currency, created_at')
@@ -923,11 +1111,9 @@ async function fetchPartnerDepotDebts() {
     var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
     var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
 
-    // ង. គណនាថ្លៃដើមដែលបានដកពីដេប៉ូប្រភេទ «កត់ជំពាក់»
-    var depotDebtTotals = {};
     cachedDepotDebtsBreakdown = {};
 
-    (deliveredOrders || []).forEach(function(ord) {
+    (activeOrders || []).forEach(function(ord) {
       var itemParts = String(ord.items || '').split(',');
       itemParts.forEach(function(partStr) {
         var str = partStr.trim();
@@ -948,7 +1134,6 @@ async function fetchPartnerDepotDebts() {
           var depotId = prodDepotMap[matchedProd.id] || 'DEPOT_KC';
           var depotObj = (activePartnerDepots || []).find(d => d.id === depotId);
 
-          // គិតតែដេប៉ូដៃគូណាដែលជាប្រភេទ «កត់ជំពាក់ (CREDIT)» ប៉ុណ្ណោះ
           if (depotObj && !depotObj.isInternal && depotObj.payTerms === 'CREDIT') {
             var rawCost = parseFloat(matchedProd.cost || 0);
             var costCurr = (matchedProd.currency || 'KHR').toUpperCase();
@@ -957,8 +1142,6 @@ async function fetchPartnerDepotDebts() {
             else if (costCurr === 'THB') costKhr = Math.round(rawCost * rateTHB);
 
             var lineCost = costKhr * qty;
-
-            depotDebtTotals[depotId] = (depotDebtTotals[depotId] || 0) + lineCost;
 
             if (!cachedDepotDebtsBreakdown[depotId]) {
               cachedDepotDebtsBreakdown[depotId] = {
@@ -970,9 +1153,9 @@ async function fetchPartnerDepotDebts() {
               };
             }
 
+            // 🔒 មិនរក្សាទុកឈ្មោះភ្ញៀវឡើយ ដើម្បីរក្សាការសម្ងាត់
             cachedDepotDebtsBreakdown[depotId].items.push({
               orderId: ord.order_id,
-              custName: ord.customer_name,
               productName: cleanName,
               qty: qty,
               costKhr: lineCost,
@@ -984,7 +1167,6 @@ async function fetchPartnerDepotDebts() {
       });
     });
 
-    // ច. ដកចេញនូវទឹកប្រាក់ដែលយើងធ្លាប់បានសងដេប៉ូនោះកន្លងមក
     (depotExpenses || []).forEach(function(e) {
       var noteText = e.note || '';
       for (var dId in cachedDepotDebtsBreakdown) {
@@ -995,7 +1177,6 @@ async function fetchPartnerDepotDebts() {
       }
     });
 
-    // ឆ. គណនាបំណុលនៅសល់សុទ្ធ & បង្ហាញ UI
     var grandTotalDepotDebt = 0;
     var listForUI = [];
 
@@ -1017,17 +1198,17 @@ async function fetchPartnerDepotDebts() {
     renderDepotDebtsCardsUI(listForUI);
 
   } catch(err) {
-    container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុសគណនាបំណុលដេប៉ូ៖ ' + err.message + '</div>';
+    container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs bg-white">កំហុសគណនាបំណុលដេប៉ូ៖ ' + err.message + '</div>';
   }
 }
 
-// 📋 ២. បង្ហាញកាតដេប៉ូនីមួយៗដែលយើងជំពាក់
+// 📋 ២. បង្ហាញកាតដេប៉ូ និងភ្ជាប់ប៊ូតុង Telegram ផ្ទៀងផ្ទាត់
 function renderDepotDebtsCardsUI(list) {
   var container = document.getElementById('depotDebtsCardsContainer');
   if (!container) return;
 
   if (list.length === 0) {
-    container.innerHTML = '<div class="card p-8 text-center text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-3xl space-y-2">' +
+    container.innerHTML = '<div class="card p-8 text-center text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-3xl space-y-2 col-span-full">' +
       '<div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl shadow-inner"><i class="fas fa-circle-check"></i></div>' +
       '<b class="text-slate-800 text-sm block">អបអរសាទរ! យើងគ្មានជំពាក់ប្រាក់ថ្លៃដើមដេប៉ូដៃគូណាមួយឡើយ</b>' +
       '<p class="text-xs text-slate-400">រាល់ទំនិញដែលដកជំពាក់ពីដេប៉ូនានា ត្រូវបានទូទាត់សងរួចរាល់ទាំងអស់។</p>' +
@@ -1062,16 +1243,20 @@ function renderDepotDebtsCardsUI(list) {
         '<div class="flex justify-between text-rose-950 font-black border-t border-rose-200 pt-1"><span>បំណុលនៅសល់ (=)៖</span><span class="text-rose-700">៛ ' + info.netDebt.toLocaleString() + '</span></div>' +
       '</div>' +
 
-      '<div class="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-xs">' +
+      '<div class="flex flex-wrap items-center justify-between gap-1.5 pt-0.5 text-xs">' +
         '<div class="flex items-center gap-1.5">' +
           (cleanPhone ? '<a href="tel:' + cleanPhone + '" class="px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-800 border border-green-200 rounded-xl font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-phone text-green-600"></i> ខលដេប៉ូ</a>' : '') +
-          (d.mapUrl ? '<a href="' + d.mapUrl + '" target="_blank" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-xl font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition" style="text-decoration:none;"><i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី</a>' : '') +
+          
+          // 💬 ប៊ូតុង Telegram ផ្ញើតារាងរាយមុខទំនិញលម្អិតទៅដេប៉ូ
+          '<button type="button" onclick="sendDepotStatementTelegram(\'' + d.id + '\')" class="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-300 rounded-xl font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition" title="ផ្ញើតារាងរាយមុខទំនិញទៅ Telegram ម្ចាស់ដេប៉ូ">' +
+            '<i class="fab fa-telegram text-sky-600"></i> Telegram' +
+          '</button>' +
+
           '<button type="button" onclick="openDepotDebtBreakdownModal(\'' + d.id + '\')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold border shadow-2xs active:scale-95 transition flex items-center gap-1"><i class="fas fa-list-ul"></i> មើលមុខទំនិញ</button>' +
         '</div>' +
 
-        // ប៊ូតុងទូទាត់សងដេប៉ូ
-        '<button type="button" onclick="settleDepotDebtAction(\'' + d.id + '\', ' + info.netDebt + ', \'' + safeDepotName + '\')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1.5 active:scale-95 transition">' +
-          '<i class="fas fa-hand-holding-dollar text-sm"></i> ទូទាត់សងដេប៉ូ' +
+        '<button type="button" onclick="settleDepotDebtAction(\'' + d.id + '\', ' + info.netDebt + ', \'' + safeDepotName + '\')" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
+          '<i class="fas fa-hand-holding-dollar text-xs"></i> ទូទាត់សងដេប៉ូ' +
         '</button>' +
       '</div>' +
     '</div>';
@@ -1080,7 +1265,55 @@ function renderDepotDebtsCardsUI(list) {
   container.innerHTML = html;
 }
 
-// 🔍 ៣. ផ្ទាំង Pop-up មើលមុខទំនិញដែលបានដកពីដេប៉ូនោះ
+// 💬 ៣. មុខងារបង្កើតសារ Telegram ទី ២ (រាយមុខទំនិញលម្អិត ១ ជួរៗ គ្មានឈ្មោះភ្ញៀវ & ឱ្យគេផ្ទៀងផ្ទាត់សិន)
+function sendDepotStatementTelegram(depotId) {
+  var info = cachedDepotDebtsBreakdown[depotId];
+  if (!info) return;
+
+  var d = info.depot;
+  var cleanPhone = String(d.phone || '').replace(/[^0-9]/g, '');
+  if (!cleanPhone) {
+    if (typeof kcAlert === 'function') {
+      kcAlert({ title: "ខ្វះលេខទូរស័ព្ទ", message: "ដេប៉ូនេះមិនមានលេខទូរស័ព្ទសម្រាប់ Telegram ឡើយ!", type: "warning" });
+    } else {
+      showToast("ដេប៉ូនេះមិនមានលេខទូរស័ព្ទឡើយ!", "error");
+    }
+    return;
+  }
+
+  var intlPhone = cleanPhone.startsWith('0') ? ('855' + cleanPhone.substring(1)) : ('855' + cleanPhone);
+  var dateKhNow = new Date().toLocaleDateString('km-KH');
+
+  var itemsLines = '';
+  info.items.forEach(function(itm, idx) {
+    var dateStr = new Date(itm.date).toLocaleString('km-KH', { 
+      timeZone: 'Asia/Phnom_Penh', 
+      dateStyle: 'short', 
+      timeStyle: 'short' 
+    });
+    // 🔒 រាយ ១ ជួរៗ មានម៉ោង និងកូដ Order តែគ្មានឈ្មោះភ្ញៀវឡើយ
+    itemsLines += (idx + 1) + ". " + itm.productName + " x " + itm.qty + " = ៛ " + Number(itm.costKhr).toLocaleString() + "\n" +
+                  "    (កូដ: " + itm.orderId + " | ម៉ោង: " + dateStr + ")\n";
+  });
+
+  var tgMsg = "🏢 [KC WATER - តារាងផ្ទៀងផ្ទាត់ថ្លៃដើមទំនិញដេប៉ូ]\n" +
+              "🏪 ដេប៉ូ៖ " + d.name + "\n" +
+              "📅 កាលបរិច្ឆេទ៖ " + dateKhNow + "\n" +
+              "━━━━━━━━━━━━━━━━━━━━\n" +
+              "📦 បញ្ជីមុខទំនិញដែលបានដក (រាយលម្អិតតាមជើង)៖\n" +
+              (itemsLines || "គ្មានមុខទំនិញ\n") +
+              "━━━━━━━━━━━━━━━━━━━━\n" +
+              "💰 សរុបថ្លៃដើមទំនិញបានដក (+)៖ ៛ " + Number(info.totalSourced).toLocaleString() + "\n" +
+              "💵 ប្រាក់បានសងពីមុន (-)៖ -៛ " + Number(info.totalPaid).toLocaleString() + "\n" +
+              "🔴 បំណុលនៅសល់ជាក់ស្ដែង (=)៖ ៛ " + Number(info.netDebt).toLocaleString() + "\n" +
+              "━━━━━━━━━━━━━━━━━━━━\n" +
+              "👉 សូមបងជួយពិនិត្យផ្ទៀងផ្ទាត់បញ្ជីទំនិញខាងលើ! សូមអរគុណ 🙏";
+
+  var tgUrl = "https://t.me/+" + intlPhone + "?text=" + encodeURIComponent(tgMsg);
+  window.open(tgUrl, '_blank');
+}
+
+// 🔍 ៤. ផ្ទាំង Pop-up មើលមុខទំនិញដែលបានដក (លុបឈ្មោះភ្ញៀវចេញ)
 function openDepotDebtBreakdownModal(depotId) {
   var info = cachedDepotDebtsBreakdown[depotId];
   if (!info) return;
@@ -1090,11 +1323,16 @@ function openDepotDebtBreakdownModal(depotId) {
 
   var rowsHtml = '';
   info.items.forEach(function(itm, idx) {
-    var dateStr = new Date(itm.date).toLocaleDateString('km-KH');
+    var dateStr = new Date(itm.date).toLocaleString('km-KH', { 
+      timeZone: 'Asia/Phnom_Penh', 
+      dateStyle: 'short', 
+      timeStyle: 'short' 
+    });
+    // 🔒 បង្ហាញកូដ Order តែគ្មានឈ្មោះភ្ញៀវឡើយ
     rowsHtml += '<tr class="border-b text-xs">' +
       '<td class="p-2 text-center text-[10px]">' + (idx + 1) + '</td>' +
       '<td class="p-2 text-[10px] text-slate-500 whitespace-nowrap">' + dateStr + '</td>' +
-      '<td class="p-2 font-bold text-slate-800">' + itm.productName + '<br><small class="text-slate-400 font-normal">ភ្ញៀវ: ' + itm.custName + '</small></td>' +
+      '<td class="p-2 font-bold text-slate-800">' + itm.productName + '<br><small class="text-slate-400 font-normal">កូដ: ' + itm.orderId + '</small></td>' +
       '<td class="p-2 text-center font-bold text-blue-700">' + itm.qty + '</td>' +
       '<td class="p-2 text-right font-black text-rose-700 whitespace-nowrap">៛ ' + itm.costKhr.toLocaleString() + '</td>' +
     '</tr>';
@@ -1111,7 +1349,7 @@ function openDepotDebtBreakdownModal(depotId) {
         '<button type="button" onclick="document.getElementById(\'depotBreakdownModal\').remove()" class="text-slate-400 hover:text-slate-700 text-lg font-bold">&times;</button>' +
       '</div>' +
       '<div class="flex-1 overflow-y-auto rounded-2xl border border-slate-200">' +
-        '<table class="w-full text-left text-xs border-collapse"><thead class="sticky top-0 bg-slate-100 text-slate-700 font-bold border-b"><tr><th class="p-2 text-center w-8">ល.រ</th><th class="p-2 text-[10px]">ថ្ងៃ</th><th class="p-2">ទំនិញ</th><th class="p-2 text-center">ចំនួន</th><th class="p-2 text-right">ថ្លៃដើម</th></tr></thead><tbody>' + (rowsHtml || '<tr><td colspan="5" class="p-4 text-center text-slate-400 italic">គ្មានទំនិញ</td></tr>') + '</tbody></table>' +
+        '<table class="w-full text-left text-xs border-collapse"><thead class="sticky top-0 bg-slate-100 text-slate-700 font-bold border-b"><tr><th class="p-2 text-center w-8">ល.រ</th><th class="p-2 text-[10px]">កាលបរិច្ឆេទ</th><th class="p-2">ទំនិញ</th><th class="p-2 text-center">ចំនួន</th><th class="p-2 text-right">ថ្លៃដើម</th></tr></thead><tbody>' + (rowsHtml || '<tr><td colspan="5" class="p-4 text-center text-slate-400 italic">គ្មានទំនិញ</td></tr>') + '</tbody></table>' +
       '</div>' +
       '<button type="button" onclick="document.getElementById(\'depotBreakdownModal\').remove()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">បិទ</button>' +
     '</div>' +
@@ -1119,6 +1357,7 @@ function openDepotDebtBreakdownModal(depotId) {
 
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
+
 
 // 💵 ៤. មុខងារទូទាត់សងដេប៉ូដៃគូ (កត់ត្រាចូល Expenses & ផ្ញើ Telegram)
 async function settleDepotDebtAction(depotId, remainingDebt, depotName) {
