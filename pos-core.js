@@ -2686,10 +2686,6 @@ function handleQuickSaleShortcutAction() {
     }
     if (typeof loadModule === 'function') {
       loadModule('POS');
-      setTimeout(function() {
-        var searchInp = document.getElementById('posProductSearchInp');
-        if (searchInp) searchInp.focus();
-      }, 150);
     }
   }
 }
