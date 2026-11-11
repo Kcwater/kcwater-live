@@ -3240,6 +3240,10 @@ async function loadStoreSettingsFromSupabase() {
     if (sMap['Telegram_ChatID']) telegramSettings.chatId = sMap['Telegram_ChatID'].trim();
     if (sMap['Telegram_Alert_Status']) telegramSettings.status = sMap['Telegram_Alert_Status'].toUpperCase();
 
+    // 🔗 ៣.១ ទាញយក QR Code ចែករំលែកទាំង ២ (Telegram Mini App & Website KC Mart)
+    if (sMap['Store_Share_QR_TG']) storeShareQrTgBase64 = sMap['Store_Share_QR_TG'].trim();
+    if (sMap['Store_Share_QR_WEB']) storeShareQrWebBase64 = sMap['Store_Share_QR_WEB'].trim();
+
     // ៤. កំណត់ថ្លៃដឹកជញ្ជូន
     if (sMap['Delivery_Fee_Standard']) storeDeliveryConfig.standardFee = parseFloat(sMap['Delivery_Fee_Standard']) || 0;
     if (sMap['Delivery_Free_Min_Qty']) storeDeliveryConfig.freeMinQty = parseInt(sMap['Delivery_Free_Min_Qty']) || 2;
@@ -3883,9 +3887,13 @@ async function cancelCustomerActiveOrder(orderId) {
   }
 }
 
-   // ==========================================
-// 🔗 មុខងារចែករំលែក KC MART (TELEGRAM MINI APP @KC_water_pos_bot, LINE, MESSENGER & QR)
 // ==========================================
+// 🔗 មុខងារចែករំលែក KC MART (TELEGRAM MINI APP & WEBSITE DUAL QR ENGINE)
+// ==========================================
+var storeShareQrTgBase64 = "";
+var storeShareQrWebBase64 = "";
+var activeShareQrTab = "TG"; // 'TG' ឬ 'WEB'
+
 function getShareStoreDetails() {
   var telegramMiniAppUrl = "https://t.me/KC_water_pos_bot/app";
   var webUrl = window.location.origin + window.location.pathname;
@@ -3908,50 +3916,65 @@ function getShareStoreDetails() {
   };
 }
 
-// ==========================================================================
-// 🔗 មុខងារចែករំលែក KC MART (INSTANT QR 0.001 វិនាទី & SAVE ចូល GALLERY ផ្ទាល់)
-// ==========================================================================
-
-// ⚡ ឃ្លាំងផ្ទុក Base64 QR ក្នុងទូរស័ព្ទ (ធានាចេញភ្លាមក្នុង 0.001 វិនាទី មិនបាច់រង់ចាំ Server ក្រៅ)
-var CACHED_STORE_QR_DATA = "";
-
 function getInstantQrUrl(text) {
-  // ប្រើប្រាស់ QuickChart Engine ល្បឿនលឿនជាង api.qrserver ៥ ដង និងមាន fallback
   return "https://quickchart.io/qr?text=" + encodeURIComponent(text) + "&size=300&margin=1&ecLevel=M";
+}
+
+// 🔄 មុខងារចុចប្តូររវាង Telegram QR និង Website QR
+function switchShareQrTab(type) {
+  activeShareQrTab = type;
+  updateShareQrDisplayUI();
+}
+
+function updateShareQrDisplayUI() {
+  var s = getShareStoreDetails();
+  var qrImg = document.getElementById('shareStoreQrImage');
+  var linkInp = document.getElementById('shareStoreLinkInput');
+  var btnTgTab = document.getElementById('btnShareTab_TG');
+  var btnWebTab = document.getElementById('btnShareTab_WEB');
+  var qrTitle = document.getElementById('shareQrTitleLabel');
+
+  var isTg = (activeShareQrTab === 'TG');
+  var targetUrl = isTg ? s.tgAppUrl : s.webUrl;
+  var customUploadedImg = isTg ? storeShareQrTgBase64 : storeShareQrWebBase64;
+
+  if (btnTgTab && btnWebTab) {
+    if (isTg) {
+      btnTgTab.className = "flex-1 py-2 px-2 rounded-xl text-xs font-black bg-emerald-700 text-white shadow-xs transition";
+      btnWebTab.className = "flex-1 py-2 px-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-white transition";
+    } else {
+      btnWebTab.className = "flex-1 py-2 px-2 rounded-xl text-xs font-black bg-emerald-700 text-white shadow-xs transition";
+      btnTgTab.className = "flex-1 py-2 px-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-white transition";
+    }
+  }
+
+  if (qrTitle) {
+    qrTitle.innerText = isTg ? "📱 ស្កេនចូល Telegram Mini App" : "🌐 ស្កេនចូល Website KC Mart";
+  }
+
+  if (linkInp) {
+    linkInp.value = targetUrl;
+  }
+
+  if (qrImg) {
+    // 🌟 បើលោកអ្នកបាន Upload រូបភាពពី Settings ➔ បង្ហាញរូបផ្ទាល់ខ្លួននោះភ្លាម!
+    if (customUploadedImg && customUploadedImg.length > 50) {
+      qrImg.src = customUploadedImg;
+    } else {
+      // បើមិនទាន់ Upload ➔ បង្កើត QR ស្វ័យប្រវត្តិតាម Link
+      qrImg.src = getInstantQrUrl(targetUrl);
+    }
+  }
 }
 
 function openShareStoreModal() {
   var s = getShareStoreDetails();
   var modal = document.getElementById('shareStoreModal');
-  var qrImg = document.getElementById('shareStoreQrImage');
-  var linkInp = document.getElementById('shareStoreLinkInput');
   var btnTg = document.getElementById('btnShareTelegram');
   var btnLine = document.getElementById('btnShareLine');
 
-  if (linkInp) linkInp.value = s.tgAppUrl;
-
-  // ⚡ បង្ហាញ QR Code ភ្លាមៗក្នុង ០.០០១ វិនាទី
-  if (qrImg) {
-    if (CACHED_STORE_QR_DATA) {
-      qrImg.src = CACHED_STORE_QR_DATA;
-    } else {
-      var fastQrUrl = getInstantQrUrl(s.tgAppUrl);
-      qrImg.src = fastQrUrl;
-
-      // បំប្លែងទុកជា Data URI ក្នុងទូរស័ព្ទអូតូ ដើម្បីឱ្យលើកក្រោយលោតភ្លែត 0ms
-      fetch(fastQrUrl)
-        .then(function(res) { return res.blob(); })
-        .then(function(blob) {
-          var reader = new FileReader();
-          reader.onloadend = function() {
-            CACHED_STORE_QR_DATA = reader.result;
-            if (qrImg) qrImg.src = CACHED_STORE_QR_DATA;
-          };
-          reader.readAsDataURL(blob);
-        })
-        .catch(function() {});
-    }
-  }
+  activeShareQrTab = "TG"; // លំនាំដើមបើកលើ Telegram QR មុនគេ
+  updateShareQrDisplayUI();
 
   if (btnTg) {
     var tgShareText = s.title + "\n" + s.desc;
@@ -3967,18 +3990,18 @@ function openShareStoreModal() {
   if (modal) modal.classList.remove('hidden');
 }
 
-// 📥 មុខងារទាញយក QR Code រក្សាទុកចូល Gallery ទូរស័ព្ទភ្លាមៗ (មិនបាច់លោតចេញក្រៅ)
+// 📥 មុខងារទាញយករូប QR ដែលកំពុងបង្ហាញ (Telegram ឬ Website) ទុកក្នុងទូរស័ព្ទ
 async function downloadShareStoreQr() {
   var qrImg = document.getElementById('shareStoreQrImage');
   if (!qrImg || !qrImg.src) return;
 
-  var s = (typeof getShareStoreDetails === 'function') ? getShareStoreDetails() : { tgAppUrl: "https://t.me/KC_water_pos_bot/app" };
-  var btn = document.querySelector('button[onclick="downloadShareStoreQr()"]');
+  var btn = document.getElementById('btnDownloadShareQr');
   var oldBtnHtml = btn ? btn.innerHTML : '';
   if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងទាញយក...';
 
+  var fileName = (activeShareQrTab === 'TG') ? 'KC-MART-Telegram-QR.png' : 'KC-MART-Website-QR.png';
+
   try {
-    // បង្កើតរូបភាព HD លើ Canvas ផ្ទាល់ក្នុងទូរស័ព្ទ (ដោះស្រាយបញ្ហា CORS បាន ១០០%)
     var canvas = document.createElement('canvas');
     var ctx = canvas.getContext('2d');
     var img = new Image();
@@ -3987,7 +4010,6 @@ async function downloadShareStoreQr() {
     img.onload = function() {
       canvas.width = 400;
       canvas.height = 400;
-      // ផ្ទៃខាងក្រោយពណ៌ស
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 20, 20, 360, 360);
@@ -3995,7 +4017,7 @@ async function downloadShareStoreQr() {
       var dataUrl = canvas.toDataURL('image/png');
       var a = document.createElement('a');
       a.href = dataUrl;
-      a.download = 'KC-MART-QR.png';
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -4007,10 +4029,9 @@ async function downloadShareStoreQr() {
     };
 
     img.onerror = function() {
-      // Fallback
       var a = document.createElement('a');
       a.href = qrImg.src;
-      a.download = 'KC-MART-QR.png';
+      a.download = fileName;
       a.target = '_blank';
       a.click();
       if (btn) btn.innerHTML = oldBtnHtml;
@@ -4052,15 +4073,18 @@ function copyShareStoreLink() {
 
 function shareViaNativeSheet() {
   var s = getShareStoreDetails();
+  var targetUrl = (activeShareQrTab === 'TG') ? s.tgAppUrl : s.webUrl;
   if (navigator.share) {
     navigator.share({
       title: s.title,
       text: s.desc,
-      url: s.tgAppUrl
+      url: targetUrl
     }).catch(function() {});
   } else {
     copyShareStoreLink();
-    alert("បានចម្លង Link ជោគជ័យ! លោកអ្នកអាចយកទៅផ្ញើក្នុង Messenger ឬ Facebook បាន។");
+    if (typeof showStoreToast === 'function') {
+      showStoreToast("បានចម្លង Link ជោគជ័យ!", "success");
+    }
   }
 }
   </script>
@@ -4080,23 +4104,32 @@ function shareViaNativeSheet() {
         <button type="button" onclick="closeShareStoreModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>
       </div>
 
-     <!-- 🖼️ ប្រអប់ QR Code សម្រាប់ស្កេន (ល្បឿនលឿនភ្លាមៗ 0ms) -->
-      <div class="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-300 space-y-2">
-        <span class="text-[11px] font-black text-emerald-900 block">📱 ស្កេន QR Code ដើម្បីចូលទិញទំនិញ</span>
+      <!-- 🔄 របារជ្រើសរើស QR CODE ទាំង ២ (Telegram Mini App VS Website KC Mart) -->
+      <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 gap-1 text-xs font-bold">
+        <button type="button" id="btnShareTab_TG" onclick="switchShareQrTab('TG')" class="flex-1 py-2 px-2 rounded-xl text-xs font-black bg-emerald-700 text-white shadow-xs transition flex items-center justify-center gap-1">
+          <i class="fab fa-telegram text-sm"></i> Telegram App
+        </button>
+        <button type="button" id="btnShareTab_WEB" onclick="switchShareQrTab('WEB')" class="flex-1 py-2 px-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-white transition flex items-center justify-center gap-1">
+          <i class="fas fa-globe text-sm"></i> Website KC Mart
+        </button>
+      </div>
+
+      <!-- 🖼️ ប្រអប់ QR Code សម្រាប់ស្កេន -->
+      <div class="p-3.5 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl border-2 border-emerald-300 space-y-2">
+        <span id="shareQrTitleLabel" class="text-[11px] font-black text-emerald-900 block">📱 ស្កេនចូល Telegram Mini App</span>
         
         <div class="p-2 bg-white rounded-2xl border border-emerald-200 shadow-sm max-w-[190px] mx-auto overflow-hidden flex items-center justify-center min-h-[160px]">
-          <!-- រូបភាព QR ល្បឿនលឿន -->
-          <img id="shareStoreQrImage" src="" class="w-full h-auto rounded-xl shadow-xs" alt="KC Mart QR Code">
+          <img id="shareStoreQrImage" src="" class="w-full h-auto rounded-xl shadow-xs object-contain" alt="KC Mart QR Code">
         </div>
 
-        <button type="button" onclick="downloadShareStoreQr()" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline flex items-center justify-center gap-1 mx-auto active:scale-95 transition">
+        <button type="button" id="btnDownloadShareQr" onclick="downloadShareStoreQr()" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline flex items-center justify-center gap-1 mx-auto active:scale-95 transition">
           <i class="fas fa-download"></i> ទាញយករូប QR ទុកក្នុងទូរស័ព្ទ
         </button>
       </div>
 
       <!-- 📋 ប្រអប់ចម្លង Link (Copy Link) -->
       <div class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
-        <input type="text" id="shareStoreLinkInput" readonly class="text-[10px] font-bold text-slate-600 bg-transparent px-2 flex-1 outline-none truncate select-all">
+        <input type="text" id="shareStoreLinkInput" readonly class="text-[10px] font-bold text-slate-600 bg-transparent px-2 flex-1 outline-none truncate select-all font-mono">
         <button type="button" id="btnCopyShareLink" onclick="copyShareStoreLink()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black shadow-xs active:scale-95 transition whitespace-nowrap">
           <i class="fas fa-copy"></i> ចម្លង Link
         </button>
@@ -4133,8 +4166,7 @@ function shareViaNativeSheet() {
       </button>
     </div>
   </div>
-  <script>
-  </script>
+  
   <!-- 📲 បដាដំឡើង App KC MART លើ Android & កុំព្យូទ័រ PC -->
   <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-[9990] max-w-sm mx-auto bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-emerald-500/40 hidden animate-in slide-in-from-bottom duration-300 select-none">
     <div class="flex items-center justify-between gap-2.5">
