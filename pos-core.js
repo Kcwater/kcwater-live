@@ -247,16 +247,11 @@ async function renderDashboardModule() {
   // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្អាត និងមិនបែកលើទូរស័ព្ទ
   area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // របារក្បាលទំព័រ Dashboard
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm gap-2">' +
-      '<div>' +
-        '<h2 class="text-base sm:text-lg font-black text-green-900 flex items-center gap-2">' +
-          '<i class="fas fa-chart-pie text-green-600"></i>ផ្ទាំងសង្ខេបអាជីវកម្ម KC WATER' +
-        '</h2>' +
-        '<p class="text-[11px] text-gray-500 mt-0.5">ទិដ្ឋភាពទូទៅនៃការលក់ សាច់ប្រាក់ ចំណាយ និងប្រាក់ចំណេញសុទ្ធ</p>' +
-      '</div>' +
-      '<button onclick="renderDashboardModule()" class="px-3.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs self-end sm:self-auto">' +
-        '<i class="fas fa-sync-alt"></i> Refresh' +
-      '</button>' +
+    '<div class="bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm">' +
+      '<h2 class="text-base sm:text-lg font-black text-green-900 flex items-center gap-2">' +
+        '<i class="fas fa-chart-pie text-green-600"></i>ផ្ទាំងសង្ខេបអាជីវកម្ម KC WATER' +
+      '</h2>' +
+      '<p class="text-[11px] text-gray-500 mt-0.5">ទិដ្ឋភាពទូទៅនៃការលក់ សាច់ប្រាក់ ចំណាយ និងប្រាក់ចំណេញសុទ្ធ</p>' +
     '</div>' +
 
     // 📊 កាតស្ថិតិទាំង ៦ (រត់ ៦ ជួរលើ PC ធំ, ៣ ជួរលើ Laptop, និង ២ ជួរលើទូរស័ព្ទ)
@@ -808,12 +803,11 @@ function renderPOSModule() {
       }
     });
 
-    customerHeaderHTML = '<div class="card border-l-4 border-blue-500 p-3 sm:p-3.5 shadow-sm mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-white">' +
-      '<div class="flex-1 w-full sm:w-auto">' +
+    customerHeaderHTML = '<div class="card border-l-4 border-blue-500 p-3 sm:p-3.5 shadow-sm mb-3 bg-white">' +
+      '<div>' +
         '<label class="text-[11px] font-bold text-gray-500 block mb-1"><i class="fas fa-user-tag text-blue-600 mr-1.5"></i>ជ្រើសរើសអតិថិជន / ម៉ូយ (ឬលក់នៅកន្លែង Walk-in)</label>' +
-        '<select id="posCustSelect" onchange="onAdminPosCustomerChange(this.value)" class="w-full font-bold text-gray-800 border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2 bg-white outline-none text-xs sm:text-sm">' + custOptions + '</select>' +
+        '<select id="posCustSelect" onchange="onAdminPosCustomerChange(this.value)" class="w-full font-bold text-gray-800 border-2 border-blue-200 focus:border-blue-600 rounded-xl p-2.5 bg-white outline-none text-xs sm:text-sm shadow-2xs">' + custOptions + '</select>' +
       '</div>' +
-      '<button onclick="fetchInitialPOSData().then(rPG)" class="px-3 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1 shadow-2xs self-end sm:self-auto"><i class="fas fa-sync-alt"></i> Refresh ស្តុក</button>' +
     '</div>' +
     '<div id="adminProxyModeNotice" class="hidden p-2.5 bg-blue-50 border-2 border-blue-400 rounded-2xl mb-3 text-xs font-bold text-blue-950 flex items-center justify-between shadow-2xs animate-in zoom-in duration-200">' +
       '<span class="flex items-center gap-2"><i class="fas fa-truck-ramp-box text-blue-600 text-base"></i> របៀបដកទំនិញជំនួស៖ <b id="adminProxyCustName" class="text-blue-900 text-sm"></b></span>' +
@@ -827,7 +821,6 @@ function renderPOSModule() {
         '<b class="text-green-900 text-xs sm:text-base"><i class="fas fa-user mr-1.5"></i>អ្នកដកទំនិញ៖ ' + currentUser.fullName + '</b>' +
         '<input type="hidden" id="posCustSelect" value="' + currentUser.fullName + '">' +
       '</div>' +
-      '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1.5 bg-white hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh ស្តុក</button>' +
     '</div>';
 
   } else if (isDriver) {
@@ -837,17 +830,15 @@ function renderPOSModule() {
         '<b class="text-amber-950 text-xs sm:text-base"><i class="fas fa-truck mr-1.5"></i>អ្នកមកដកផ្ទាល់៖ ' + currentUser.fullName + '</b>' +
         '<input type="hidden" id="posCustSelect" value="' + (currentUser.linkedBoss || '') + '">' +
       '</div>' +
-      '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1.5 bg-white hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-bold border border-amber-200 active:scale-95 transition flex items-center gap-1 shadow-2xs"><i class="fas fa-sync-alt"></i> Refresh</button>' +
     '</div>';
 
   } else {
     customerHeaderHTML = '<div class="card border-l-4 border-blue-600 bg-blue-50 p-3 mb-3 flex justify-between items-center">' +
       '<b class="text-blue-900 text-xs sm:text-sm"><i class="fas fa-store mr-1.5"></i>លក់នៅកន្លែង (Walk-in)</b>' +
       '<input type="hidden" id="posCustSelect" value="Walk-in">' +
-      '<button onclick="fetchInitialPOSData().then(rPG)" class="px-2.5 py-1 bg-white text-blue-700 rounded-lg text-xs font-bold border"><i class="fas fa-sync-alt"></i> Refresh</button>' +
     '</div>';
   }
-
+  
   // ផ្នែក Discount
   var discountSectionHTML = '';
   if (isAdmin) {
