@@ -783,17 +783,12 @@ async function renderDebtorsReportModule() {
   // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
   area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // ក្បាលទំព័រ
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm gap-2">' +
-      '<div>' +
-        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
-          '<i class="fas fa-hand-holding-dollar text-red-600"></i>' +
-          '<span>របាយការណ៍បំណុលជំពាក់ (Debts & Payables)</span>' +
-        '</h2>' +
-        '<p class="text-[11px] text-slate-500 mt-0.5">គ្រប់គ្រងបំណុលម៉ូយជំពាក់យើង & បំណុលយើងជំពាក់ដេប៉ូដៃគូ</p>' +
-      '</div>' +
-      '<button onclick="renderDebtorsReportModule()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border active:scale-95 transition flex items-center gap-1.5 shadow-2xs self-end sm:self-auto">' +
-        '<i class="fas fa-sync-alt"></i> Refresh' +
-      '</button>' +
+    '<div class="bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm">' +
+      '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+        '<i class="fas fa-hand-holding-dollar text-red-600"></i>' +
+        '<span>របាយការណ៍បំណុលជំពាក់ (Debts & Payables)</span>' +
+      '</h2>' +
+      '<p class="text-[11px] text-slate-500 mt-0.5">គ្រប់គ្រងបំណុលម៉ូយជំពាក់យើង & បំណុលយើងជំពាក់ដេប៉ូដៃគូ</p>' +
     '</div>' +
 
     // របារប្តូរផ្ទាំង ២ (Tabs: ម៉ូយជំពាក់យើង vs យើងជំពាក់ដេប៉ូ)
@@ -942,17 +937,12 @@ async function renderStockRepModule() {
   // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
   area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // ក្បាលទំព័រ
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm gap-2">' +
-      '<div>' +
-        '<h2 class="text-base sm:text-lg font-black text-green-900 flex items-center gap-2">' +
-          '<i class="fas fa-boxes-stacked text-green-600"></i>' +
-          '<span>របាយការណ៍ស្តុក និងដើមទុនក្នុងឃ្លាំង (Stock Report)</span>' +
-        '</h2>' +
-        '<p class="text-[11px] text-gray-500 mt-0.5">តាមដានដើមទុនសរុប និងចលនាស្តុក Realtime</p>' +
-      '</div>' +
-      '<button onclick="renderStockRepModule()" class="px-3.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold border border-green-200 active:scale-95 transition flex items-center gap-1.5 shadow-2xs self-end sm:self-auto">' +
-        '<i class="fas fa-sync-alt"></i> Refresh' +
-      '</button>' +
+    '<div class="bg-white p-3.5 sm:p-4 rounded-2xl border shadow-sm">' +
+      '<h2 class="text-base sm:text-lg font-black text-green-900 flex items-center gap-2">' +
+        '<i class="fas fa-boxes-stacked text-green-600"></i>' +
+        '<span>របាយការណ៍ស្តុក និងដើមទុនក្នុងឃ្លាំង (Stock Report)</span>' +
+      '</h2>' +
+      '<p class="text-[11px] text-gray-500 mt-0.5">តាមដានដើមទុនសរុប និងចលនាស្តុក Realtime</p>' +
     '</div>' +
 
     // កាតសង្ខេប ២
