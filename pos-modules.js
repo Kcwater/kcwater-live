@@ -1466,14 +1466,9 @@ function renderExpensesModule() {
 
       // កាតទី ២៖ ប្រវត្តិការចំណាយ (lg:col-span-7)
       '<div class="lg:col-span-7 card border-t-4 border-gray-700 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
-        '<div class="flex justify-between items-center mb-2.5">' +
-          '<h3 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-1.5">' +
-            '<i class="fas fa-history text-blue-600"></i>ប្រវត្តិការចំណាយថ្មីៗ' +
-          '</h3>' +
-          '<button onclick="fetchExpensesHistory()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs">' +
-            '<i class="fas fa-sync-alt text-[10px]"></i> Refresh' +
-          '</button>' +
-        '</div>' +
+        '<h3 class="font-bold text-gray-800 text-xs sm:text-sm mb-2.5 flex items-center gap-1.5">' +
+          '<i class="fas fa-history text-blue-600"></i>ប្រវត្តិការចំណាយថ្មីៗ' +
+        '</h3>' +
         '<div class="overflow-x-auto max-h-96 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
           '<table class="w-full text-left text-xs border-collapse">' +
             '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
@@ -1715,17 +1710,12 @@ function renderCustomersModule() {
     // ជួរខាងលើ៖ បង្កើតគណនី (ឆ្វេង ៦ ភាគ) + កំណត់តម្លៃកុងត្រា (ស្តាំ ៦ ភាគ) លើ PC ធំ
     '<div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">' +
       
-      // កាត ១៖ បង្កើត/កែប្រែគណនី
-      '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
-        '<div class="flex justify-between items-center mb-3">' +
-          '<h2 id="custFormTitle" class="font-extrabold text-blue-900 text-xs sm:text-base flex items-center gap-1.5">' +
-            '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
-          '</h2>' +
-          '<button type="button" id="btnCancelEditCust" onclick="cancelEditCustomer()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
-            '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
-          '</button>' +
-        '</div>' +
-        '<div class="space-y-2.5">' +
+      // កាតទី ១៖ ទម្រង់កត់ត្រាការខ្ចី
+    '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+      '<h2 class="font-extrabold text-blue-900 text-xs sm:text-base mb-3 flex items-center gap-1.5">' +
+        '<i class="fas fa-boxes-packing text-blue-600"></i>កត់ត្រាភ្ញៀវខ្ចីធុង / បរិក្ខារ' +
+      '</h2>' +
+      '<div class="space-y-2.5">' +
           '<div>' +
             '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
             '<select id="mem_role_type" onchange="toggleCustTypeFields()" class="font-bold border-2 border-blue-200 p-2 rounded-xl w-full bg-white text-xs sm:text-sm outline-none">' +
@@ -2479,17 +2469,12 @@ function renderSettingsModule() {
   // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
   area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // ក្បាលទំព័រ
-    '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-3xl border shadow-sm gap-2">' +
-      '<div>' +
-        '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
-          '<i class="fas fa-gear text-emerald-600"></i>' +
-          '<span>ការកំណត់ប្រព័ន្ធ (System Settings)</span>' +
-        '</h2>' +
-        '<p class="text-[11px] text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
-      '</div>' +
-      '<button onclick="renderSettingsModule()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1.5 self-end sm:self-auto">' +
-        '<i class="fas fa-sync-alt"></i> Refresh' +
-      '</button>' +
+    '<div class="bg-white p-3.5 sm:p-4 rounded-3xl border shadow-sm">' +
+      '<h2 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">' +
+        '<i class="fas fa-gear text-emerald-600"></i>' +
+        '<span>ការកំណត់ប្រព័ន្ធ (System Settings)</span>' +
+      '</h2>' +
+      '<p class="text-[11px] text-slate-500 mt-0.5">ចុចលើកាតមុខងារនីមួយៗដើម្បីបើកផ្ទាំង Pop-up កំណត់ទិន្នន័យ</p>' +
     '</div>' +
 
     // 📱 ក្រឡាចត្រង្គកាតមុខងារទាំង ៩
@@ -2535,6 +2520,20 @@ function renderSettingsModule() {
           '</div>' +
         '</div>' +
         '<i class="fas fa-chevron-right text-slate-300 group-hover:text-red-600 group-hover:translate-x-1 transition text-xs"></i>' +
+      '</div>' +
+
+      // កាត ៤ ថ្មី៖ QR Code ចែករំលែក (Telegram & Website)
+      '<div onclick="openShareQrSettingsModal()" class="card border-l-4 border-sky-600 p-3.5 bg-sky-50/30 rounded-2xl shadow-sm hover:shadow-xl hover:border-sky-500 transition-all cursor-pointer active:scale-95 flex items-center justify-between group mb-0">' +
+        '<div class="flex items-center gap-2.5">' +
+          '<div class="w-11 h-11 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition">' +
+            '<i class="fas fa-share-nodes"></i>' +
+          '</div>' +
+          '<div>' +
+            '<b class="text-xs sm:text-sm font-black text-slate-900 block group-hover:text-sky-700 transition">QR ចែករំលែក (Share QR)</b>' +
+            '<span class="text-[10px] text-sky-700 font-bold block mt-0.5">បញ្ចូល QR Telegram & Website 📱🌐</span>' +
+          '</div>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right text-slate-300 group-hover:text-sky-600 group-hover:translate-x-1 transition text-xs"></i>' +
       '</div>' +
 
       // កាត ៤៖ ដេប៉ូដៃគូផ្គត់ផ្គង់
@@ -5329,6 +5328,227 @@ async function saveAbaQrSettings() {
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុក QR';
+    }
+  }
+}
+
+// ==========================================================================
+// 📱 មុខងារ POP-UP UPLOAD រូប QR CODE ចែករំលែកហាង (TELEGRAM MINI APP & WEBSITE)
+// ==========================================================================
+
+async function openShareQrSettingsModal() {
+  var existing = document.getElementById('shareQrSettingsModal');
+  if (existing) existing.remove();
+
+  var currentTgQr = "";
+  var currentWebQr = "";
+
+  try {
+    const { data } = await supabaseClient
+      .from('settings')
+      .select('key, value')
+      .in('key', ['Store_Share_QR_TG', 'Store_Share_QR_WEB']);
+
+    if (data) {
+      data.forEach(function(r) {
+        if (r.key === 'Store_Share_QR_TG' && r.value) currentTgQr = r.value;
+        if (r.key === 'Store_Share_QR_WEB' && r.value) currentWebQr = r.value;
+      });
+    }
+  } catch(e) {}
+
+  var defaultQrPlaceholder = "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
+
+  var html = '<div id="shareQrSettingsModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">' +
+    '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs" onclick="closeShareQrSettingsModal()"></div>' +
+    '<div class="bg-white rounded-3xl shadow-2xl z-10 w-full max-w-md p-4 sm:p-5 space-y-3.5 text-center relative border border-slate-100 animate-in zoom-in-95 duration-200 my-auto max-h-[92dvh] flex flex-col">' +
+      
+      // ក្បាលផ្ទាំង
+      '<div class="flex justify-between items-center border-b pb-2.5">' +
+        '<div class="text-left">' +
+          '<h3 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
+            '<i class="fas fa-share-nodes text-sky-600"></i> កំណត់ QR Code ចែករំលែកហាង' +
+          '</h3>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">ផ្ទុក QR សម្រាប់ Telegram Mini App & Website KC Mart</p>' +
+        '</div>' +
+        '<button type="button" onclick="closeShareQrSettingsModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 text-lg font-bold flex items-center justify-center">&times;</button>' +
+      '</div>' +
+
+      '<div class="flex-1 overflow-y-auto space-y-3 text-left pr-1 text-xs">' +
+        // ១. QR Code សម្រាប់ Telegram Mini App
+        '<div class="p-3 bg-sky-50/70 rounded-2xl border-2 border-dashed border-sky-300 space-y-2">' +
+          '<div class="flex justify-between items-center">' +
+            '<b class="text-sky-950 text-xs flex items-center gap-1.5"><i class="fab fa-telegram text-sky-500 text-sm"></i> ១. QR Code សម្រាប់ Telegram Mini App</b>' +
+            '<span id="shareQrTgStatusBadge" class="text-[9.5px] font-black px-2 py-0.5 rounded-full ' + (currentTgQr ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600') + '">' +
+              (currentTgQr ? '✅ មានរូប' : '⚪ មិនទាន់មាន') +
+            '</span>' +
+          '</div>' +
+          '<div class="flex items-center gap-3">' +
+            '<div class="w-20 h-20 bg-white rounded-xl border border-sky-200 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">' +
+              '<img id="shareQrTgPreviewImg" src="' + (currentTgQr || defaultQrPlaceholder) + '" class="max-w-full max-h-full object-contain rounded" alt="TG QR">' +
+            '</div>' +
+            '<div class="flex-1 space-y-1.5">' +
+              '<label class="py-2 px-3 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-xs shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+                '<i class="fas fa-image"></i> 📷 រើសរូប QR Telegram' +
+                '<input type="file" accept="image/*" onchange="previewShareQrUpload(this, \'TG\')" class="hidden">' +
+              '</label>' +
+              '<button type="button" onclick="removeShareQrSettings(\'TG\')" class="w-full py-1.5 bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-xl font-bold text-[10px] border border-slate-200 active:scale-95 transition flex items-center justify-center gap-1">' +
+                '<i class="fas fa-trash-can"></i> ដករូបចេញ' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<input type="hidden" id="inpHiddenShareQrTgBase64" value="' + currentTgQr + '">' +
+        '</div>' +
+
+        // ២. QR Code សម្រាប់ Website KC Mart
+        '<div class="p-3 bg-emerald-50/70 rounded-2xl border-2 border-dashed border-emerald-300 space-y-2">' +
+          '<div class="flex justify-between items-center">' +
+            '<b class="text-emerald-950 text-xs flex items-center gap-1.5"><i class="fas fa-globe text-emerald-600 text-sm"></i> ២. QR Code សម្រាប់ Website KC Mart</b>' +
+            '<span id="shareQrWebStatusBadge" class="text-[9.5px] font-black px-2 py-0.5 rounded-full ' + (currentWebQr ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600') + '">' +
+              (currentWebQr ? '✅ មានរូប' : '⚪ មិនទាន់មាន') +
+            '</span>' +
+          '</div>' +
+          '<div class="flex items-center gap-3">' +
+            '<div class="w-20 h-20 bg-white rounded-xl border border-emerald-200 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">' +
+              '<img id="shareQrWebPreviewImg" src="' + (currentWebQr || defaultQrPlaceholder) + '" class="max-w-full max-h-full object-contain rounded" alt="Web QR">' +
+            '</div>' +
+            '<div class="flex-1 space-y-1.5">' +
+              '<label class="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition">' +
+                '<i class="fas fa-image"></i> 📷 រើសរូប QR Website' +
+                '<input type="file" accept="image/*" onchange="previewShareQrUpload(this, \'WEB\')" class="hidden">' +
+              '</label>' +
+              '<button type="button" onclick="removeShareQrSettings(\'WEB\')" class="w-full py-1.5 bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-xl font-bold text-[10px] border border-slate-200 active:scale-95 transition flex items-center justify-center gap-1">' +
+                '<i class="fas fa-trash-can"></i> ដករូបចេញ' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<input type="hidden" id="inpHiddenShareQrWebBase64" value="' + currentWebQr + '">' +
+        '</div>' +
+      '</div>' +
+
+      // ប៊ូតុងសកម្មភាពខាងក្រោម
+      '<div class="grid grid-cols-2 gap-2 pt-1 border-t">' +
+        '<button type="button" onclick="closeShareQrSettingsModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 transition">បោះបង់</button>' +
+        '<button type="button" id="btnSaveShareQrAction" onclick="saveShareQrSettings()" class="py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-xl text-xs shadow-md active:scale-95 transition flex items-center justify-center gap-1">' +
+          '<i class="fas fa-floppy-disk"></i> រក្សាទុក QR ទាំងពីរ' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeShareQrSettingsModal() {
+  var modal = document.getElementById('shareQrSettingsModal');
+  if (modal) modal.remove();
+}
+
+function previewShareQrUpload(input, type) {
+  if (input.files && input.files[0]) {
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var maxDim = 600;
+        var w = img.width, h = img.height;
+        if (w > h) {
+          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        } else {
+          if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var base64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        if (type === 'TG') {
+          document.getElementById('shareQrTgPreviewImg').src = base64;
+          document.getElementById('inpHiddenShareQrTgBase64').value = base64;
+          var badge = document.getElementById('shareQrTgStatusBadge');
+          if (badge) {
+            badge.className = "text-[9.5px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800";
+            badge.innerText = "✅ បានរើសរូបថ្មី";
+          }
+        } else {
+          document.getElementById('shareQrWebPreviewImg').src = base64;
+          document.getElementById('inpHiddenShareQrWebBase64').value = base64;
+          var badgeWeb = document.getElementById('shareQrWebStatusBadge');
+          if (badgeWeb) {
+            badgeWeb.className = "text-[9.5px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800";
+            badgeWeb.innerText = "✅ បានរើសរូបថ្មី";
+          }
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeShareQrSettings(type) {
+  var defaultPlaceholder = "https://cdn-icons-png.flaticon.com/512/3100/3100566.png";
+  if (type === 'TG') {
+    document.getElementById('inpHiddenShareQrTgBase64').value = '';
+    document.getElementById('shareQrTgPreviewImg').src = defaultPlaceholder;
+    var badge = document.getElementById('shareQrTgStatusBadge');
+    if (badge) {
+      badge.className = "text-[9.5px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-600";
+      badge.innerText = "⚪ មិនទាន់មាន";
+    }
+  } else {
+    document.getElementById('inpHiddenShareQrWebBase64').value = '';
+    document.getElementById('shareQrWebPreviewImg').src = defaultPlaceholder;
+    var badgeWeb = document.getElementById('shareQrWebStatusBadge');
+    if (badgeWeb) {
+      badgeWeb.className = "text-[9.5px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-600";
+      badgeWeb.innerText = "⚪ មិនទាន់មាន";
+    }
+  }
+}
+
+async function saveShareQrSettings() {
+  var base64Tg = document.getElementById('inpHiddenShareQrTgBase64') ? document.getElementById('inpHiddenShareQrTgBase64').value.trim() : '';
+  var base64Web = document.getElementById('inpHiddenShareQrWebBase64') ? document.getElementById('inpHiddenShareQrWebBase64').value.trim() : '';
+
+  var btn = document.getElementById('btnSaveShareQrAction');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+  }
+
+  try {
+    const { error } = await supabaseClient.from('settings').upsert([
+      { key: 'Store_Share_QR_TG', value: base64Tg },
+      { key: 'Store_Share_QR_WEB', value: base64Web }
+    ]);
+
+    if (error) throw error;
+
+    closeShareQrSettingsModal();
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "ជោគជ័យ! 🎉",
+        message: "រូបភាព QR Code សម្រាប់ Telegram Mini App និង Website ត្រូវបានរក្សាទុកក្នុងប្រព័ន្ធរួចរាល់!",
+        type: "success"
+      });
+    } else {
+      showToast("បានរក្សាទុក QR Codes ចែករំលែកជោគជ័យ!", "success");
+    }
+
+  } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-floppy-disk mr-1"></i> រក្សាទុក QR ទាំងពីរ';
     }
   }
 }
