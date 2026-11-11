@@ -34,16 +34,19 @@ async function login() {
 
     if (error) throw error;
 
-    if (data) {
-      var bossName = (data.linked_boss || "").trim();
+    // 🔍 ស្រង់យកទិន្នន័យគណនី (គាំទ្រទាំង Array និង Object ធានាស្គាល់ឈ្មោះ និង Role ១០០%)
+    var userRow = Array.isArray(data) ? data[0] : data;
+
+    if (userRow && userRow.id) {
+      var bossName = (userRow.linked_boss || "").trim();
 
       // 🔍 ប្រសិនបើជាកូនចៅ ហើយ RPC មិនបានផ្ញើ linked_boss មក ➔ ទាញយកពីតារាង users ផ្ទាល់
-      if ((data.role === 'Driver' || data.type === 'Driver') && !bossName) {
+      if ((userRow.role === 'Driver' || userRow.type === 'Driver') && !bossName) {
         try {
           const { data: uRow } = await supabaseClient
             .from('users')
             .select('linked_boss')
-            .eq('id', data.id)
+            .eq('id', userRow.id)
             .maybeSingle();
           if (uRow && uRow.linked_boss) {
             bossName = uRow.linked_boss.trim();
@@ -52,12 +55,12 @@ async function login() {
       }
 
       currentUser = {
-        id: data.id,
-        username: data.username,
-        fullName: data.full_name,
-        role: data.role,
-        type: data.type,
-        phone: data.phone,
+        id: userRow.id,
+        username: userRow.username,
+        fullName: userRow.full_name,
+        role: userRow.role,
+        type: userRow.type,
+        phone: userRow.phone,
         linkedBoss: bossName
       };
 
