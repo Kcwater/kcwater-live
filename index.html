@@ -353,8 +353,14 @@
       <span class="text-[11px] font-bold text-emerald-700 cursor-pointer" onclick="filterCatalog('ALL', document.getElementById('catBtn_ALL'))" id="txtCatalogAll">ទាំងអស់</span>
     </div>
 
+    <!-- 🔍 ប្រអប់ស្វែងរកទំនិញរហ័ស (Instant Live Search Bar) -->
+    <div class="relative">
+      <input type="text" id="catalogSearchInp" oninput="onCatalogSearchInput(this.value)" placeholder="🔍 ស្វែងរកទំនិញ (ឧ៖ កាហ្វេ, មី, ទឹកធុង, 500ml)..." class="w-full bg-white border-2 border-emerald-200 focus:border-emerald-600 rounded-2xl py-2.5 pl-9 pr-9 text-xs font-bold text-slate-800 placeholder-slate-400 outline-none shadow-xs transition">
+      <i class="fas fa-search absolute left-3 top-3.5 text-emerald-600 text-xs pointer-events-none"></i>
+      <button type="button" id="btnClearCatalogSearch" onclick="clearCatalogSearch()" class="hidden absolute right-3 top-2 text-slate-400 hover:text-slate-600 text-base font-bold w-6 h-6 flex items-center justify-center">&times;</button>
+    </div>
+
     <!-- របាររើសប្រភេទទំនិញ KC MART (រំកិល Scroll បានរលូន) -->
-    <!-- ✅ កូដថ្មី អូសទាញបានរលូន ១០០%៖ -->
 <div id="categoryChipsContainer" class="flex gap-2 overflow-x-auto pb-2 text-xs font-bold scroll-smooth" style="-webkit-overflow-scrolling: touch; touch-action: pan-x; cursor: grab;">
       <button type="button" onclick="filterCatalog('ALL', this)" id="catBtn_ALL" class="cat-chip px-4 py-2 rounded-2xl bg-emerald-700 text-white shadow-xs whitespace-nowrap active:scale-95 transition">ទាំងអស់</button>
       <button type="button" onclick="filterCatalog('GROCERY', this)" id="catBtn_GROCERY" class="cat-chip px-4 py-2 rounded-2xl bg-white text-slate-600 border border-slate-200 whitespace-nowrap active:scale-95 transition">🍚 ស្បៀង & គ្រឿងទេស</button>
@@ -1748,7 +1754,31 @@ async function loadStoreOnlineProducts() {
   }
 }
     
-    // 🎨 បង្ហាញកាតទំនិញ (ចេញផ្លាក Promotion ច្បាស់ៗ ទិញ... ថែម... & ពហុរូបិយប័ណ្ណ)
+    // ==========================================
+    // 🔍 មុខងារស្វែងរកទំនិញរហ័ស (INSTANT LIVE SEARCH ENGINE)
+    // ==========================================
+    var activeCatalogSearchKeyword = '';
+
+    function onCatalogSearchInput(val) {
+      activeCatalogSearchKeyword = (val || '').toLowerCase().trim();
+      var clearBtn = document.getElementById('btnClearCatalogSearch');
+      if (clearBtn) {
+        if (activeCatalogSearchKeyword) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+      renderCatalogGrid();
+    }
+
+    function clearCatalogSearch() {
+      var inp = document.getElementById('catalogSearchInp');
+      if (inp) inp.value = '';
+      activeCatalogSearchKeyword = '';
+      var clearBtn = document.getElementById('btnClearCatalogSearch');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      renderCatalogGrid();
+    }
+
+    // 🎨 បង្ហាញកាតទំនិញ (គាំទ្រការស្វែងរកទំនិញរហ័ស ០.០១ វិនាទី & ៣ ភាសា)
     function renderCatalogGrid(filterCat) {
       filterCat = filterCat || activeCatalogCategoryFilter || 'ALL';
       var grid = document.getElementById('catalogGrid');
@@ -1760,6 +1790,7 @@ async function loadStoreOnlineProducts() {
       STORE_CATALOG.forEach(function(item) {
         var isFavorited = (favList.indexOf(String(item.id)) !== -1);
 
+        // ១. ចម្រាញ់តាមប្រភេទ Category
         if (filterCat === 'FAVORITES') {
           if (!isFavorited) return;
         } else if (filterCat !== 'ALL') {
@@ -1770,11 +1801,22 @@ async function loadStoreOnlineProducts() {
           if (!isMatch) return;
         }
 
+        // 🔍 ២. ចម្រាញ់តាមពាក្យស្វែងរក (ស្គាល់ទាំងឈ្មោះខ្មែរ អង់គ្លេស ចិន និងការពិពណ៌នា)
+        if (activeCatalogSearchKeyword) {
+          var nameKh = (item.raw_name || '').toLowerCase();
+          var nameTrans = getLocalizedProductName({ name: item.raw_name }, currentLang).toLowerCase();
+          var descKh = (item.desc || '').toLowerCase();
+          var matchSearch = nameKh.includes(activeCatalogSearchKeyword) || 
+                            nameTrans.includes(activeCatalogSearchKeyword) || 
+                            descKh.includes(activeCatalogSearchKeyword);
+          if (!matchSearch) return;
+        }
+
         var localizedName = getLocalizedProductName({ name: item.raw_name }, currentLang);
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-        // 🎁 ឆែកមើលថាតើទំនិញនេះមាន Promotion ថែមដែរឬទេ
+        // 🎁 ឆែកមើល Promotion
         var promoRule = null;
         if (activePromoConfig && activePromoConfig.rules && activePromoConfig.rules.length > 0) {
           promoRule = activePromoConfig.rules.find(function(r) {
@@ -1786,7 +1828,6 @@ async function loadStoreOnlineProducts() {
         if (isOutOfStock) {
           badgeLabel = '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ស្តុក</span>';
         } else if (promoRule) {
-          // 🔥 បង្ហាញលក្ខខណ្ឌ Promotion ច្បាស់ៗ (ឧ៖ ទិញ ២ ថែម... ឬ ថែម...)
           var buyPrefix = (promoRule.buyQty && promoRule.buyQty > 1) ? ('ទិញ ' + promoRule.buyQty + ' ថែម ') : 'ថែម ';
           badgeLabel = '<span class="bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs animate-pulse truncate max-w-[130px]" title="🎁 ' + buyPrefix + promoRule.freeProduct + ' x ' + promoRule.freeQty + '">' +
             '🎁 ' + buyPrefix + promoRule.freeProduct + ' x ' + promoRule.freeQty +
@@ -1825,25 +1866,17 @@ async function loadStoreOnlineProducts() {
           '<div class="text-[10px] sm:text-[11px] font-black text-blue-700 leading-none">' + usdStr + '</div>' +
         '</div>';
 
-        // 🎨 កាតទំនិញ ៣ ជួរ (3 Columns)៖ រូបច្បាស់សមមាត្រ & អក្សរមិនបាំងរូបឡើយ
         html += '<div ' + clickAction + ' class="kc-glass-card p-1.5 sm:p-2.5 flex flex-col justify-between cursor-pointer group relative ' + cardOpacity + ' transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">' +
-          // ជួរលើ៖ ផ្លាក Badge & ប៊ូតុងបេះដូង
           '<div class="flex justify-between items-center w-full mb-1 min-h-[20px] z-10">' +
             badgeLabel +
             favBtn +
           '</div>' +
-
-          // 🖼️ ប្រអប់រូបភាពទំនិញសមមាត្រ ៣ ជួរ (កម្ពស់ h-24 sm:h-28 ស្អាតពេញប្រអប់)
           '<div class="w-full h-24 sm:h-28 flex items-center justify-center p-1.5 my-0.5 bg-slate-50/90 rounded-xl overflow-hidden border border-slate-100 group-hover:bg-emerald-50/40 transition">' + 
             item.svg + 
           '</div>' +
-
-          // 📝 ឈ្មោះទំនិញនៅខាងក្រោម (មិនបាំងរូប)
           '<div class="text-left px-0.5 mt-1.5 mb-1">' +
             '<h4 data-trans-key="' + item.raw_name + '" class="text-[10px] sm:text-xs font-black text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-700 transition">' + localizedName + '</h4>' +
           '</div>' +
-
-          // 💵 តម្លៃ ៣ រូបិយប័ណ្ណ (៛, ฿, $) & ប៊ូតុង + តូចស្អាត
           '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
             '<div class="min-w-0 flex-1">' +
               priceDisplay +
@@ -1852,6 +1885,16 @@ async function loadStoreOnlineProducts() {
           '</div>' +
         '</div>';
       });
+
+      // 🔍 បង្ហាញផ្ទាំងជូនដំណឹងបើស្វែងរកមិនឃើញទំនិញ
+      if (!html) {
+        grid.innerHTML = '<div class="col-span-full py-8 text-center text-slate-400 font-bold text-xs bg-white rounded-2xl border border-dashed border-slate-200 p-4 space-y-1.5">' +
+          '<i class="fas fa-magnifying-glass text-2xl text-slate-300 block mb-1"></i>' +
+          '<span>រកមិនឃើញទំនិញត្រូវនឹងពាក្យ «' + activeCatalogSearchKeyword + '» ឡើយ</span>' +
+          '<button type="button" onclick="clearCatalogSearch()" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold block mx-auto active:scale-95 transition">សម្អាតការស្វែងរក</button>' +
+        '</div>';
+        return;
+      }
 
       grid.innerHTML = html;
     }
@@ -2181,7 +2224,7 @@ function confirmAddToCart() {
   showStoreToast("បានបញ្ចូលកន្ត្រកជោគជ័យ!", "success");
 }
 
-    // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត ជា ៣ រូបិយប័ណ្ណ (៛, ฿, $)
+    // 🛒 មុខងារគណនាកន្ត្រកអណ្តែត ជា ៣ រូបិយប័ណ្ណ (និងរុញបដាដំឡើង App ឡើងលើអូតូ មិនឱ្យបាំងកន្ត្រក)
     function recalcCartDock() {
       var totalUnits = 0, totalPriceKhr = 0;
       for (var k in cartItems) {
@@ -2198,6 +2241,7 @@ function confirmAddToCart() {
       var dock = document.getElementById('floatingCartDock');
       var countEl = document.getElementById('dockItemCount');
       var priceEl = document.getElementById('dockTotalPrice');
+      var pwaBanner = document.getElementById('pwaInstallBanner');
       var d = DICT[currentLang] || DICT.km;
       var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
       var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
@@ -2218,8 +2262,20 @@ function confirmAddToCart() {
           '</div>';
         }
         dock.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+
+        // 🚀 រុញបដាដំឡើង App ឡើងទៅលើកម្ពស់ (bottom-36) មិនឱ្យបាំងកន្ត្រក និងប៊ូតុងគិតលុយឡើយ
+        if (pwaBanner) {
+          pwaBanner.classList.remove('bottom-20');
+          pwaBanner.classList.add('bottom-36');
+        }
       } else {
         dock.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+
+        // ⬇️ ពេលកន្ត្រកទទេ វិលត្រឡប់មកកម្ពស់ដើម (bottom-20) វិញ
+        if (pwaBanner) {
+          pwaBanner.classList.remove('bottom-36');
+          pwaBanner.classList.add('bottom-20');
+        }
       }
     }
     
@@ -3681,7 +3737,7 @@ function applyCustomSlidesFromSettings(sMap) {
     // 📱 មុខងារគ្រប់គ្រង BOTTOM NAVIGATION & ប្រវត្តិទិញទឹក
     // ==========================================
 
-    // ១. ប្តូរ Tab លើ Bottom Navigation Bar
+   // ១. ប្តូរ Tab លើ Bottom Navigation Bar (គ្មាន alert ចាស់ មិនកន្ត្រាក់ Telegram)
     function switchStoreAppTab(tab, btn) {
       document.querySelectorAll('.bnav-btn').forEach(b => {
         b.className = "bnav-btn flex flex-col items-center gap-1 text-slate-500 hover:text-slate-900 transition active:scale-95";
@@ -3702,7 +3758,7 @@ function applyCustomSlidesFromSettings(sMap) {
         if (trackCard && !trackCard.classList.contains('hidden')) {
           trackCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
-          alert("បច្ចុប្បន្នលោកអ្នកមិនមានការកុម្ម៉ង់ទឹកដែលកំពុងដឹកជញ្ជូនឡើយ!");
+          showStoreToast("បច្ចុប្បន្នលោកអ្នកមិនមានការកុម្ម៉ង់ទឹកដែលកំពុងដឹកជញ្ជូនឡើយ!", "info");
         }
       } else if (tab === 'HISTORY') {
         openCustomerHistoryModal();
@@ -3845,10 +3901,40 @@ function applyCustomSlidesFromSettings(sMap) {
       if (modal) modal.classList.add('hidden');
     }
 
-   // ❌ ៤. មុខងារបោះបង់ការកុម្ម៉ង់របស់ភ្ញៀវ (មានសុវត្ថិភាព មិនគាំងទូរស័ព្ទ)
+   // ❌ ៤. មុខងារបោះបង់ការកុម្ម៉ង់របស់ភ្ញៀវ (2-Step In-App Confirm - គ្មាន window.confirm មិនគាំងទូរស័ព្ទ)
+var cancelOrderConfirmState = {};
+
 async function cancelCustomerActiveOrder(orderId) {
-  var ok = window.confirm("តើលោកអ្នកពិតជាចង់បោះបង់ការកុម្ម៉ង់ទឹកលេខកូដ [" + orderId + "] នេះមែនទេ?");
-  if (!ok) return;
+  var btn = event ? event.target.closest('button') : null;
+
+  // 🛡️ ជំហានទី ១៖ ចុចលើកទី ១ ➔ ប្តូរពណ៌ប៊ូតុងសួរភ្ញៀវសិន (ជំនួស window.confirm ការពារកុំឱ្យគាំង Telegram)
+  if (!cancelOrderConfirmState[orderId]) {
+    cancelOrderConfirmState[orderId] = true;
+    if (btn) {
+      btn.className = "w-full mt-2 py-2.5 bg-red-600 text-white font-black text-xs rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1.5 animate-pulse";
+      btn.innerHTML = '<i class="fas fa-triangle-exclamation text-yellow-300"></i> ចុចទីនេះម្តងទៀត ដើម្បីបញ្ជាក់ការបោះបង់!';
+    }
+    showStoreToast("សូមចុចលើប៊ូតុងក្រហមម្តងទៀត ដើម្បីបញ្ជាក់!", "warning");
+
+    // រង់ចាំ ៤ វិនាទី បើមិនចុចម្តងទៀត ➔ ត្រឡប់មកសភាពដើមវិញ
+    setTimeout(function() {
+      if (cancelOrderConfirmState[orderId]) {
+        delete cancelOrderConfirmState[orderId];
+        if (btn) {
+          btn.className = "w-full mt-2 py-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs rounded-xl border border-red-200 transition active:scale-95 flex items-center justify-center gap-1.5";
+          btn.innerHTML = '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ';
+        }
+      }
+    }, 4000);
+    return;
+  }
+
+  // 🛡️ ជំហានទី ២៖ ភ្ញៀវបានចុចបញ្ជាក់លើកទី ២ ➔ ដំណើរការបោះបង់ភ្លាមៗ
+  delete cancelOrderConfirmState[orderId];
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> កំពុងបោះបង់...';
+  }
 
   try {
     const { error } = await supabaseClient
@@ -3868,12 +3954,13 @@ async function cancelCustomerActiveOrder(orderId) {
 
     showStoreToast("ការកុម្ម៉ង់ត្រូវបានបោះបង់ជោគជ័យ!", "info");
 
-    // ផ្ញើសារ Telegram ជូនដំណឹងទៅរោងចក្រ
+    // ផ្ញើសារ Telegram ជូនដំណឹងទៅរោងចក្រ (តាមម៉ោងកម្ពុជា)
     try {
       if (telegramSettings && telegramSettings.token && telegramSettings.chatId) {
+        var timeKhNow = new Date().toLocaleTimeString('km-KH', { timeZone: 'Asia/Phnom_Penh' });
         var msg = "🔔 <b>[KC WATER - ភ្ញៀវបានបោះបង់ការកុម្ម៉ង់ដោយខ្លួនឯង]</b>\n\n" +
                   "🆔 <b>កូដ៖</b> <code>" + orderId + "</code>\n" +
-                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
         fetch("https://api.telegram.org/bot" + telegramSettings.token + "/sendMessage", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -3884,6 +3971,10 @@ async function cancelCustomerActiveOrder(orderId) {
 
   } catch(err) {
     showStoreToast("កំហុស៖ " + err.message, "error");
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-circle-xmark"></i> បោះបង់ការកុម្ម៉ង់នេះ';
+    }
   }
 }
 
@@ -4168,7 +4259,8 @@ function shareViaNativeSheet() {
   </div>
   
   <!-- 📲 បដាដំឡើង App KC MART លើ Android & កុំព្យូទ័រ PC -->
-  <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-[9990] max-w-sm mx-auto bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-emerald-500/40 hidden animate-in slide-in-from-bottom duration-300 select-none">
+  <!-- 📲 បដាដំឡើង App KC MART (កែសម្រួលកម្ពស់ & z-index មិនបាំងកន្ត្រក) -->
+  <div id="pwaInstallBanner" class="fixed bottom-20 left-3 right-3 z-30 max-w-sm mx-auto bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-emerald-500/40 hidden animate-in slide-in-from-bottom transition-all duration-300 select-none">
     <div class="flex items-center justify-between gap-2.5">
       <div class="flex items-center gap-2.5 min-w-0 flex-1">
         <div class="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-lg shadow-inner shrink-0 border border-emerald-400/40">
