@@ -294,35 +294,39 @@ async function loadSettingsAndTelegram() {
   }
 }
 
-// 📲 មុខងារផ្ញើសារដំណឹង Telegram (ប្រើផ្ទាំងជូនដំណឹងរបស់ POS kcAlert ពេលមានបញ្ហា)
+// 📲 មុខងារផ្ញើសារដំណឹង Telegram (សុវត្ថិភាពខ្ពស់ ការពារកុំឱ្យគាំង និងដាស់តឿនតាម kcAlert)
 async function sendTelegramAlert(message, customChatId) {
-  if (!telegramConfig.token || telegramConfig.status === 'OFF') return;
+  if (telegramConfig.status === 'OFF') return;
+  var token = (telegramConfig.token || '').trim();
   var target = customChatId || telegramConfig.chatId;
-  if (!target) return;
+  
+  if (!token || !target) return;
 
   try {
-    var response = await fetch("https://api.telegram.org/bot" + telegramConfig.token + "/sendMessage", {
+    var response = await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
         chat_id: target, 
         text: message, 
-        parse_mode: "HTML" 
+        parse_mode: "HTML",
+        disable_web_page_preview: true
       })
     });
 
     var resData = await response.json();
     if (!resData.ok) {
-      if (typeof kcAlert === 'function') {
+      console.warn("Telegram API Error:", resData.description);
+      if (typeof kcAlert === 'function' && currentUser && currentUser.role === 'Admin') {
         kcAlert({
-          title: "⚠️ Telegram Bot Error",
-          message: "មិនអាចផ្ញើសារទៅ Chat ID [" + target + "] បានទេ៖\n👉 " + resData.description,
+          title: "⚠️ ដំណឹង Telegram មិនដើរ",
+          message: "មិនអាចផ្ញើសារទៅ Chat ID [" + target + "] បានទេ៖\n👉 " + (resData.description || 'កំហុសបច្ចេកទេស'),
           type: "warning"
         });
       }
     }
   } catch(e) {
-    console.error("Telegram alert error:", e);
+    console.warn("Telegram Network Alert error:", e);
   }
 }
 
