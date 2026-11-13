@@ -1658,10 +1658,8 @@ async function delExpenseFromSupabase(id, amt, cat) {
 }
 
 // ==========================================
-// 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (ពេញលេញ ១០០%)
+// 👥 ៤. គ្រប់គ្រងគណនី & តម្លៃពិសេស (ពេញលេញ ១០០% - កែចំណងជើង និងប៊ូតុងបោះបង់)
 // ==========================================
-var editingCustomerId = null;
-
 function renderCustomersModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
@@ -1710,12 +1708,17 @@ function renderCustomersModule() {
     // ជួរខាងលើ៖ បង្កើតគណនី (ឆ្វេង ៦ ភាគ) + កំណត់តម្លៃកុងត្រា (ស្តាំ ៦ ភាគ) លើ PC ធំ
     '<div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">' +
       
-      // កាតទី ១៖ ទម្រង់កត់ត្រាការខ្ចី
-    '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
-      '<h2 class="font-extrabold text-blue-900 text-xs sm:text-base mb-3 flex items-center gap-1.5">' +
-        '<i class="fas fa-boxes-packing text-blue-600"></i>កត់ត្រាភ្ញៀវខ្ចីធុង / បរិក្ខារ' +
-      '</h2>' +
-      '<div class="space-y-2.5">' +
+      // កាតទី ១៖ ទម្រង់បង្កើត & កែប្រែគណនី (Admin / អ្នកដឹក / ម៉ូយ)
+      '<div class="card border-t-4 border-blue-600 shadow-xl p-4 sm:p-5 mb-0 bg-white">' +
+        '<div class="flex justify-between items-center mb-3 border-b pb-2">' +
+          '<h2 id="custFormTitle" class="font-extrabold text-blue-900 text-xs sm:text-base flex items-center gap-1.5">' +
+            '<i class="fas fa-user-plus text-blue-600"></i>បង្កើតគណនី Admin / អ្នកដឹក / អតិថិជន' +
+          '</h2>' +
+          '<button type="button" id="btnCancelEditCust" onclick="cancelEditCustomer()" class="text-xs font-bold text-gray-500 hover:text-red-600 hidden">' +
+            '<i class="fas fa-times mr-1"></i>បោះបង់ការកែប្រែ' +
+          '</button>' +
+        '</div>' +
+        '<div class="space-y-2.5">' +
           '<div>' +
             '<label class="text-[9.5px] font-bold text-gray-500 uppercase block mb-0.5">ប្រភេទគណនីដែលត្រូវបង្កើត</label>' +
             '<select id="mem_role_type" onchange="toggleCustTypeFields()" class="font-bold border-2 border-blue-200 p-2 rounded-xl w-full bg-white text-xs sm:text-sm outline-none">' +
