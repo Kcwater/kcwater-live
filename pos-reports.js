@@ -313,7 +313,7 @@ async function fetchCompanySummaryFromSupabase() {
   }
 }
 
-// 👤 មុខងារទាញកាតគ្រីអតិថិជន (គណនាស៊ីសង្វាក់គ្នា ១០០% មិនឱ្យលើសលុយជំពាក់ឡើយ)
+// 👤 មុខងារទាញកាតគ្រីអតិថិជន (គណនាតាមស្តង់ដារគណនេយ្យ ១០០% គ្មានការបូកស្ទួន)
 async function fetchFullStatementFromSupabase() {
   var nameInp = document.getElementById('custSearchInp');
   var name = nameInp ? nameInp.value.trim() : '';
@@ -363,7 +363,7 @@ async function fetchFullStatementFromSupabase() {
 
     if (payErr) throw payErr;
 
-    // ៣. ស្វែងរកបំណុលចាស់មុនថ្ងៃ Start Date
+    // ៣. ស្វែងរកបំណុលចាស់មុនថ្ងៃ Start Date (Balance Forward)
     const { data: oldSet } = await supabaseClient
       .from('settlements')
       .select('balance_khr, settled_at')
@@ -373,25 +373,48 @@ async function fetchFullStatementFromSupabase() {
       .limit(1)
       .maybeSingle();
 
-    var prevDebt = oldSet ? parseFloat(oldSet.balance_khr || 0) : 0;
-    var lastSetTime = oldSet ? oldSet.settled_at : null;
+    var prevDebt = 0;
+    if (oldSet) {
+      prevDebt = parseFloat(oldSet.balance_khr || 0);
+      var lastSetTime = oldSet.settled_at;
 
-    // ៤. បូកបន្ថែមជើងទឹកជំពាក់ដែលកើតឡើងក្រោយ Settlement ចុងក្រោយ តែមុនថ្ងៃ Start Date
-    var oldUnpaidQuery = supabaseClient
-      .from('transactions')
-      .select('total')
-      .eq('customer_name', name)
-      .eq('status', 'Unpaid')
-      .lt('created_at', startIso);
+      // បូកបន្ថែមជើងទឹកជំពាក់ដែលដកចន្លោះពេល Settlement ចុងក្រោយ និងថ្ងៃ Start Date
+      const { data: extraTrans } = await supabaseClient
+        .from('transactions')
+        .select('total, payment_method')
+        .eq('customer_name', name)
+        .gt('created_at', lastSetTime)
+        .lt('created_at', startIso);
 
-    if (lastSetTime) {
-      oldUnpaidQuery = oldUnpaidQuery.gt('created_at', lastSetTime);
+      (extraTrans || []).forEach(function(u) {
+        if (u.payment_method === 'Debt') {
+          prevDebt += parseFloat(u.total || 0);
+        }
+      });
+    } else {
+      // ករណីមិនដែលទូទាត់សោះ មុនថ្ងៃ Start Date
+      const { data: allPastTrans } = await supabaseClient
+        .from('transactions')
+        .select('total, payment_method')
+        .eq('customer_name', name)
+        .lt('created_at', startIso);
+
+      const { data: allPastSets } = await supabaseClient
+        .from('settlements')
+        .select('paid_khr')
+        .eq('customer_name', name)
+        .lt('settled_at', startIso);
+
+      var pastPurchases = 0;
+      var pastPaid = 0;
+      (allPastTrans || []).forEach(function(u) {
+        if (u.payment_method === 'Debt') pastPurchases += parseFloat(u.total || 0);
+      });
+      (allPastSets || []).forEach(function(s) {
+        pastPaid += parseFloat(s.paid_khr || 0);
+      });
+      prevDebt = Math.max(0, pastPurchases - pastPaid);
     }
-
-    const { data: extraUnpaid } = await oldUnpaidQuery;
-    (extraUnpaid || []).forEach(function(u) {
-      prevDebt += parseFloat(u.total || 0);
-    });
 
     var totalPurchased = 0;
     var totalPaidInMonth = 0;
@@ -399,7 +422,7 @@ async function fetchFullStatementFromSupabase() {
     var unpaidTotal = 0;
     var productSummary = {};
 
-    // គណនាជើងទឹកដកក្នុងខែ និងបូកប្រាក់ដែលបានបង់ផ្ទាល់នៅ POS (បើមាន)
+    // ៤. គណនាជើងទឹកក្នុងខែ (ចៀសវាងការបូកស្ទួនជាមួយ Settlement)
     (items || []).forEach(function(i) {
       var tot = parseFloat(i.total || 0);
       var q = parseFloat(i.qty || 0);
@@ -408,8 +431,8 @@ async function fetchFullStatementFromSupabase() {
       if (i.status === 'Unpaid') {
         unpaidCount++;
         unpaidTotal += tot;
-      } else if (i.status === 'Paid') {
-        // បើបង់លុយនៅកន្លែង POS ភ្លាមៗ រាប់បញ្ចូលជាប្រាក់បានបង់កុំឱ្យច្រឡំជំពាក់
+      } else if (i.status === 'Paid' && i.payment_method !== 'Debt') {
+        // 🛡️ រាប់តែជើងទឹកណាដែលបង់លុយសុទ្ធ/ABA ភ្លាមៗនៅកន្លែង POS (មិនរាប់ជើងទឹកជំពាក់ដែលសងតាម Settlement ឡើយ)
         totalPaidInMonth += parseFloat(i.paid_khr || tot);
       }
 
@@ -418,12 +441,12 @@ async function fetchFullStatementFromSupabase() {
       }
     });
 
-    // បូកបន្ថែមប្រាក់ដែលបានសងតាម Settlement
+    // ៥. បូកប្រាក់ដែលបានសងតាម Settlement ក្នុងខែនេះ
     (payments || []).forEach(function(p) {
       totalPaidInMonth += parseFloat(p.paid_khr || 0);
     });
 
-    // គណនាបំណុលសរុបជាក់ស្តែងចុងក្រោយ
+    // ៦. គណនាបំណុលសរុបជាក់ស្តែងចុងក្រោយ (ត្រឹមត្រូវ ១០០% តាមស្តង់ដារគណនេយ្យ)
     var finalBalance = Math.max(0, prevDebt + totalPurchased - totalPaidInMonth);
 
     stmtDataCache = {
