@@ -269,13 +269,25 @@ var storeAbaQrCodeBase64 = "";
 
 async function loadSettingsAndTelegram() {
   try {
-    const { data } = await supabaseClient.from('settings').select('*');
+    const { data } = await supabaseClient
+      .from('settings')
+      .select('key, value')
+      .in('key', [
+        'Telegram_Token',
+        'Telegram_ChatID',
+        'Telegram_Driver_ChatID',
+        'Telegram_Alert_Status',
+        'Exchange_Rate_USD',
+        'Exchange_Rate_THB',
+        'Store_ABA_QR'
+      ]);
+
     if (data) {
       data.forEach(function(r) {
         if (r.key === 'Telegram_Token') telegramConfig.token = r.value;
         if (r.key === 'Telegram_ChatID') telegramConfig.chatId = r.value;
         if (r.key === 'Telegram_Driver_ChatID') telegramConfig.driverChatId = r.value;
-        if (r.key === 'Telegram_Alert_Status') telegramConfig.status = r.value.toUpperCase();
+        if (r.key === 'Telegram_Alert_Status') telegramConfig.status = String(r.value || 'ON').toUpperCase();
         if (r.key === 'Exchange_Rate_USD') exchangeRateUSD = parseFloat(r.value) || 4100;
         if (r.key === 'Exchange_Rate_THB') exchangeRateTHB = parseFloat(r.value) || 115;
 
