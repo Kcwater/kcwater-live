@@ -3754,6 +3754,7 @@ function injectCustKhqrPaymentModal() {
   if (existing) existing.remove();
 
   var due = custPortalDataCache ? custPortalDataCache.grandTotalDue : 0;
+  var qrSrc = (typeof storeAbaQrCodeBase64 !== 'undefined' && storeAbaQrCodeBase64) ? storeAbaQrCodeBase64 : 'https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg';
 
   var modalHtml = '<div id="custKhqrModal" class="fixed inset-0 z-[6000] flex items-center justify-center p-3 sm:p-4 hidden">' +
     '<div class="absolute inset-0 bg-black/60 backdrop-blur-xs" onclick="closeCustKhqrModal()"></div>' +
@@ -3930,9 +3931,10 @@ function renderCustomerHistoryModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
 
-  var now = new Date();
-  var thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
-  var today = now.toISOString().split('T')[0];
+ var today = (typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toISOString().split('T')[0];
+  var thirtyDaysDate = new Date(today + 'T00:00:00+07:00');
+  thirtyDaysDate.setDate(thirtyDaysDate.getDate() - 30);
+  var thirtyDaysAgo = (typeof toCambodiaDateStr === 'function') ? toCambodiaDateStr(thirtyDaysDate) : thirtyDaysDate.toISOString().split('T')[0];
 
   area.innerHTML = '<div class="max-w-3xl mx-auto space-y-4">' +
     '<div class="flex bg-white p-1.5 rounded-2xl border shadow-sm gap-1.5">' +
@@ -4308,9 +4310,10 @@ function openContactEnterpriseModal() {
 
 // 📑 កាតគ្រីផ្ទាល់ខ្លួនរបស់ម៉ូយ (MY MONTHLY STATEMENT MODAL POPUP)
 async function viewMyMonthlyStatement() {
-  var now = new Date();
-  var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  var today = now.toISOString().split('T')[0];
+  var today = (typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toISOString().split('T')[0];
+  var firstDay = today.substring(0, 7) + '-01';
+  var startIso = firstDay + 'T00:00:00+07:00';
+  var endIso = today + 'T23:59:59.999+07:00';
 
   showToast("កំពុងរៀបចំកាតគ្រីខែនេះ...");
 
@@ -4319,45 +4322,80 @@ async function viewMyMonthlyStatement() {
       .from('transactions')
       .select('*')
       .eq('customer_name', currentUser.fullName)
-      .gte('created_at', firstDay + 'T00:00:00Z')
-      .lte('created_at', today + 'T23:59:59Z')
+      .gte('created_at', startIso)
+      .lte('created_at', endIso)
       .order('created_at', { ascending: true });
 
     const { data: payments } = await supabaseClient
       .from('settlements')
       .select('*')
       .eq('customer_name', currentUser.fullName)
-      .gte('settled_at', firstDay + 'T00:00:00Z')
-      .lte('settled_at', today + 'T23:59:59Z')
+      .gte('settled_at', startIso)
+      .lte('settled_at', endIso)
       .order('settled_at', { ascending: true });
 
     const { data: lastSet } = await supabaseClient
       .from('settlements')
-      .select('balance_khr')
+      .select('balance_khr, settled_at')
       .eq('customer_name', currentUser.fullName)
-      .lt('settled_at', firstDay + 'T00:00:00Z')
+      .lt('settled_at', startIso)
       .order('id', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    var prevDebt = lastSet ? parseFloat(lastSet.balance_khr || 0) : 0;
-    var totalPurchased = 0, totalPaidInMonth = 0;
+    var prevDebt = 0;
+    if (lastSet) {
+      prevDebt = parseFloat(lastSet.balance_khr || 0);
+      const { data: extraTrans } = await supabaseClient
+        .from('transactions')
+        .select('total, payment_method')
+        .eq('customer_name', currentUser.fullName)
+        .gt('created_at', lastSet.settled_at)
+        .lt('created_at', startIso);
+      (extraTrans || []).forEach(function(u) {
+        if (u.payment_method === 'Debt') prevDebt += parseFloat(u.total || 0);
+      });
+    } else {
+      const [pastTransRes, pastSetRes] = await Promise.all([
+        supabaseClient.from('transactions').select('total, payment_method').eq('customer_name', currentUser.fullName).lt('created_at', startIso),
+        supabaseClient.from('settlements').select('paid_khr').eq('customer_name', currentUser.fullName).lt('settled_at', startIso)
+      ]);
+      var pastPurchases = 0, pastPaid = 0;
+      (pastTransRes.data || []).forEach(function(u) {
+        if (u.payment_method === 'Debt') pastPurchases += parseFloat(u.total || 0);
+      });
+      (pastSetRes.data || []).forEach(function(s) {
+        pastPaid += parseFloat(s.paid_khr || 0);
+      });
+      prevDebt = Math.max(0, pastPurchases - pastPaid);
+    }
 
-    (items || []).forEach(i => { totalPurchased += parseFloat(i.total || 0); });
-    (payments || []).forEach(p => { totalPaidInMonth += parseFloat(p.paid_khr || 0); });
+    var totalPurchased = 0, totalPaidInMonth = 0;
+    (items || []).forEach(function(i) {
+      var tot = parseFloat(i.total || 0);
+      totalPurchased += tot;
+      if (i.status === 'Paid' && i.payment_method !== 'Debt') {
+        totalPaidInMonth += parseFloat(i.paid_khr || tot);
+      }
+    });
+    (payments || []).forEach(function(p) {
+      totalPaidInMonth += parseFloat(p.paid_khr || 0);
+    });
     var finalBalance = Math.max(0, prevDebt + totalPurchased - totalPaidInMonth);
 
     var itemsHtml = '';
     (items || []).forEach(function(item) {
-      var dateStr = new Date(item.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
+      var dateStr = new Date(item.created_at).toLocaleString('km-KH', { timeZone: 'Asia/Phnom_Penh', dateStyle: 'short', timeStyle: 'short' });
       itemsHtml += '<tr class="border-b"><td class="p-2 text-[10px] text-gray-500">' + dateStr + '</td><td class="p-2 font-bold text-gray-800">' + item.product_name + '</td><td class="p-2 text-center text-blue-700 font-bold">' + item.qty + '</td><td class="p-2 text-right font-black text-green-700">៛ ' + Number(item.total).toLocaleString() + '</td></tr>';
     });
 
     var payHtml = '';
     if (payments && payments.length > 0) {
+      payHtml += '<div class="bg-blue-50 p-2 rounded-xl text-[11px] space-y-1"><div class="font-bold text-blue-900">ប្រាក់បានបង់សងក្នុងខែនេះ៖</div>';
       payments.forEach(function(p) {
-        payHtml += '<div class="flex justify-between text-[11px] bg-white p-1.5 rounded border"><span>' + new Date(p.settled_at).toLocaleDateString('km-KH') + ' (' + p.pay_method + ')</span><b class="text-blue-700">-៛ ' + Number(p.paid_khr).toLocaleString() + '</b></div>';
+        payHtml += '<div class="flex justify-between text-[11px] bg-white p-1.5 rounded border"><span>' + new Date(p.settled_at).toLocaleDateString('km-KH', { timeZone: 'Asia/Phnom_Penh' }) + ' (' + p.pay_method + ')</span><b class="text-blue-700">-៛ ' + Number(p.paid_khr).toLocaleString() + '</b></div>';
       });
+      payHtml += '</div>';
     }
 
     var modalHtml = '<div id="myStatementModal" class="fixed inset-0 z-[7500] flex items-center justify-center p-3">' +
@@ -4367,7 +4405,7 @@ async function viewMyMonthlyStatement() {
           '<div class="text-center border-b pb-2"><b class="text-green-800 text-base uppercase">KC WATER - កាតគ្រីអតិថិជន</b><div class="text-xs text-gray-600 font-bold">ឈ្មោះ៖ ' + currentUser.fullName + '</div><div class="text-[10px] text-gray-400">ប្រចាំខែ៖ ' + firstDay + ' ដល់ ' + today + '</div></div>' +
           '<div class="flex justify-between text-xs bg-orange-50 p-2 rounded-xl text-orange-900 border border-orange-200 font-bold"><span>បំណុលចាស់ពីមុន៖</span><b>៛ ' + prevDebt.toLocaleString() + '</b></div>' +
           '<div class="max-h-48 overflow-y-auto border rounded-xl"><table class="w-full text-left text-[11px]"><thead class="bg-gray-100 font-bold text-gray-600"><tr><th class="p-2">កាលបរិច្ឆេទ</th><th class="p-2">មុខទំនិញ</th><th class="p-2 text-center">ចំនួន</th><th class="p-2 text-right">សរុប</th></tr></thead><tbody>' + (itemsHtml || '<tr><td colspan="4" class="p-3 text-center text-gray-400 italic">គ្មានទំនិញដកខែនេះ</td></tr>') + '</tbody></table></div>' +
-          (payHtml ? '<div class="bg-blue-50 p-2 rounded-xl text-[11px] space-y-1"><div class="font-bold text-blue-900">ប្រាក់បានបង់សងក្នុងខែនេះ៖</div>' + payHtml + '</div>' : '') +
+          payHtml +
           '<div class="p-2.5 bg-green-50 rounded-xl border border-green-200 space-y-1 text-xs font-bold"><div class="flex justify-between"><span>សរុបទំនិញដកថ្មី (+)៖</span><b>៛ ' + totalPurchased.toLocaleString() + '</b></div><div class="flex justify-between text-blue-700"><span>សរុបបានបង់ (-)៖</span><b>-៛ ' + totalPaidInMonth.toLocaleString() + '</b></div><div class="flex justify-between text-green-950 font-black border-t border-green-300 pt-1 text-sm"><span>បំណុលនៅសល់ (=)៖</span><span class="text-green-800">៛ ' + finalBalance.toLocaleString() + '</span></div></div>' +
         '</div>' +
         '<div class="grid grid-cols-2 gap-2 pt-1"><button onclick="downloadMyStatementPNG()" class="py-2.5 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 active:scale-95 transition"><i class="fas fa-download text-green-400"></i> ទាញយក PNG</button><button onclick="document.getElementById(\'myStatementModal\').remove()" class="py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs active:scale-95 transition">បិទ</button></div>' +
