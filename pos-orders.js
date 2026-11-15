@@ -27,7 +27,17 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-
+function escapeJsAttr(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, ' ')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 // ==========================================
 // 🔔 ១. សំឡេងរោទ៍ & ឆែកមើលការកុម្ម៉ង់ ONLINE ថ្មី
 // ==========================================
@@ -201,11 +211,14 @@ async function openOnlineOrdersModal() {
   injectOnlineOrdersAdminModal();
   var modal = document.getElementById('onlineOrdersAdminModal');
   var container = document.getElementById('onlineOrdersAdminListContainer');
+  var isAlreadyOpen = (modal && !modal.classList.contains('hidden'));
+
   if (modal) modal.classList.remove('hidden');
-  if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1.5 text-amber-600"></i> កំពុងទាញយកបញ្ជីកុម្ម៉ង់...</div>';
+  if (container && !isAlreadyOpen) {
+    container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1.5 text-amber-600"></i> កំពុងទាញយកបញ្ជីកុម្ម៉ង់...</div>';
+  }
 
   try {
-    // ១. ធានាថាមានទិន្នន័យអ្នកដឹកជញ្ជូនក្នុង Dropdown (មិនទាញ Password ឡើយ)
     if (!allCustomers || allCustomers.length === 0) {
       const { data: custs } = await supabaseClient
         .from('users')
@@ -214,11 +227,9 @@ async function openOnlineOrdersModal() {
       if (custs) allCustomers = custs;
     }
 
-    // 🇰🇭 ប្រើប្រព័ន្ធម៉ោងកម្ពុជា UTC+7
     var todayStr = getCambodiaToday();
     var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
-    // ២. ទាញយក Order កំពុងដំណើរការ (Pending, Assigned, Departed) និង ដឹកដល់ថ្ងៃនេះ ព្រមគ្នា
     const [activeRes, deliveredRes] = await Promise.all([
       supabaseClient
         .from('orders')
@@ -236,11 +247,18 @@ async function openOnlineOrdersModal() {
     if (activeRes.error) throw activeRes.error;
     if (deliveredRes.error) throw deliveredRes.error;
 
+    var activeEl = document.activeElement;
+    if (isAlreadyOpen && activeEl && activeEl.id && activeEl.id.indexOf('driver_sel_') === 0) {
+      return;
+    }
+
     adminOnlineOrdersCache = (activeRes.data || []).concat(deliveredRes.data || []);
     renderAdminOnlineOrdersUI();
 
   } catch(err) {
-    if (container) container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + escapeHtml(err.message) + '</div>';
+    if (container && !isAlreadyOpen) {
+      container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + escapeHtml(err.message) + '</div>';
+    }
   }
 }
 
@@ -526,7 +544,7 @@ function renderAdminOnlineOrdersUI() {
           '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">📦 បានចាត់ចែង' + (safeDriverName ? ' (' + safeDriverName + ')' : '') + '</span>'));
 
     var cleanPhone = String(o.phone || '').replace(/[^0-9]/g, '');
-    var safeNameForJs = String(o.customer_name || '').replace(/'/g, "\\'");
+    var safeNameForJs = escapeJsAttr(o.customer_name || '');
     var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
     var rawLoc = (o.location_url || o.address || '').trim();
 
@@ -575,7 +593,7 @@ function renderAdminOnlineOrdersUI() {
       '</a>' : '') +
 
       (rawLoc ? 
-      '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+      '<button type="button" onclick="openOrderMap(\'' + escapeJsAttr(rawLoc) + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-map-location-dot text-xs text-blue-600"></i> ផែនទី' +
       '</button>' : '');
 
@@ -594,7 +612,7 @@ function renderAdminOnlineOrdersUI() {
       actionButtonsHtml += '<button type="button" onclick="cancelOnlineOrder(\'' + o.order_id + '\', \'' + safeNameForJs + '\')" class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl font-bold border border-red-200 shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-trash-can text-xs text-red-500"></i> បោះបង់' +
       '</button>' +
-      '<button type="button" onclick="completeOnlineOrder(\'' + o.order_id + '\', \'' + safeNameForJs + '\', ' + (o.total || 0) + ', \'' + (o.items || '').replace(/'/g, "\\'") + '\', \'' + (o.driver_name || '').replace(/'/g, "\\'") + '\', \'' + (o.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
+      '<button type="button" onclick="completeOnlineOrder(\'' + escapeJsAttr(o.order_id) + '\', \'' + safeNameForJs + '\', ' + (Number(o.total) || 0) + ', \'' + escapeJsAttr(o.items || '') + '\', \'' + escapeJsAttr(o.driver_name || '') + '\', \'' + escapeJsAttr(o.payment_method || 'COD') + '\')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
         '<i class="fas fa-check text-xs"></i> ដឹកដល់' +
       '</button>';
     }
@@ -1135,13 +1153,13 @@ async function executeFinalCompleteDelivery() {
         });
       }
 
-      // 💵 បំប្លែងតម្លៃទំនិញ (USD/THB) ចេញជាប្រាក់រៀល (KHR) ឱ្យត្រូវតាមវិក្កយបត្រភ្ញៀវ
+      // 💵 បំប្លែងតម្លៃទំនិញ (USD/THB) ចេញជាប្រាក់រៀល (KHR) បង្គត់ឡើងដល់ខ្ទង់ ១០០៛ ឱ្យត្រូវតាមវិក្កយបត្រភ្ញៀវ ១០០%
       var rawOnlinePrice = matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0;
       var prodCurr = matchedProd ? (matchedProd.currency || 'KHR').toUpperCase() : 'KHR';
-      var unitPriceKhr = rawOnlinePrice;
-      if (prodCurr === 'USD') unitPriceKhr = Math.round(rawOnlinePrice * rateU);
-      else if (prodCurr === 'THB') unitPriceKhr = Math.round(rawOnlinePrice * rateT);
-      else unitPriceKhr = Math.round(rawOnlinePrice);
+      var unitPriceKhr = 0;
+      if (prodCurr === 'USD') unitPriceKhr = Math.ceil(Math.round(rawOnlinePrice * rateU) / 100) * 100;
+      else if (prodCurr === 'THB') unitPriceKhr = Math.ceil(Math.round(rawOnlinePrice * rateT) / 100) * 100;
+      else unitPriceKhr = Math.ceil(Math.round(rawOnlinePrice) / 100) * 100;
 
       var unitPrice = isFreeGift ? 0 : unitPriceKhr;
       var lineTotal = unitPrice * qty;
@@ -1436,7 +1454,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
       var safePayMethod = escapeHtml(task.payment_method || 'COD');
 
       var cleanPhone = String(task.phone || '').replace(/[^0-9]/g, '');
-      var safeNameForJs = String(task.customer_name || '').replace(/'/g, "\\'");
+      var safeNameForJs = escapeJsAttr(task.customer_name || '');
       var rawLoc = (task.location_url || task.address || '').trim();
       var timeStr = new Date(task.created_at).toLocaleString('km-KH', { 
         timeZone: 'Asia/Phnom_Penh', 
@@ -1508,7 +1526,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
           '</a>' : '') +
 
           (rawLoc ? 
-          '<button type="button" onclick="openOrderMap(\'' + rawLoc.replace(/'/g, "\\'") + '\')" class="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="openOrderMap(\'' + escapeJsAttr(rawLoc) + '\')" class="py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-bold border border-blue-200 shadow-2xs flex items-center justify-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
 
@@ -1520,7 +1538,7 @@ async function renderCompanyDeliveriesModule(isSilentRefresh) {
 
         departActionHtml +
 
-        '<button type="button" onclick="completeOnlineOrder(\'' + task.order_id + '\', \'' + safeNameForJs + '\', ' + (task.total || 0) + ', \'' + (task.items || '').replace(/'/g, "\\'") + '\', \'' + driverName.replace(/'/g, "\\'") + '\', \'' + (task.payment_method || 'COD').replace(/'/g, "\\'") + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
+        '<button type="button" onclick="completeOnlineOrder(\'' + escapeJsAttr(task.order_id) + '\', \'' + safeNameForJs + '\', ' + (Number(task.total) || 0) + ', \'' + escapeJsAttr(task.items || '') + '\', \'' + escapeJsAttr(driverName) + '\', \'' + escapeJsAttr(task.payment_method || 'COD') + '\')" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 active:scale-95 transition">' +
           '<i class="fas fa-check-circle text-base"></i> ដឹកដល់ហើយ & ប្រមូលលុយរួច' +
         '</button>' +
       '</div>';
