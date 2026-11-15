@@ -1700,17 +1700,17 @@ async function loadStoreOnlineProducts() {
         var priceKhr = 0, priceThb = 0, priceUsd = 0;
 
         if (rawCurrency === 'USD') {
-          priceKhr = Math.round(onlinePrice * exchangeRateUSD);
+          priceKhr = Math.ceil(Math.round(onlinePrice * exchangeRateUSD) / 100) * 100;
           priceUsd = onlinePrice;
           priceThb = Math.round(priceKhr / exchangeRateTHB);
         } else if (rawCurrency === 'THB') {
-          priceKhr = Math.round(onlinePrice * exchangeRateTHB);
+          priceKhr = Math.ceil(Math.round(onlinePrice * exchangeRateTHB) / 100) * 100;
           priceThb = onlinePrice;
           priceUsd = parseFloat((priceKhr / exchangeRateUSD).toFixed(2));
         } else {
-          priceKhr = Math.round(onlinePrice);
-          priceThb = Math.round(onlinePrice / exchangeRateTHB);
-          priceUsd = parseFloat((onlinePrice / exchangeRateUSD).toFixed(2));
+          priceKhr = Math.ceil(Math.round(onlinePrice) / 100) * 100;
+          priceThb = Math.round(priceKhr / exchangeRateTHB);
+          priceUsd = parseFloat((priceKhr / exchangeRateUSD).toFixed(2));
         }
 
         return {
