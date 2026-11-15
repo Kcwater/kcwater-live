@@ -102,6 +102,9 @@ async function login() {
 
       await loadSettingsAndTelegram();
       await fetchInitialPOSData();
+      if (typeof updateNotificationCenterBadge === 'function') {
+        updateNotificationCenterBadge();
+      }
 
       // 🎯 បែងចែកទំព័រដើមតាមតួនាទី (Role Routing)
       if (currentUser.role === 'Admin') {
@@ -2445,53 +2448,48 @@ async function updateNotificationCenterBadge() {
   if (!badge) return;
 
   var isAdmin = (currentUser && currentUser.role === 'Admin');
-  var isCompanyDriver = (currentUser && currentUser.type === 'CompanyDriver');
 
-  // លាក់កណ្តឹងពីម៉ូយធម្មតា
-  if (!isAdmin && !isCompanyDriver) {
-    if (bellBtn) bellBtn.classList.add('hidden');
+  // 🔒 លាក់រូបកណ្តឹងពីគ្រប់តួនាទីទាំងអស់ ទុកឱ្យតែ Admin ម្នាក់គត់
+  if (!isAdmin) {
+    if (bellBtn) {
+      bellBtn.classList.add('hidden');
+      bellBtn.style.setProperty('display', 'none', 'important');
+    }
+    badge.classList.add('hidden');
+    badge.style.display = 'none';
     return;
   }
-  if (bellBtn) bellBtn.classList.remove('hidden');
+
+  if (bellBtn) {
+    bellBtn.classList.remove('hidden');
+    bellBtn.style.setProperty('display', 'inline-flex', 'important');
+  }
 
   try {
-    var totalCount = 0;
+    const [ordRes, payRes] = await Promise.all([
+      supabaseClient.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
+      supabaseClient.from('pending_payments').select('*', { count: 'exact', head: true }).eq('status', 'Pending')
+    ]);
 
-    // ក. ប្រសិនបើជាអ្នកដឹកជញ្ជូនរោងចក្រ ➔ រាប់តែការងារដឹករបស់គាត់
-    if (isCompanyDriver) {
-      const { count } = await supabaseClient
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .in('status', ['Assigned', 'Departed'])
-        .ilike('driver_name', (currentUser.fullName || '').trim());
-      
-      totalCount = count || 0;
+    var pendingOrders = ordRes.count || 0;
+    var pendingPays = payRes.count || 0;
 
-    // ខ. ប្រសិនបើជា Admin ➔ រាប់សរុបទាំង ៣ ប្រភេទ (Orders + Payments + Low Stock)
-    } else if (isAdmin) {
-      const [ordRes, payRes] = await Promise.all([
-        supabaseClient.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
-        supabaseClient.from('pending_payments').select('*', { count: 'exact', head: true }).eq('status', 'Pending')
-      ]);
+    var lowStockCount = 0;
+    (allProducts || []).forEach(function(p) {
+      if (p.type === 'ទិញគេ' && parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5)) {
+        lowStockCount++;
+      }
+    });
 
-      var pendingOrders = ordRes.count || 0;
-      var pendingPays = payRes.count || 0;
-
-      var lowStockCount = 0;
-      (allProducts || []).forEach(function(p) {
-        if (p.type === 'ទិញគេ' && parseFloat(p.stock || 0) <= parseFloat(p.min_stock || 5)) {
-          lowStockCount++;
-        }
-      });
-
-      totalCount = pendingOrders + pendingPays + lowStockCount;
-    }
+    var totalCount = pendingOrders + pendingPays + lowStockCount;
 
     if (totalCount > 0) {
       badge.innerText = totalCount > 99 ? '99+' : totalCount;
       badge.classList.remove('hidden');
+      badge.style.display = 'flex';
     } else {
       badge.classList.add('hidden');
+      badge.style.display = 'none';
     }
 
     // បន្លឺសំឡេងរោទ៍ Chime បើមានដំណឹងថ្មីលោតឡើង
@@ -2505,6 +2503,10 @@ async function updateNotificationCenterBadge() {
 
 // ២. មុខងារបើកផ្ទាំង Pop-up មជ្ឈមណ្ឌលជូនដំណឹង
 async function openNotificationCenterModal() {
+  if (!currentUser || currentUser.role !== 'Admin') {
+    showToast("មានតែ Admin ប៉ុណ្ណោះដែលមានសិទ្ធិមើលមជ្ឈមណ្ឌលជូនដំណឹង!", "error");
+    return;
+  }
   var existing = document.getElementById('notificationCenterModal');
   if (existing) existing.remove();
 
@@ -2765,7 +2767,6 @@ function initDraggableQuickSaleFab() {
     return;
   }
 
-  // សម្អាត Pop-up ចាស់ចោលជាស្ថាពរ
   var oldBrokenModal = document.getElementById('quickPosModalOverlay');
   if (oldBrokenModal) oldBrokenModal.remove();
 
@@ -2775,7 +2776,6 @@ function initDraggableQuickSaleFab() {
   var savedSide = localStorage.getItem('kc_fab_side') || 'right';
   var sideStyle = (savedSide === 'left') ? 'left:12px; right:auto;' : 'right:12px; left:auto;';
 
-  // 🌟 ប៊ូតុងរាងមូលសុទ្ធ 48px (Z-Index 1900 នៅក្រោម Sidebar Menu កុំឱ្យបាំង)
   var fabHtml = '<div id="floatingQuickSaleFab" style="top:' + savedTop + '; ' + sideStyle + '" class="fixed z-[1900] select-none touch-none">' +
     '<button type="button" id="btnInsideQuickSaleFab" onclick="onFabClickAction(event)" class="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-full shadow-2xl border-2 border-white/90 active:scale-90 transition cursor-pointer">' +
       '<i id="fabIconEl" class="fas fa-bolt text-yellow-300 text-base animate-pulse"></i>' +
@@ -2824,7 +2824,6 @@ function initDraggableQuickSaleFab() {
     fab.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
 
     if (fabHasMoved) {
-      // តោងគែមឆ្វេង ឬស្តាំស្វ័យប្រវត្តិ
       var rect = fab.getBoundingClientRect();
       var isCloserToLeft = (rect.left + rect.width / 2) < (window.innerWidth / 2);
 
@@ -2839,10 +2838,32 @@ function initDraggableQuickSaleFab() {
       }
 
       localStorage.setItem('kc_fab_top_pos', fab.style.top);
-    } else {
-      handleQuickSaleShortcutAction();
+      setTimeout(function() { fabHasMoved = false; }, 100);
     }
   }
+
+  fab.addEventListener('touchstart', function(e) {
+    if (e.touches && e.touches[0]) onDragStart(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+
+  fab.addEventListener('mousedown', function(e) {
+    onDragStart(e.clientX, e.clientY);
+  });
+
+  if (!window.__kcFabGlobalBound) {
+    window.__kcFabGlobalBound = true;
+    window.addEventListener('touchmove', function(e) {
+      if (fabIsDragging && e.touches && e.touches[0]) onDragMove(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    window.addEventListener('touchend', onDragEnd);
+    window.addEventListener('mousemove', function(e) {
+      if (fabIsDragging) onDragMove(e.clientX, e.clientY);
+    });
+    window.addEventListener('mouseup', onDragEnd);
+  }
+
+  updateFabButtonState();
+}
 
   // 📱 Touch លើទូរស័ព្ទដៃ
   fab.addEventListener('touchstart', function(e) {
@@ -2867,7 +2888,6 @@ function initDraggableQuickSaleFab() {
   window.addEventListener('mouseup', onDragEnd);
 
   updateFabButtonState();
-}
 
 function onFabClickAction(e) {
   if (fabHasMoved) {
