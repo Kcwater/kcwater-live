@@ -890,28 +890,53 @@ function switchDebtorsTab(tab) {
 
 async function fetchDebtorsListFromSupabase() {
   try {
-    const { data: unpaids } = await supabaseClient.from('transactions').select('customer_name, total').eq('status', 'Unpaid');
+    const [unpaidRes, settleRes] = await Promise.all([
+      supabaseClient.from('transactions').select('customer_name, total').eq('status', 'Unpaid'),
+      supabaseClient.from('settlements').select('id, customer_name, balance_khr').order('id', { ascending: false })
+    ]);
+
+    var unpaids = unpaidRes.data || [];
+    var settles = settleRes.data || [];
     var map = {};
-    var grandTotal = 0;
 
-    if (unpaids) {
-      unpaids.forEach(function(u) {
-        var c = (u.customer_name || "").trim();
-        if (c && c !== "Walk-in") {
-          var tot = parseFloat(u.total || 0);
-          map[c] = (map[c] || 0) + tot;
-          grandTotal += tot;
+    // ១. បូកជើងទឹកដកថ្មីដែលមិនទាន់ទូទាត់ (Unpaid)
+    unpaids.forEach(function(u) {
+      var c = (u.customer_name || "").trim();
+      if (c && c !== "Walk-in") {
+        var tot = parseFloat(u.total || 0);
+        map[c] = (map[c] || 0) + tot;
+      }
+    });
+
+    // ២. បូកបន្ថែមបំណុលចាស់នៅសល់ចុងក្រោយបំផុតរបស់ម៉ូយម្នាក់ៗ (balance_khr)
+    var latestSeen = {};
+    settles.forEach(function(s) {
+      var c = (s.customer_name || "").trim();
+      if (c && c !== "Walk-in" && !latestSeen[c]) {
+        latestSeen[c] = true;
+        var oldBal = parseFloat(s.balance_khr || 0);
+        if (oldBal > 0) {
+          map[c] = (map[c] || 0) + oldBal;
         }
-      });
-    }
+      }
+    });
 
+    var grandTotal = 0;
     allDebtorsCache = [];
-    for (var k in map) { allDebtorsCache.push({ name: k, total: map[k] }); }
+    for (var k in map) {
+      if (map[k] > 0) {
+        allDebtorsCache.push({ name: k, total: map[k] });
+        grandTotal += map[k];
+      }
+    }
     allDebtorsCache.sort((a, b) => b.total - a.total);
 
-    document.getElementById('debtorsGrandTotalText').innerText = '៛ ' + grandTotal.toLocaleString();
+    var grandEl = document.getElementById('debtorsGrandTotalText');
+    if (grandEl) grandEl.innerText = '៛ ' + grandTotal.toLocaleString();
     renderDebtorsCardsUI(allDebtorsCache);
-  } catch(e) {}
+  } catch(e) {
+    console.error("Fetch debtors error:", e);
+  }
 }
 
 function renderDebtorsCardsUI(list) {
@@ -1132,12 +1157,17 @@ async function fetchPartnerDepotDebts() {
         var str = partStr.trim();
         if (!str) return;
 
-        var seg = str.split('x');
-        var rawName = seg[0] ? seg[0].trim() : str;
-        var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+        var m = str.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+        var rawName = m ? m[1].trim() : str;
+        var qty = m ? parseFloat(m[2].trim() || 1) : 1;
         if (isNaN(qty) || qty <= 0) qty = 1;
 
-        var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+        var cleanName = rawName
+          .replace(/🎁\s*\[Free\]/gi, '')
+          .replace(/\[Free\]/gi, '')
+          .replace(/\[កាដូថែម Free\]/gi, '')
+          .replace(/🛢️/gi, '')
+          .trim();
 
         var matchedProd = (allProducts || []).find(function(p) {
           return p.name.trim().toLowerCase() === cleanName.toLowerCase();
@@ -1185,6 +1215,8 @@ async function fetchPartnerDepotDebts() {
       for (var dId in cachedDepotDebtsBreakdown) {
         if (noteText.includes(dId) || noteText.includes(cachedDepotDebtsBreakdown[dId].depot.name)) {
           var amt = parseFloat(e.amount || 0);
+          if (e.currency === 'USD') amt = Math.round(amt * rateUSD);
+          else if (e.currency === 'THB') amt = Math.round(amt * rateTHB);
           cachedDepotDebtsBreakdown[dId].totalPaid += amt;
         }
       }
