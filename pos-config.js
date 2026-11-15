@@ -333,26 +333,24 @@ async function sendTelegramAlert(message, customChatId) {
 // 📦 ៧. មុខងារទាញយកទិន្នន័យដំបូង (ទំនិញ, អតិថិជន និងតម្លៃពិសេស) ពី SUPABASE
 async function fetchInitialPOSData() {
   try {
-    const { data: prods } = await supabaseClient
-      .from('products')
-      .select('*')
-      .order('id', { ascending: true });
-    if (prods) {
-  allProducts = prods.sort((a, b) => (parseInt(a.sort_order) || 99) - (parseInt(b.sort_order) || 99));
-}
+    // ⚡ ទាញទំនិញ, បញ្ជីឈ្មោះ (គ្មាន Password) និងតម្លៃកុងត្រាព្រមគ្នា ដើម្បីឱ្យលឿន និងសុវត្ថិភាព
+    const [prodsRes, custsRes, pricesRes] = await Promise.all([
+      supabaseClient.from('products').select('*').order('id', { ascending: true }),
+      supabaseClient.from('users').select('id, full_name, role, type, phone, linked_boss').order('full_name', { ascending: true }),
+      supabaseClient.from('customer_prices').select('*')
+    ]);
 
-    const { data: custs } = await supabaseClient
-      .from('users')
-      .select('*')
-      .order('full_name', { ascending: true });
-    if (custs) allCustomers = custs;
+    if (prodsRes.data) {
+      allProducts = prodsRes.data.sort((a, b) => (parseInt(a.sort_order) || 99) - (parseInt(b.sort_order) || 99));
+    }
 
-    const { data: prices } = await supabaseClient
-      .from('customer_prices')
-      .select('*');
-    if (prices) {
-      specialPrices = prices;
-      window.specialPrices = prices;
+    if (custsRes.data) {
+      allCustomers = custsRes.data;
+    }
+
+    if (pricesRes.data) {
+      specialPrices = pricesRes.data;
+      window.specialPrices = pricesRes.data;
     }
   } catch(e) {
     console.error("Initial data load error:", e);
