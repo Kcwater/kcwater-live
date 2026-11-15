@@ -14,10 +14,9 @@ function renderMonthlyRepModule() {
   var area = document.getElementById('contentArea');
   if (!area) return;
 
-  var now = new Date();
-  var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  var today = now.toISOString().split('T')[0];
-
+ var today = (typeof getCambodiaToday === 'function') ? getCambodiaToday() : new Date().toISOString().split('T')[0];
+  var firstDay = today.substring(0, 7) + '-01';
+  
   // 🖥️ ប្រើ w-full max-w-[1600px] ដើម្បីឱ្យពេញអេក្រង់កុំព្យូទ័រស្មើស្អាត
   area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
     // របារប្តូរផ្ទាំង ២ (របាយការណ៍សរុប vs កាតគ្រីម៉ូយ)
