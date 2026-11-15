@@ -10,7 +10,7 @@ var activeQuickRestockData = null;
 var rPG = function() { if (typeof renderProductGrid === 'function') renderProductGrid(); };
 var rC = function() { if (typeof renderCart === 'function') renderCart(); };
 
-// 🔑 មុខងារចូលប្រើប្រាស់សុវត្ថិភាពខ្ពស់ (ផ្ទៀងផ្ទាត់ និងចងចាំឈ្មោះមេ ១០០%)
+// 🔑 មុខងារចូលប្រើប្រាស់សុវត្ថិភាពខ្ពស់ (ផ្ទៀងផ្ទាត់ និងចងចាំឈ្មោះមេ ១០០% - ទប់ស្កាត់ Monthly ភ្លាមៗ)
 async function login() {
   var userEl = document.getElementById('user');
   var passEl = document.getElementById('pass');
@@ -38,6 +38,17 @@ async function login() {
     var userRow = Array.isArray(data) ? data[0] : data;
 
     if (userRow && userRow.id) {
+      // 🔒 រារាំងអតិថិជនប្រចាំខែ (Monthly) ភ្លាមៗមុនពេលបើកប្រព័ន្ធ ឬទាញទិន្នន័យ!
+      if (userRow.type === 'Monthly') {
+        showToast("អតិថិជនប្រចាំខែ មិនអនុញ្ញាតឱ្យចូលប្រើប្រព័ន្ធឡើយ! Admin ជាអ្នកដកទំនិញជំនួស។", "error");
+        if (remEl) remEl.checked = false;
+        localStorage.removeItem('kc_pos_user');
+        localStorage.removeItem('kc_pos_pass');
+        userEl.value = '';
+        passEl.value = '';
+        return;
+      }
+
       var bossName = (userRow.linked_boss || "").trim();
 
       // 🔍 ប្រសិនបើជាកូនចៅ ហើយ RPC មិនបានផ្ញើ linked_boss មក ➔ ទាញយកពីតារាង users ផ្ទាល់
@@ -81,6 +92,9 @@ async function login() {
       document.getElementById('userInfo').innerText = roleLabel + currentUser.fullName;
 
       renderSidebarMenu();
+      if (typeof renderEnvironmentBanner === 'function') {
+        renderEnvironmentBanner();
+      }
 
       if (typeof checkPendingOnlineOrdersBadge === 'function') {
         checkPendingOnlineOrdersBadge();
@@ -88,13 +102,6 @@ async function login() {
 
       await loadSettingsAndTelegram();
       await fetchInitialPOSData();
-
-      // 🔒 រារាំងអតិថិជនប្រចាំខែ (Monthly) មិនឱ្យ Login ចូលប្រព័ន្ធដាច់ខាត
-      if (currentUser.type === 'Monthly') {
-        showToast("អតិថិជនប្រចាំខែ មិនមានសិទ្ធិចូលប្រើប្រព័ន្ធឡើយ! Admin ជាអ្នកដកទំនិញជំនួស។", "error");
-        logout();
-        return;
-      }
 
       // 🎯 បែងចែកទំព័រដើមតាមតួនាទី (Role Routing)
       if (currentUser.role === 'Admin') {
@@ -126,6 +133,11 @@ function logout() {
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginPage').style.display = 'flex';
   closeSidebar();
+  if (typeof renderEnvironmentBanner === 'function') {
+    renderEnvironmentBanner();
+    var oldFab = document.getElementById('floatingQuickSaleFab');
+  if (oldFab) oldFab.remove();
+  }
   showToast("បានចាកចេញពីប្រព័ន្ធ!", "info");
 }
 
@@ -236,7 +248,15 @@ function loadModule(name) {
   else if (name === 'CustHistory' && typeof renderCustomerHistoryModule === 'function') renderCustomerHistoryModule();
   else if (name === 'CustBottles' && typeof renderCustomerBottlesModule === 'function') renderCustomerBottlesModule();
   else if (name === 'CompanyDeliveries' && typeof renderCompanyDeliveriesModule === 'function') renderCompanyDeliveriesModule();
+  if (currentUser && currentUser.role === 'Admin') {
+    if (!document.getElementById('floatingQuickSaleFab') && typeof initDraggableQuickSaleFab === 'function') {
+      initDraggableQuickSaleFab();
+    } else if (typeof updateFabButtonState === 'function') {
+      updateFabButtonState();
+    }
+  }
 }
+
 // ==========================================
 // 📊 ២. ផ្ទាំង DASHBOARD (ពេញអេក្រង់ PC + សមមាត្រលើទូរស័ព្ទ + អក្សរខ្លីស្អាត)
 // ==========================================
@@ -365,26 +385,19 @@ async function loadDashboardData() {
     var monthQueryStart = firstDayMonthStr + 'T00:00:00+07:00';
     var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
-    const { data: monthTrans } = await supabaseClient
-      .from('transactions')
-      .select('*')
-      .gte('created_at', monthQueryStart)
-      .order('created_at', { ascending: false });
-
-    const { data: todaySettles } = await supabaseClient
-      .from('settlements')
-      .select('*')
-      .gte('settled_at', todayQueryStart);
-
-    const { data: monthExpenses } = await supabaseClient
-      .from('expenses')
-      .select('*')
-      .gte('created_at', monthQueryStart);
-
-    const { data: unpaids } = await supabaseClient
-      .from('transactions')
-      .select('total')
-      .eq('status', 'Unpaid');
+    const [
+      { data: monthTrans },
+      { data: todaySettles },
+      { data: monthExpenses },
+      { data: unpaids },
+      { data: allSettleBalances }
+    ] = await Promise.all([
+      supabaseClient.from('transactions').select('*').gte('created_at', monthQueryStart).order('created_at', { ascending: false }),
+      supabaseClient.from('settlements').select('*').gte('settled_at', todayQueryStart),
+      supabaseClient.from('expenses').select('*').gte('created_at', monthQueryStart),
+      supabaseClient.from('transactions').select('total').eq('status', 'Unpaid'),
+      supabaseClient.from('settlements').select('id, customer_name, balance_khr').order('id', { ascending: false })
+    ]);
 
     var todaySalesKHR = 0, todayCashInHand = 0, todayBankAba = 0, monthSalesKHR = 0, monthCOGS = 0;
     var todayProdQty = {}, todayRecentSales = [];
@@ -449,6 +462,16 @@ async function loadDashboardData() {
 
     var totalDebtKHR = 0;
     (unpaids || []).forEach(u => { totalDebtKHR += parseFloat(u.total || 0); });
+
+    var latestSettleSeen = {};
+    (allSettleBalances || []).forEach(function(s) {
+      var cName = (s.customer_name || "").trim();
+      if (cName && cName !== "Walk-in" && !latestSettleSeen[cName]) {
+        latestSettleSeen[cName] = true;
+        var oldBal = parseFloat(s.balance_khr || 0);
+        if (oldBal > 0) totalDebtKHR += oldBal;
+      }
+    });
 
     if (document.getElementById('dashTodaySales')) document.getElementById('dashTodaySales').innerText = '៛ ' + todaySalesKHR.toLocaleString();
     if (document.getElementById('dashTodayCashTotal')) document.getElementById('dashTodayCashTotal').innerText = '៛ ' + todayTotalCash.toLocaleString();
@@ -684,7 +707,9 @@ function injectQuickRestockModal() {
 
 function openQuickRestockModal(prodId, prodName, currentCost) {
   injectQuickRestockModal();
-  activeQuickRestockData = { id: prodId, name: prodName, cost: currentCost };
+  var prod = (allProducts || []).find(function(p) { return p.id === prodId; });
+  var curr = prod ? (prod.currency || 'KHR').toUpperCase() : 'KHR';
+  activeQuickRestockData = { id: prodId, name: prodName, cost: currentCost, currency: curr };
 
   var titleEl = document.getElementById('qrProdTitle');
   var qtyInp = document.getElementById('qrQtyInput');
@@ -692,10 +717,32 @@ function openQuickRestockModal(prodId, prodName, currentCost) {
   var hintEl = document.getElementById('qrCurrentCostHint');
   var modal = document.getElementById('quickRestockModal');
 
-  if (titleEl) titleEl.innerText = "ទំនិញ៖ [" + prodName + "]";
-  if (qtyInp) { qtyInp.value = "50"; setTimeout(() => { qtyInp.focus(); qtyInp.select(); }, 150); }
-  if (costInp) costInp.value = currentCost > 0 ? currentCost : "";
-  if (hintEl) hintEl.innerText = "*ថ្លៃដើមបច្ចុប្បន្ន៖ ៛ " + Number(currentCost).toLocaleString() + " (អាចកែប្រែបាន)";
+  var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+  var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
+  function formatQuickCostHint(val) {
+    var num = parseFloat(val || 0);
+    if (num <= 0) return '-';
+    if (curr === 'USD') return '$ ' + num.toFixed(2) + ' (≈ ៛ ' + Math.round(num * rateUSD).toLocaleString() + ')';
+    if (curr === 'THB') return '฿ ' + num.toLocaleString() + ' (≈ ៛ ' + Math.round(num * rateTHB).toLocaleString() + ')';
+    return '៛ ' + num.toLocaleString();
+  }
+
+  if (titleEl) titleEl.innerText = "ទំនិញ៖ [" + prodName + "] (" + curr + ")";
+  if (qtyInp) { qtyInp.value = "50"; setTimeout(function() { qtyInp.focus(); qtyInp.select(); }, 150); }
+  if (costInp) {
+    costInp.value = currentCost > 0 ? currentCost : "";
+    costInp.placeholder = "វាយថ្លៃដើមថ្មី (" + curr + ")";
+    costInp.oninput = function() {
+      var v = parseFloat(this.value || 0);
+      if (hintEl) {
+        hintEl.innerText = v > 0
+          ? "👉 ថ្លៃដើមថ្មីលើកនេះ៖ " + formatQuickCostHint(v)
+          : "*ថ្លៃដើមបច្ចុប្បន្ន៖ " + formatQuickCostHint(currentCost) + " [" + curr + "]";
+      }
+    };
+  }
+  if (hintEl) hintEl.innerText = "*ថ្លៃដើមបច្ចុប្បន្ន៖ " + formatQuickCostHint(currentCost) + " [" + curr + "]";
 
   if (modal) modal.classList.remove('hidden');
 }
@@ -721,6 +768,7 @@ async function confirmQuickRestockSubmit() {
 
   var targetProdId = activeQuickRestockData.id;
   var prodName = activeQuickRestockData.name;
+  var curr = (activeQuickRestockData.currency || 'KHR').toUpperCase();
   var btn = document.getElementById('qrConfirmBtn');
   btn.disabled = true;
 
@@ -747,10 +795,18 @@ async function confirmQuickRestockSubmit() {
     renderDashboardModule();
 
     try {
+      var rateUSD = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+      var rateTHB = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+      var costTgDisplay = '';
+      if (newCost > 0) {
+        if (curr === 'USD') costTgDisplay = "$ " + newCost.toFixed(2) + " (≈ ៛ " + Math.round(newCost * rateUSD).toLocaleString() + ")";
+        else if (curr === 'THB') costTgDisplay = "฿ " + newCost.toLocaleString() + " (≈ ៛ " + Math.round(newCost * rateTHB).toLocaleString() + ")";
+        else costTgDisplay = "៛ " + newCost.toLocaleString();
+      }
       var tgMsg = "📦 <b>[KC WATER - បញ្ចូលស្តុកថ្មី (Dashboard)]</b>\n\n" +
                   "• ទំនិញ៖ <b>" + prodName + "</b>\n" +
                   "• ចំនួនទិញចូល៖ <b>+" + q + "</b>\n" +
-                  (newCost > 0 ? "• ថ្លៃដើមថ្មី៖ <b>៛ " + Number(newCost).toLocaleString() + "</b>\n" : "") +
+                  (costTgDisplay ? "• ថ្លៃដើមថ្មី៖ <b>" + costTgDisplay + "</b>\n" : "") +
                   "• ស្តុកសរុបបច្ចុប្បន្ន៖ <b>" + finalStock + "</b>\n" +
                   "• អ្នកកត់ត្រា៖ " + (currentUser.fullName || "Admin") + "\n" +
                   "🕒 ម៉ោង៖ " + new Date().toLocaleTimeString('km-KH');
@@ -1008,12 +1064,21 @@ async function onAdminPosCustomerChange(val) {
       });
     }
   } else if (!isMonthly && cart && cart.length > 0) {
-    // ចំពោះម៉ូយធម្មតា អាប់ដេតតម្លៃពិសេសបើមាន
+    var rU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+    // ចំពោះម៉ូយធម្មតា អាប់ដេតតម្លៃពិសេសបើមាន និងបំប្លែងជាប្រាក់រៀលត្រឹមត្រូវ
     cart.forEach(function(item) {
       var sp = specialPrices.find(s => s.customer_name === val && s.product_name === item.name);
       var prod = allProducts.find(p => p.id === item.id);
-      if (sp) item.price = parseFloat(sp.price);
-      else if (prod) item.price = parseFloat(prod.price || 0);
+      if (sp) {
+        var spCurr = (sp.currency || 'KHR').toUpperCase();
+        var spRaw = parseFloat(sp.price || 0);
+        item.price = (spCurr === 'USD') ? Math.round(spRaw * rU) : ((spCurr === 'THB') ? Math.round(spRaw * rT) : Math.round(spRaw));
+      } else if (prod) {
+        var pCurr = (prod.currency || 'KHR').toUpperCase();
+        var pRaw = parseFloat(prod.price || 0);
+        item.price = (pCurr === 'USD') ? Math.round(pRaw * rU) : ((pCurr === 'THB') ? Math.round(pRaw * rT) : Math.round(pRaw));
+      }
     });
   }
 
@@ -1119,7 +1184,7 @@ function renderProductGrid() {
   filtered.forEach(function(p) {
     var sp = specialPrices.find(s => s.customer_name === custName && s.product_name === p.name);
     var unitPrice = sp ? parseFloat(sp.price) : parseFloat(p.price || 0);
-    var rawCurr = (p.currency || 'KHR').toUpperCase();
+    var rawCurr = sp ? (sp.currency || 'KHR').toUpperCase() : (p.currency || 'KHR').toUpperCase();
 
     var khrVal = 0, thbVal = 0, usdVal = 0;
     if (rawCurr === 'USD') {
@@ -2650,6 +2715,8 @@ function updateFabButtonState() {
   if (!fabBtn || !fabIcon) return;
 
   var isCurrentlyOnPos = (document.getElementById('pGrid') !== null);
+  if (fabBtn.dataset.lastPosState === String(isCurrentlyOnPos)) return;
+  fabBtn.dataset.lastPosState = String(isCurrentlyOnPos);
 
   if (isCurrentlyOnPos) {
     // ពេលនៅ POS ➔ បង្ហាញព្រួញត្រឡប់ក្រោយ ↩️ ពណ៌ខ្មៅរលោង
@@ -2809,20 +2876,3 @@ function onFabClickAction(e) {
   }
   handleQuickSaleShortcutAction();
 }
-
-// 🔄 ពិនិត្យបង្ហាញប៊ូតុងសម្រាប់ Admin ពេល Login
-setInterval(function() {
-  var mainApp = document.getElementById('mainApp');
-  if (mainApp && !mainApp.classList.contains('hidden') && currentUser && currentUser.role === 'Admin') {
-    if (!document.getElementById('floatingQuickSaleFab')) {
-      initDraggableQuickSaleFab();
-    } else {
-      updateFabButtonState();
-    }
-  } else {
-    var oldFab = document.getElementById('floatingQuickSaleFab');
-    if (oldFab && (!currentUser || currentUser.role !== 'Admin')) {
-      oldFab.remove();
-    }
-  }
-}, 1500);
