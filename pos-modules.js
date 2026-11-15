@@ -906,26 +906,35 @@ async function prepareEditProduct(id) {
   if (catInp) catInp.value = p.category || 'GROCERY';
 
   try {
-    const { data: setDesc } = await supabaseClient.from('settings').select('value').eq('key', 'DESC_' + p.id).maybeSingle();
-    if (setDesc && setDesc.value && descInp) descInp.value = setDesc.value;
+    var keysNeeded = [
+      'DESC_' + p.id,
+      'BADGE_' + p.id,
+      'CAT_' + p.id,
+      'DEPOT_' + p.id,
+      'ONLINE_SORT_' + p.id
+    ];
+    const { data: prodSettings } = await supabaseClient
+      .from('settings')
+      .select('key, value')
+      .in('key', keysNeeded);
 
-    const { data: setBadge } = await supabaseClient.from('settings').select('value').eq('key', 'BADGE_' + p.id).maybeSingle();
-    if (setBadge && setBadge.value && badgeInp) badgeInp.value = setBadge.value;
+    var sMap = {};
+    (prodSettings || []).forEach(function(r) { sMap[r.key] = r.value; });
 
-    const { data: setCat } = await supabaseClient.from('settings').select('value').eq('key', 'CAT_' + p.id).maybeSingle();
-    if (setCat && setCat.value && catInp) catInp.value = setCat.value;
+    if (sMap['DESC_' + p.id] && descInp) descInp.value = sMap['DESC_' + p.id];
+    if (sMap['BADGE_' + p.id] && badgeInp) badgeInp.value = sMap['BADGE_' + p.id];
+    if (sMap['CAT_' + p.id] && catInp) catInp.value = sMap['CAT_' + p.id];
 
-    // 🏬 ទាញយកដេប៉ូដែលផ្គត់ផ្គង់ទំនិញនេះ
-    const { data: setDepot } = await supabaseClient.from('settings').select('value').eq('key', 'DEPOT_' + p.id).maybeSingle();
-    var currentDepotId = setDepot ? setDepot.value : 'DEPOT_KC';
+    var currentDepotId = sMap['DEPOT_' + p.id] || 'DEPOT_KC';
     populateProductDepotDropdown(currentDepotId);
 
-    const { data: setWebSort } = await supabaseClient.from('settings').select('value').eq('key', 'ONLINE_SORT_' + p.id).maybeSingle();
-    if (setWebSort && setWebSort.value && document.getElementById('pSortOnline')) {
-      document.getElementById('pSortOnline').value = setWebSort.value;
-      p.online_sort_order = parseInt(setWebSort.value);
+    if (sMap['ONLINE_SORT_' + p.id] && document.getElementById('pSortOnline')) {
+      document.getElementById('pSortOnline').value = sMap['ONLINE_SORT_' + p.id];
+      p.online_sort_order = parseInt(sMap['ONLINE_SORT_' + p.id]);
     }
-  } catch(e) {}
+  } catch(e) {
+    populateProductDepotDropdown('DEPOT_KC');
+  }
 
   if (typeof populateProductCategoryDropdown === 'function') {
     populateProductCategoryDropdown(catInp ? catInp.value : 'GROCERY');
@@ -3729,7 +3738,8 @@ async function fetchCustomerPortalData() {
 // 💳 ៧. ផ្ទាំងស្នើទូទាត់លុយរបស់ម៉ូយ (CUSTOMER PAYMENT REQUEST MODAL)
 // ==========================================
 function openCustomerPortalPayment(mode) {
-  var due = custPortalDataCache ? custPortalDataCache.grandTotalDue : 0;
+ var due = custPortalDataCache ? custPortalDataCache.grandTotalDue : 0;
+  var qrSrc = (typeof storeAbaQrCodeBase64 !== 'undefined' && storeAbaQrCodeBase64) ? storeAbaQrCodeBase64 : '';
   if (due <= 0) {
     showToast("អ្នកមិនមានបំណុលត្រូវទូទាត់ឡើយ!", "info");
     return;
@@ -3764,7 +3774,7 @@ function injectCustKhqrPaymentModal() {
           '<span class="text-xs font-black text-green-700">៛ ' + due.toLocaleString() + '</span>' +
         '</div>' +
         '<div class="p-1.5 bg-white rounded-2xl border shadow-inner max-w-[180px] mx-auto">' +
-          '<img src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" class="w-full rounded-xl shadow-xs">' +
+          '<img src="' + qrSrc + '" class="w-full rounded-xl shadow-xs">' +
         '</div>' +
         '<p class="text-[10px] text-gray-400 italic">ស្កេនទូទាត់ ឬ Save QR ទុកស្កេនក្នុង App ធនាគារ</p>' +
       '</div>' +
@@ -4448,6 +4458,7 @@ async function saveQuickExchangeRates() {
 
     exchangeRateUSD = rUSD;
     exchangeRateTHB = rTHB;
+    if (typeof renderSettingsModule === 'function') renderSettingsModule();
 
     if (typeof kcAlert === 'function') {
       await kcAlert({
