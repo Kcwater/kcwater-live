@@ -205,11 +205,11 @@ async function openOnlineOrdersModal() {
   if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 italic text-xs"><i class="fas fa-spinner fa-spin mr-1.5 text-amber-600"></i> កំពុងទាញយកបញ្ជីកុម្ម៉ង់...</div>';
 
   try {
-    // ១. ធានាថាមានទិន្នន័យអ្នកដឹកជញ្ជូនក្នុង Dropdown
+    // ១. ធានាថាមានទិន្នន័យអ្នកដឹកជញ្ជូនក្នុង Dropdown (មិនទាញ Password ឡើយ)
     if (!allCustomers || allCustomers.length === 0) {
       const { data: custs } = await supabaseClient
         .from('users')
-        .select('*')
+        .select('id, full_name, role, type, phone, linked_boss')
         .order('full_name', { ascending: true });
       if (custs) allCustomers = custs;
     }
@@ -218,29 +218,29 @@ async function openOnlineOrdersModal() {
     var todayStr = getCambodiaToday();
     var todayQueryStart = todayStr + 'T00:00:00+07:00';
 
-    // ២. ទាញយកទាំង Order កំពុងដំណើរការ (Pending, Assigned) និង Order ដឹកដល់ថ្ងៃនេះ (Delivered Today)
-    const { data: activeList, error: actErr } = await supabaseClient
-      .from('orders')
-      .select('*')
-      .in('status', ['Pending', 'Assigned'])
-      .order('created_at', { ascending: false });
+    // ២. ទាញយក Order កំពុងដំណើរការ (Pending, Assigned, Departed) និង ដឹកដល់ថ្ងៃនេះ ព្រមគ្នា
+    const [activeRes, deliveredRes] = await Promise.all([
+      supabaseClient
+        .from('orders')
+        .select('*')
+        .in('status', ['Pending', 'Assigned', 'Departed'])
+        .order('created_at', { ascending: false }),
+      supabaseClient
+        .from('orders')
+        .select('*')
+        .eq('status', 'Delivered')
+        .gte('created_at', todayQueryStart)
+        .order('created_at', { ascending: false })
+    ]);
 
-    if (actErr) throw actErr;
+    if (activeRes.error) throw activeRes.error;
+    if (deliveredRes.error) throw deliveredRes.error;
 
-    const { data: deliveredToday, error: delErr } = await supabaseClient
-      .from('orders')
-      .select('*')
-      .eq('status', 'Delivered')
-      .gte('created_at', todayQueryStart)
-      .order('created_at', { ascending: false });
-
-    if (delErr) throw delErr;
-
-    adminOnlineOrdersCache = (activeList || []).concat(deliveredToday || []);
+    adminOnlineOrdersCache = (activeRes.data || []).concat(deliveredRes.data || []);
     renderAdminOnlineOrdersUI();
 
   } catch(err) {
-    if (container) container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + err.message + '</div>';
+    if (container) container.innerHTML = '<div class="p-4 text-center text-red-500 font-bold text-xs">កំហុស៖ ' + escapeHtml(err.message) + '</div>';
   }
 }
 
@@ -334,9 +334,10 @@ function formatOrderItemsVerticalListHTML(itemsText) {
     var str = partStr.trim();
     if (!str) return;
 
-    var seg = str.split('x');
-    var rawName = seg[0] ? seg[0].trim() : str;
-    var qty = (seg.length >= 2) ? seg[1].trim() : '1';
+    // ✅ កាត់យកតែ " x ចំនួន" នៅខាងចុងបំផុត (ការពារកុំឱ្យដាច់ឈ្មោះទំនិញដែលមានអក្សរ x ដូចជា Box, Extra, 500ml x 24)
+    var m = str.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+    var rawName = m ? m[1].trim() : str;
+    var qty = m ? m[2].trim() : '1';
 
     var isFreeGift = rawName.includes('[Free]') || rawName.includes('🎁') || rawName.includes('កាដូ');
     var isBarrel = rawName.includes('🛢️') || rawName.includes('សំបក');
@@ -353,6 +354,9 @@ function formatOrderItemsVerticalListHTML(itemsText) {
     });
 
     var imgUrl = (matchedProd && matchedProd.img) ? matchedProd.img : 'https://cdn-icons-png.flaticon.com/512/3100/3100566.png';
+    var safeName = escapeHtml(cleanName);
+    var safeQty = escapeHtml(qty);
+    var safeImg = escapeHtml(imgUrl);
 
     var giftBadge = isFreeGift ? '<span class="px-1.5 py-0.2 bg-amber-100 text-amber-900 text-[9px] font-black rounded border border-amber-300 ml-1 whitespace-nowrap">🎁 Free</span>' : '';
     var barrelBadge = isBarrel ? '<span class="px-1.5 py-0.2 bg-blue-100 text-blue-900 text-[9px] font-black rounded border border-blue-200 ml-1 whitespace-nowrap">🛢️ សំបក</span>' : '';
@@ -360,14 +364,14 @@ function formatOrderItemsVerticalListHTML(itemsText) {
     html += '<div class="flex items-center justify-between p-1.5 bg-white rounded-xl border border-slate-200 shadow-2xs">' +
       '<div class="flex items-center gap-2 min-w-0 flex-1">' +
         '<div class="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">' +
-          '<img src="' + imgUrl + '" class="max-w-full max-h-full object-contain" alt="' + cleanName + '">' +
+          '<img src="' + safeImg + '" class="max-w-full max-h-full object-contain" alt="' + safeName + '">' +
         '</div>' +
         '<div class="min-w-0 flex-1">' +
-          '<span class="text-xs font-bold text-slate-900 block truncate">' + cleanName + giftBadge + barrelBadge + '</span>' +
+          '<span class="text-xs font-bold text-slate-900 block truncate">' + safeName + giftBadge + barrelBadge + '</span>' +
         '</div>' +
       '</div>' +
       '<div class="text-right shrink-0 pl-2">' +
-        '<span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200 font-mono">x ' + qty + '</span>' +
+        '<span class="text-xs font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200 font-mono">x ' + safeQty + '</span>' +
       '</div>' +
     '</div>';
   });
@@ -469,7 +473,7 @@ function renderAdminOnlineOrdersUI() {
 
   list.forEach(function(o) {
     if (o.status === 'Pending') pendingCount++;
-    if (o.status === 'Assigned') assignedCount++;
+    if (o.status === 'Assigned' || o.status === 'Departed') assignedCount++;
     if (o.status === 'Delivered') deliveredCount++;
   });
 
@@ -481,9 +485,9 @@ function renderAdminOnlineOrdersUI() {
   '</div>';
 
   var filteredList = list.filter(function(o) {
-    if (activeAdminOnlineTab === 'ACTIVE') return o.status === 'Pending' || o.status === 'Assigned';
+    if (activeAdminOnlineTab === 'ACTIVE') return o.status === 'Pending' || o.status === 'Assigned' || o.status === 'Departed';
     if (activeAdminOnlineTab === 'PENDING') return o.status === 'Pending';
-    if (activeAdminOnlineTab === 'ASSIGNED') return o.status === 'Assigned';
+    if (activeAdminOnlineTab === 'ASSIGNED') return o.status === 'Assigned' || o.status === 'Departed';
     if (activeAdminOnlineTab === 'DELIVERED') return o.status === 'Delivered';
     return true;
   });
@@ -503,6 +507,7 @@ function renderAdminOnlineOrdersUI() {
   var html = tabsHtml;
   filteredList.forEach(function(o) {
     var isPending = (o.status === 'Pending');
+    var isDeparted = (o.status === 'Departed');
     var isDelivered = (o.status === 'Delivered');
 
     // 🛡️ ចម្រាញ់ទិន្នន័យការពារ XSS Injection
@@ -516,7 +521,9 @@ function renderAdminOnlineOrdersUI() {
       '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ រង់ចាំចាត់ចែង</span>' : 
       (isDelivered ? 
         '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">✅ ដឹកដល់រួចរាល់</span>' : 
-        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">🚚 កំពុងដឹក' + (safeDriverName ? ' (' + safeDriverName + ')' : '') + '</span>');
+        (isDeparted ? 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-600 text-white border border-blue-400 animate-pulse">🛵💨 កំពុងធ្វើដំណើរ' + (safeDriverName ? ' (' + safeDriverName + ')' : '') + '</span>' :
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">📦 បានចាត់ចែង' + (safeDriverName ? ' (' + safeDriverName + ')' : '') + '</span>'));
 
     var cleanPhone = String(o.phone || '').replace(/[^0-9]/g, '');
     var safeNameForJs = String(o.customer_name || '').replace(/'/g, "\\'");
@@ -1049,16 +1056,30 @@ async function executeFinalCompleteDelivery() {
   }
 
   try {
-    // ១. Update ស្ថានភាពទៅជា Delivered ក្នុងតារាង Orders
-    const { error: ordErr } = await supabaseClient
+    // ១. Update ស្ថានភាពទៅជា Delivered ក្នុងតារាង Orders (ការពារកុំឱ្យកត់ត្រាស្ទួន ២ ដង)
+    const { data: updatedOrders, error: ordErr } = await supabaseClient
       .from('orders')
       .update({
         status: 'Delivered',
         payment_method: payTextLabel
       })
-      .eq('order_id', orderId);
+      .eq('order_id', orderId)
+      .neq('status', 'Delivered')
+      .neq('status', 'Cancelled')
+      .select('order_id');
 
     if (ordErr) throw ordErr;
+
+    if (!updatedOrders || updatedOrders.length === 0) {
+      closeCompleteDeliveryModal();
+      showToast("ការកុម្ម៉ង់នេះត្រូវបានបញ្ចប់ ឬបោះបង់រួចហើយ!", "info");
+      if (currentUser && currentUser.type === 'CompanyDriver' && typeof renderCompanyDeliveriesModule === 'function') {
+        renderCompanyDeliveriesModule(false);
+      }
+      var adminM = document.getElementById('onlineOrdersAdminModal');
+      if (adminM && !adminM.classList.contains('hidden')) openOnlineOrdersModal();
+      return;
+    }
 
     // ២. ធានាថាមានទិន្នន័យទំនិញស្រស់ៗពី Database ដើម្បីពិនិត្យស្តុក
     if (!allProducts || allProducts.length === 0) {
@@ -1072,14 +1093,18 @@ async function executeFinalCompleteDelivery() {
     var totalAllocated = 0;
     var stockDeductionQueue = [];
 
+    var rateU = (typeof exchangeRateUSD !== 'undefined') ? exchangeRateUSD : 4100;
+    var rateT = (typeof exchangeRateTHB !== 'undefined') ? exchangeRateTHB : 115;
+
     var itemParts = String(itemsText).split(',');
     itemParts.forEach(function(partStr) {
       var rawPart = partStr.trim();
       if (!rawPart) return;
 
-      var seg = rawPart.split('x');
-      var rawName = seg[0] ? seg[0].trim() : rawPart;
-      var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+      // ✅ កាត់យកតែ " x ចំនួន" នៅខាងចុងបំផុត (ការពារឈ្មោះទំនិញមានអក្សរ x)
+      var m = rawPart.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+      var rawName = m ? m[1].trim() : rawPart;
+      var qty = m ? parseFloat(m[2].trim() || 1) : 1;
       if (isNaN(qty) || qty <= 0) qty = 1;
 
       // 🎁 ឆែកមើលថាតើជាកាដូថែម Free ឬជាសំបកធុង
@@ -1110,7 +1135,15 @@ async function executeFinalCompleteDelivery() {
         });
       }
 
-      var unitPrice = isFreeGift ? 0 : (matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0);
+      // 💵 បំប្លែងតម្លៃទំនិញ (USD/THB) ចេញជាប្រាក់រៀល (KHR) ឱ្យត្រូវតាមវិក្កយបត្រភ្ញៀវ
+      var rawOnlinePrice = matchedProd ? parseFloat(matchedProd.online_price || matchedProd.price || 0) : 0;
+      var prodCurr = matchedProd ? (matchedProd.currency || 'KHR').toUpperCase() : 'KHR';
+      var unitPriceKhr = rawOnlinePrice;
+      if (prodCurr === 'USD') unitPriceKhr = Math.round(rawOnlinePrice * rateU);
+      else if (prodCurr === 'THB') unitPriceKhr = Math.round(rawOnlinePrice * rateT);
+      else unitPriceKhr = Math.round(rawOnlinePrice);
+
+      var unitPrice = isFreeGift ? 0 : unitPriceKhr;
       var lineTotal = unitPrice * qty;
       totalAllocated += lineTotal;
 
@@ -1140,7 +1173,7 @@ async function executeFinalCompleteDelivery() {
         });
       }
     });
-
+    
     // 🛵 គណនាថ្លៃដឹកជញ្ជូនជាក់ស្តែង (បើមាននៅសល់ពីតម្លៃទំនិញ និងសំបកធុង)
     var diff = total - totalAllocated;
     if (diff > 0) {
@@ -1251,6 +1284,11 @@ function viewOrderHousePhotoById(orderId) {
     showToast("ការកុម្ម៉ង់នេះមិនមានភ្ជាប់រូបថតមុខផ្ទះឡើយ!", "info");
     return;
   }
+  var safeUrl = String(item.url).trim();
+  if (!safeUrl.startsWith('data:image/') && !safeUrl.startsWith('https://') && !safeUrl.startsWith('http://')) {
+    showToast("ទម្រង់រូបភាពមិនត្រឹមត្រូវ!", "error");
+    return;
+  }
   var existing = document.getElementById('orderHousePhotoModal');
   if (existing) existing.remove();
 
@@ -1260,12 +1298,12 @@ function viewOrderHousePhotoById(orderId) {
       '<div class="flex justify-between items-center border-b pb-2">' +
         '<div class="text-left">' +
           '<b class="text-xs sm:text-sm text-slate-900 flex items-center gap-1.5"><i class="fas fa-house-chimney text-emerald-600"></i> រូបថតមុខផ្ទះ / ច្រកចូល</b>' +
-          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">អតិថិជន៖ ' + item.name + ' (កូដ: ' + orderId + ')</p>' +
+          '<p class="text-[10px] text-slate-500 font-bold mt-0.5">អតិថិជន៖ ' + escapeHtml(item.name) + ' (កូដ: ' + escapeHtml(orderId) + ')</p>' +
         '</div>' +
         '<button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 text-lg font-bold flex items-center justify-center">&times;</button>' +
       '</div>' +
       '<div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center max-h-[58vh]">' +
-        '<img src="' + item.url + '" class="w-full h-auto object-contain max-h-[58vh] rounded-xl shadow-xs" alt="House Photo">' +
+        '<img src="' + escapeHtml(safeUrl) + '" class="w-full h-auto object-contain max-h-[58vh] rounded-xl shadow-xs" alt="House Photo">' +
       '</div>' +
       '<button type="button" onclick="document.getElementById(\'orderHousePhotoModal\').remove()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition">បិទផ្ទាំងរូបភាព</button>' +
     '</div>' +
@@ -1673,11 +1711,16 @@ async function loadOnlineHubOrdersTab() {
       var isPending = (o.status === 'Pending');
       var isDeparted = (o.status === 'Departed');
 
+      var safeCustName = escapeHtml(o.customer_name || 'អតិថិជន');
+      var safeOrderId = escapeHtml(o.order_id || '');
+      var safePhone = escapeHtml(o.phone || '-');
+      var safeDriver = escapeHtml(o.driver_name || 'អ្នកដឹក');
+
       var statusBadge = isPending ? 
         '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap">⏳ រង់ចាំចាត់ចែង</span>' : 
         (isDeparted ? 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300 animate-pulse whitespace-nowrap">🛵💨 កំពុងធ្វើដំណើរ (' + (o.driver_name || 'អ្នកដឹក') + ')</span>' : 
-          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap">📦 បានចាត់ចែង (' + (o.driver_name || 'អ្នកដឹក') + ')</span>');
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300 animate-pulse whitespace-nowrap">🛵💨 កំពុងធ្វើដំណើរ (' + safeDriver + ')</span>' : 
+          '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap">📦 បានចាត់ចែង (' + safeDriver + ')</span>');
 
       var rawLoc = (o.location_url || o.address || '').trim();
       var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
@@ -1685,8 +1728,8 @@ async function loadOnlineHubOrdersTab() {
       html += '<div class="card p-4 border-l-4 ' + (isPending ? 'border-amber-500' : 'border-blue-500') + ' shadow-md mb-0 space-y-2.5 hover:shadow-lg transition bg-white rounded-2xl">' +
         '<div class="flex justify-between items-start border-b pb-2">' +
           '<div>' +
-            '<b class="text-sm font-black text-slate-900">' + o.customer_name + '</b>' +
-            '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ <code>' + o.order_id + '</code> | ម៉ោង៖ ' + dateStr + '</div>' +
+            '<b class="text-sm font-black text-slate-900">' + safeCustName + '</b>' +
+            '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ <code>' + safeOrderId + '</code> | ម៉ោង៖ ' + dateStr + '</div>' +
           '</div>' +
           '<div class="text-right">' +
             '<b class="text-emerald-700 text-sm font-black">៛ ' + Number(o.total || 0).toLocaleString() + '</b>' +
@@ -1694,12 +1737,12 @@ async function loadOnlineHubOrdersTab() {
           '</div>' +
         '</div>' +
         '<div class="text-xs text-slate-700 space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">' +
-          '<div><b>📞 ទូរស័ព្ទ៖</b> <span class="text-emerald-700 font-bold">' + (o.phone || '-') + '</span></div>' +
+          '<div><b>📞 ទូរស័ព្ទ៖</b> <span class="text-emerald-700 font-bold">' + safePhone + '</span></div>' +
           '<div>' +
             '<span class="text-slate-500 font-bold text-[11px] block mb-1">📦 មុខទំនិញកុម្ម៉ង់៖</span>' +
-            (typeof formatOrderItemsVerticalListHTML === 'function' ? formatOrderItemsVerticalListHTML(o.items) : o.items) +
+            (typeof formatOrderItemsVerticalListHTML === 'function' ? formatOrderItemsVerticalListHTML(o.items) : escapeHtml(o.items)) +
           '</div>' +
-          (typeof formatOrderLocationBadgeHTML === 'function' ? formatOrderLocationBadgeHTML(rawLoc) : (rawLoc ? '<div><b>📍 ទីតាំង៖</b> ' + rawLoc + '</div>' : '')) +
+          (typeof formatOrderLocationBadgeHTML === 'function' ? formatOrderLocationBadgeHTML(rawLoc) : (rawLoc ? '<div><b>📍 ទីតាំង៖</b> ' + escapeHtml(rawLoc) + '</div>' : '')) +
         '</div>' +
         '<div class="flex justify-end pt-1">' +
           '<button type="button" onclick="openOnlineOrdersModal()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5">' +
@@ -1840,21 +1883,35 @@ function renderOnlineAuditResultsList() {
     var isCancelled = (o.status === 'Cancelled');
     var dateStr = new Date(o.created_at).toLocaleString('km-KH', { dateStyle: 'short', timeStyle: 'short' });
 
+    var safeCustName = escapeHtml(o.customer_name || 'អតិថិជន');
+    var safeOrderId = escapeHtml(o.order_id || '');
+    var safePhone = escapeHtml(o.phone || '-');
+    var safeItems = escapeHtml(o.items || '');
+    var safeDriver = escapeHtml(o.driver_name || '');
+    var safeDriverPhone = escapeHtml(o.driver_phone || '-');
+    var safePayMethod = escapeHtml(o.payment_method || 'COD');
+    var safeAddress = escapeHtml(o.address || '');
+    var safeStatus = escapeHtml(o.status || '');
+
+    var jsSafeCustName = escapeHtml(String(o.customer_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+    var jsSafeItems = escapeHtml(String(o.items || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+    var jsSafeLoc = escapeHtml(String(o.location_url || o.address || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+
     if (o.photo_url) {
-      storeOrderPhoto(o.order_id, o.photo_url, o.customer_name);
+      storeOrderPhoto(o.order_id, o.photo_url, safeCustName);
     }
 
     var statusBadge = isDelivered ? 
       '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">✅ ដឹកដល់ (ទូទាត់រួច)</span>' : 
       (isCancelled ? 
         '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700 border border-red-300">❌ បានបោះបង់ / សងលុយ</span>' : 
-        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ ' + o.status + '</span>');
+        '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⏳ ' + safeStatus + '</span>');
 
     html += '<div class="bg-white p-3.5 rounded-2xl border ' + (isCancelled ? 'border-red-200 bg-red-50/20' : 'border-slate-200') + ' shadow-xs space-y-2.5 hover:shadow-md transition">' +
       '<div class="flex justify-between items-start border-b pb-2">' +
         '<div>' +
-          '<b class="text-xs sm:text-sm text-slate-900 font-black"><i class="fas fa-user-circle text-blue-600 mr-1"></i>' + o.customer_name + '</b>' +
-          '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ ' + o.order_id + ' | ម៉ោង៖ ' + dateStr + '</div>' +
+          '<b class="text-xs sm:text-sm text-slate-900 font-black"><i class="fas fa-user-circle text-blue-600 mr-1"></i>' + safeCustName + '</b>' +
+          '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">កូដ៖ ' + safeOrderId + ' | ម៉ោង៖ ' + dateStr + '</div>' +
         '</div>' +
         '<div class="text-right">' +
           '<b class="text-emerald-700 text-xs sm:text-sm font-black">៛ ' + Number(o.total || 0).toLocaleString() + '</b>' +
@@ -1863,33 +1920,32 @@ function renderOnlineAuditResultsList() {
       '</div>' +
 
       '<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs space-y-1 text-slate-700">' +
-        '<div><b>📞 ទូរស័ព្ទភ្ញៀវ៖</b> <span class="text-emerald-700 font-bold">' + (o.phone || '-') + '</span></div>' +
-        '<div><b>📦 មុខទំនិញ៖</b> ' + o.items + '</div>' +
-        '<div><b>🛵 អ្នកដឹកជញ្ជូន៖</b> ' + (o.driver_name ? (o.driver_name + ' (📞 ' + (o.driver_phone || '-') + ')') : 'មិនទាន់ចាត់ចែង') + '</div>' +
-        '<div><b>💳 វិធីបង់ប្រាក់៖</b> ' + (o.payment_method || 'COD') + '</div>' +
-        (o.address ? '<div><b>📍 អាសយដ្ឋាន/ចំណាំ៖</b> ' + o.address + '</div>' : '') +
+        '<div><b>📞 ទូរស័ព្ទភ្ញៀវ៖</b> <span class="text-emerald-700 font-bold">' + safePhone + '</span></div>' +
+        '<div><b>📦 មុខទំនិញ៖</b> ' + safeItems + '</div>' +
+        '<div><b>🛵 អ្នកដឹកជញ្ជូន៖</b> ' + (safeDriver ? (safeDriver + ' (📞 ' + safeDriverPhone + ')') : 'មិនទាន់ចាត់ចែង') + '</div>' +
+        '<div><b>💳 វិធីបង់ប្រាក់៖</b> ' + safePayMethod + '</div>' +
+        (safeAddress ? '<div><b>📍 អាសយដ្ឋាន/ចំណាំ៖</b> ' + safeAddress + '</div>' : '') +
       '</div>' +
 
       '<div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">' +
         '<div class="flex items-center gap-1.5">' +
           (o.photo_url ? 
-          '<button type="button" onclick="viewOrderHousePhotoById(\'' + o.order_id + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="viewOrderHousePhotoById(\'' + safeOrderId + '\')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-camera text-amber-600"></i> មើលរូបផ្ទះ' +
           '</button>' : '') +
           (o.location_url || o.address ? 
-          '<button type="button" onclick="openOrderMap(\'' + (o.location_url || o.address).replace(/'/g, "\\'") + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
+          '<button type="button" onclick="openOrderMap(\'' + jsSafeLoc + '\')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1 active:scale-95 transition">' +
             '<i class="fas fa-map-location-dot text-blue-600"></i> ផែនទី' +
           '</button>' : '') +
         '</div>' +
 
         (isDelivered ? 
-        '<button type="button" onclick="refundAndVoidOnlineOrder(\'' + o.order_id + '\', \'' + o.customer_name.replace(/'/g, "\\'") + '\', ' + (o.total || 0) + ', \'' + (o.items || '').replace(/'/g, "\\'") + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
+        '<button type="button" onclick="refundAndVoidOnlineOrder(\'' + safeOrderId + '\', \'' + jsSafeCustName + '\', ' + (o.total || 0) + ', \'' + jsSafeItems + '\')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1 active:scale-95 transition">' +
           '<i class="fas fa-rotate-left text-xs"></i> សងលុយវិញ / បោះបង់ (Refund)' +
         '</button>' : '') +
       '</div>' +
     '</div>';
   });
-
   resArea.innerHTML = html;
 }
 // ⚠️ មុខងារដោះស្រាយវិវាទ៖ បង្វិលសងលុយ & កាត់ស្តុកត្រឡប់មកវិញ (ស្គាល់ទាំងសំបកធុង 🛢️ និងកាដូថែម 🎁)
@@ -1922,11 +1978,13 @@ async function refundAndVoidOnlineOrder(orderId, custName, total, itemsText) {
     try {
       var itemParts = String(itemsText).split(',');
       for (var i = 0; i < itemParts.length; i++) {
-        var seg = itemParts[i].split('x');
-        if (seg.length >= 2) {
-          var rawName = seg[0].trim();
-          var pQty = parseFloat(seg[1].trim() || 0);
-
+        var partStr = itemParts[i].trim();
+        if (!partStr) continue;
+        var m = partStr.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+        if (m) {
+          var rawName = m[1].trim();
+          var pQty = parseFloat(m[2].trim() || 0);
+          
           // 🧹 ជម្រះ Emoji និងស្លាក Free ដើម្បីស្វែងរកឈ្មោះទំនិញពិតប្រាកដក្នុងស្តុក
           var cleanName = rawName
             .replace(/🎁\s*\[Free\]/gi, '')
@@ -2120,12 +2178,17 @@ async function openOrderPickupManifestModal(orderId) {
       var str = partStr.trim();
       if (!str) return;
 
-      var seg = str.split('x');
-      var rawName = seg[0] ? seg[0].trim() : str;
-      var qty = (seg.length >= 2) ? parseFloat(seg[1].trim() || 1) : 1;
+      var m = str.match(/^(.*)\s+x\s*(\d+(?:\.\d+)?)$/i);
+      var rawName = m ? m[1].trim() : str;
+      var qty = m ? parseFloat(m[2].trim() || 1) : 1;
       if (isNaN(qty) || qty <= 0) qty = 1;
 
-      var cleanName = rawName.replace(/🎁\s*\[Free\]/gi, '').replace(/\[Free\]/gi, '').trim();
+      var cleanName = rawName
+        .replace(/🎁\s*\[Free\]/gi, '')
+        .replace(/\[Free\]/gi, '')
+        .replace(/\[កាដូថែម Free\]/gi, '')
+        .replace(/🛢️/gi, '')
+        .trim();
 
       var matchedProd = (allProducts || []).find(function(p) {
         return p.name.trim().toLowerCase() === cleanName.toLowerCase();
