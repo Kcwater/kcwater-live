@@ -273,9 +273,6 @@ async function loadSettingsAndTelegram() {
       .from('settings')
       .select('key, value')
       .in('key', [
-        'Telegram_Token',
-        'Telegram_ChatID',
-        'Telegram_Driver_ChatID',
         'Telegram_Alert_Status',
         'Exchange_Rate_USD',
         'Exchange_Rate_THB',
@@ -284,9 +281,6 @@ async function loadSettingsAndTelegram() {
 
     if (data) {
       data.forEach(function(r) {
-        if (r.key === 'Telegram_Token') telegramConfig.token = r.value;
-        if (r.key === 'Telegram_ChatID') telegramConfig.chatId = r.value;
-        if (r.key === 'Telegram_Driver_ChatID') telegramConfig.driverChatId = r.value;
         if (r.key === 'Telegram_Alert_Status') telegramConfig.status = String(r.value || 'ON').toUpperCase();
         if (r.key === 'Exchange_Rate_USD') exchangeRateUSD = parseFloat(r.value) || 4100;
         if (r.key === 'Exchange_Rate_THB') exchangeRateTHB = parseFloat(r.value) || 115;
@@ -345,10 +339,10 @@ async function sendTelegramAlert(message, customChatId) {
 // 📦 ៧. មុខងារទាញយកទិន្នន័យដំបូង (ទំនិញ, អតិថិជន និងតម្លៃពិសេស) ពី SUPABASE
 async function fetchInitialPOSData() {
   try {
-    // ⚡ ទាញទំនិញ, បញ្ជីឈ្មោះ (គ្មាន Password) និងតម្លៃកុងត្រាព្រមគ្នា ដើម្បីឱ្យលឿន និងសុវត្ថិភាព
+    var token = (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : '';
     const [prodsRes, custsRes, pricesRes] = await Promise.all([
       supabaseClient.from('products').select('*').order('id', { ascending: true }),
-      supabaseClient.from('users').select('id, full_name, role, type, phone, linked_boss').order('full_name', { ascending: true }),
+      token ? supabaseClient.rpc('get_pos_users_public', { p_token: token }) : Promise.resolve({ data: [] }),
       supabaseClient.from('customer_prices').select('*')
     ]);
 
