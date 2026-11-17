@@ -219,11 +219,9 @@ async function openOnlineOrdersModal() {
   }
 
   try {
-    if (!allCustomers || allCustomers.length === 0) {
+    if ((!allCustomers || allCustomers.length === 0) && currentUser && currentUser.sessionToken) {
       const { data: custs } = await supabaseClient
-        .from('users')
-        .select('id, full_name, role, type, phone, linked_boss')
-        .order('full_name', { ascending: true });
+        .rpc('get_pos_users_public', { p_token: currentUser.sessionToken });
       if (custs) allCustomers = custs;
     }
 
@@ -782,9 +780,8 @@ async function assignDriverToOnlineOrder(orderId, custName) {
                   (orderInfo.address ? ("📝 <b>ចំណាំទីតាំង៖</b> " + orderInfo.address + "\n") : "") +
                   "🕒 <b>ម៉ោងចាត់ចែង៖</b> " + timeKhNow;
 
-      var targetChatId = (telegramConfig && telegramConfig.driverChatId) ? telegramConfig.driverChatId : ((telegramConfig && telegramConfig.chatId) ? telegramConfig.chatId : '');
       if (typeof sendTelegramAlert === 'function') {
-        sendTelegramAlert(tgMsg, targetChatId);
+        sendTelegramAlert(tgMsg, 'DRIVER');
       }
     } catch(tgErr) {}
     
