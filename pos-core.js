@@ -360,10 +360,11 @@ async function renderDashboardModule() {
               '<th class="p-2 sm:p-2.5 text-center">ចំនួន</th>' +
               '<th class="p-2 sm:p-2.5 text-right">សរុប</th>' +
               '<th class="p-2 sm:p-2.5 text-center">ស្ថានភាព</th>' +
+              '<th class="p-2 sm:p-2.5 text-center w-14">បោះបង់</th>' +
             '</tr>' +
           '</thead>' +
           '<tbody id="dashRecentTbody">' +
-            '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr>' +
+            '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr>' +
           '</tbody>' +
         '</table>' +
       '</div>' +
@@ -580,13 +581,15 @@ async function loadDashboardData() {
     if (badgeCount) badgeCount.innerText = todayRecentSales.length + " លើក";
 
     if (tbodyRecent) {
+      window.__dashRecentRowsMap = {};
       if (todayRecentSales.length === 0) {
-        tbodyRecent.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រតិបត្តិការដកទំនិញថ្ងៃនេះនៅឡើយ</td></tr>';
+        tbodyRecent.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រតិបត្តិការដកទំនិញថ្ងៃនេះនៅឡើយ</td></tr>';
       } else {
         var rHtml = '';
         var isAdmin = (currentUser && currentUser.role === 'Admin');
 
         todayRecentSales.forEach(function(r) {
+          window.__dashRecentRowsMap[r.id] = r;
           var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { 
             timeZone: 'Asia/Phnom_Penh', 
             hour: '2-digit', 
@@ -604,16 +607,24 @@ async function loadDashboardData() {
             withdrawTag = '<br><span class="text-[9px] text-blue-900 font-bold bg-blue-50 border border-blue-200 px-1 py-0.2 rounded inline-flex items-center gap-1 mt-0.5"><i class="fas fa-user-pen text-[8px] text-blue-500"></i>Admin កត់ជំនួស</span>';
           }
 
+          var isSettledDebt = (r.status === 'Paid' && r.payment_method === 'Debt');
+          var voidCellHtml = isAdmin ? (
+            isSettledDebt
+              ? '<span class="text-[9px] text-slate-400 italic" title="បានទូទាត់ក្នុង Settlement រួច">ទូទាត់រួច</span>'
+              : '<button type="button" onclick="voidTransaction(' + Number(r.id) + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="បោះបង់ការលក់នេះ"><i class="fas fa-trash-can"></i></button>'
+          ) : '-';
+
           rHtml += '<tr class="border-b hover:bg-gray-50">' +
-         '<td class="p-2 text-center text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
-         '<td class="p-2 font-bold text-gray-800">' + r.customer_name + withdrawTag + '</td>' +
-         '<td class="p-2">' + r.product_name + '</td>' +
-         '<td class="p-2 text-center font-bold text-blue-700">' + r.qty + '</td>' +
-         '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
-         '<td class="p-2 text-center whitespace-nowrap">' +
-           '<span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span>' +
-         '</td>' +
-       '</tr>';
+            '<td class="p-2 text-center text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
+            '<td class="p-2 font-bold text-gray-800">' + r.customer_name + withdrawTag + '</td>' +
+            '<td class="p-2">' + r.product_name + '</td>' +
+            '<td class="p-2 text-center font-bold text-blue-700">' + r.qty + '</td>' +
+            '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
+            '<td class="p-2 text-center whitespace-nowrap">' +
+              '<span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span>' +
+            '</td>' +
+            '<td class="p-2 text-center whitespace-nowrap">' + voidCellHtml + '</td>' +
+          '</tr>';
         });
         tbodyRecent.innerHTML = rHtml;
       }
@@ -680,11 +691,28 @@ function initDashboardRealtimeListener() {
 
 // 🗑️ មុខងារបោះបង់ការលក់ & បង្វិលស្តុកសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ (Void Sale)
 async function voidTransaction(rowId, tid, prodName, qty, total) {
-  if (!rowId) return;
+  if (!rowId || !currentUser || currentUser.role !== 'Admin') return;
 
+  var rowObj = (window.__dashRecentRowsMap && window.__dashRecentRowsMap[rowId]) ? window.__dashRecentRowsMap[rowId] : null;
+  if (rowObj) {
+    tid = rowObj.transaction_id;
+    prodName = rowObj.product_name || '';
+    qty = parseFloat(rowObj.qty || 0);
+    total = parseFloat(rowObj.total || 0);
+    if (rowObj.status === 'Paid' && rowObj.payment_method === 'Debt') {
+      await kcAlert({
+        title: "មិនអាចលុបដោយផ្ទាល់បានទេ",
+        message: "ជើងទឹករបស់ [" + (rowObj.customer_name || '') + "] នេះត្រូវបានទូទាត់ក្នុង Settlement រួចហើយ! សូមចូលទៅបោះបង់ការទូទាត់ (Undo) ក្នុងផ្ទាំង «ទូទាត់លុយ» ជាមុនសិន។",
+        type: "warning"
+      });
+      return;
+    }
+  }
+
+  var custLabel = rowObj ? (rowObj.customer_name || 'Walk-in') : '';
   var ok = await kcConfirm({
     title: "បោះបង់ការលក់ (Void Sale)",
-    message: "តើអ្នកពិតជាចង់បោះបង់ប្រតិបត្តិការ [" + prodName + " x " + qty + "] ចំនួន ៛ " + Number(total).toLocaleString() + " នេះមែនទេ? ស្តុកទំនិញនឹងត្រូវបង្វិលសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ។",
+    message: "តើអ្នកពិតជាចង់បោះបង់ប្រតិបត្តិការ" + (custLabel ? ("របស់ [" + custLabel + "] ") : " ") + "[" + prodName + " x " + qty + "] ចំនួន ៛ " + Number(total).toLocaleString() + " នេះមែនទេ? ស្តុកទំនិញនឹងត្រូវបង្វិលសងចូលឃ្លាំងវិញដោយស្វ័យប្រវត្តិ។",
     type: "danger",
     confirmText: "យល់ព្រមបោះបង់"
   });
@@ -692,15 +720,20 @@ async function voidTransaction(rowId, tid, prodName, qty, total) {
   if (!ok) return;
 
   try {
-    // ១. បង្វិលស្តុកទំនិញសងចូលឃ្លាំងវិញ (បើជាទំនិញទិញគេ)
-    var prodObj = allProducts.find(p => p.name.trim().toLowerCase() === prodName.trim().toLowerCase());
+    var cleanProdName = String(prodName || '')
+      .replace(/🎁\s*\[Free\]/gi, '')
+      .replace(/\[Free\]/gi, '')
+      .replace(/🛢️/gi, '')
+      .trim()
+      .toLowerCase();
+
+    var prodObj = allProducts.find(function(p) { return p.name.trim().toLowerCase() === cleanProdName; });
     if (prodObj && prodObj.type === 'ទិញគេ' && qty > 0) {
       var restoredStock = parseFloat(prodObj.stock || 0) + parseFloat(qty);
       await supabaseClient.from('products').update({ stock: restoredStock }).eq('id', prodObj.id);
       prodObj.stock = restoredStock;
     }
 
-    // ២. លុបកំណត់ត្រាចេញពីតារាង Transactions
     const { error: delErr } = await supabaseClient
       .from('transactions')
       .delete()
@@ -708,20 +741,28 @@ async function voidTransaction(rowId, tid, prodName, qty, total) {
 
     if (delErr) throw delErr;
 
-    showToast("បានបោះបង់ការលក់ និងបង្វិលស្តុកសងវិញជោគជ័យ!", "success");
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "បានបោះបង់ការលក់ជោគជ័យ!",
+        message: "ប្រតិបត្តិការ [" + prodName + " x " + qty + "] ត្រូវបានលុប និងបង្វិលស្តុកសងវិញរួចរាល់។",
+        type: "success"
+      });
+    } else {
+      showToast("បានបោះបង់ការលក់ និងបង្វិលស្តុកសងវិញជោគជ័យ!", "success");
+    }
 
-    // ៣. បាញ់សារ Telegram Alert ទៅកាន់ថៅកែ
     try {
+      var timeKhNow = new Date().toLocaleString('km-KH', { timeZone: 'Asia/Phnom_Penh', dateStyle: 'short', timeStyle: 'short' });
       var tgMsg = "⚠️ <b>[KC WATER - បោះបង់ការលក់ (Void Sale)]</b>\n\n" +
                   "🆔 <b>កូដប្រតិបត្តិការ៖</b> <code>" + (tid || rowId) + "</code>\n" +
+                  (custLabel ? ("👤 <b>អតិថិជន៖</b> " + custLabel + "\n") : "") +
                   "📦 <b>ទំនិញ៖</b> " + prodName + " x " + qty + "\n" +
                   "💰 <b>ទឹកប្រាក់៖</b> <b>-៛ " + Number(total).toLocaleString() + "</b>\n" +
                   "✍️ <b>អ្នកលុប៖</b> " + (currentUser.fullName || "Admin") + "\n" +
-                  "🕒 <b>ម៉ោង៖</b> " + new Date().toLocaleTimeString('km-KH');
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
       sendTelegramAlert(tgMsg);
     } catch(tgE) {}
 
-    // ៤. ទាញទិន្នន័យ Dashboard ឡើងវិញភ្លាមៗ
     await fetchInitialPOSData();
     loadDashboardData();
 
@@ -729,6 +770,7 @@ async function voidTransaction(rowId, tid, prodName, qty, total) {
     showToast("កំហុសបោះបង់ការលក់៖ " + err.message, "error");
   }
 }
+
 // 📦 មុខងារ QUICK RESTOCK MODAL លើ DASHBOARD
 function injectQuickRestockModal() {
   if (document.getElementById('quickRestockModal')) return;
