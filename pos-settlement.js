@@ -134,6 +134,30 @@ async function renderSettlementModule() {
 
   '</div>' +
 
+    // 🧾 ប្រវត្តិទូទាត់ថ្មីៗ (សម្រាប់ Admin ត្រួតពិនិត្យ / បោះបង់ការទូទាត់ខុស)
+    '<div class="card border-t-4 border-emerald-600 shadow-xl p-3.5 sm:p-5 mb-0 bg-white rounded-2xl">' +
+      '<div class="flex justify-between items-center mb-2.5">' +
+        '<h4 class="font-bold text-gray-800 text-xs sm:text-sm flex items-center gap-2">' +
+          '<i class="fas fa-receipt text-emerald-600"></i> ប្រវត្តិទូទាត់ប្រាក់ថ្មីៗ (អាចបោះបង់បើទូទាត់ខុស)' +
+        '</h4>' +
+      '</div>' +
+      '<div class="overflow-x-auto max-h-64 overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
+        '<table class="w-full text-left text-xs border-collapse">' +
+          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-xs">' +
+            '<tr>' +
+              '<th class="p-2 sm:p-2.5 text-center w-24">ម៉ោង/ថ្ងៃ</th>' +
+              '<th class="p-2 sm:p-2.5">អតិថិជន</th>' +
+              '<th class="p-2 sm:p-2.5 text-right">ប្រាក់បានបង់</th>' +
+              '<th class="p-2 sm:p-2.5 text-center">វិធីបង់</th>' +
+              '<th class="p-2 sm:p-2.5 text-right">នៅសល់</th>' +
+              '<th class="p-2 sm:p-2.5 text-center w-24">សកម្មភាព</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody id="recentSettlementsTbody"><tr><td colspan="6" class="p-4 text-center text-gray-400 italic">កំពុងទាញប្រវត្តិ...</td></tr></tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>' +
+
   // 🌟 ផ្ទាំង POP-UP MODAL គិតលុយចំកណ្តាលអេក្រង់
   '<div id="settlementActionModal" class="fixed inset-0 z-[7000] flex items-center justify-center p-3 sm:p-4 hidden overflow-y-auto">' +
     '<div class="fixed inset-0 bg-slate-950/65 backdrop-blur-xs transition-opacity" onclick="closeSettlementModal()"></div>' +
@@ -227,6 +251,7 @@ async function renderSettlementModule() {
   checkAdminPendingPayments();
   fetchSettlementOverviewData();
   await loadSettlementDebtorsList();
+  if (typeof loadRecentSettlementsList === 'function') loadRecentSettlementsList();
 }
 
 // ==========================================
@@ -969,6 +994,7 @@ async function submitSettlementPayment() {
       pay_method: currentSettlementPayMode,
       cash_khr: cashKhrRecorded,
       scan_khr: scanKhrRecorded,
+      settled_tx_ids: JSON.stringify(selectedIds),
       settled_at: new Date().toISOString()
     }]);
     if (setErr) throw setErr;
@@ -1046,6 +1072,7 @@ async function submitSettlementPayment() {
     // ៧. Refresh ផ្ទាំង Settlement ឡើងវិញ
     
     closeSettlementModal();
+    if (typeof loadRecentSettlementsList === 'function') loadRecentSettlementsList();
     checkAdminPendingPayments();
     fetchSettlementOverviewData();
     await loadSettlementDebtorsList();
@@ -1318,6 +1345,129 @@ async function deleteSettleItem(transId, prodName, qty, total) {
   } catch(err) {
     if (typeof kcAlert === 'function') {
       await kcAlert({ title: "កំហុស", message: err.message, type: "danger" });
+    } else {
+      showToast("កំហុស៖ " + err.message, "error");
+    }
+  }
+}
+
+// ==========================================
+// 🧾 ប្រវត្តិទូទាត់ប្រាក់ថ្មីៗ & បោះបង់ការទូទាត់ខុស (ADMIN UNDO SETTLEMENT)
+// ==========================================
+async function loadRecentSettlementsList() {
+  var tbody = document.getElementById('recentSettlementsTbody');
+  if (!tbody) return;
+
+  try {
+    const { data: list, error } = await supabaseClient
+      .from('settlements')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    window.__recentSettlementsMap = {};
+    if (!list || list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រវត្តិទូទាត់នៅឡើយ</td></tr>';
+      return;
+    }
+
+    var isAdmin = (currentUser && currentUser.role === 'Admin');
+    var latestSeenCust = {};
+    var html = '';
+
+    list.forEach(function(s) {
+      window.__recentSettlementsMap[s.id] = s;
+      var cName = (s.customer_name || '').trim();
+      var isLatestForCust = !latestSeenCust[cName];
+      if (cName) latestSeenCust[cName] = true;
+
+      var dateStr = new Date(s.settled_at).toLocaleString('km-KH', {
+        timeZone: 'Asia/Phnom_Penh',
+        dateStyle: 'short',
+        timeStyle: 'short'
+      });
+
+      var canUndo = isAdmin && isLatestForCust && (s.settled_tx_ids !== null && s.settled_tx_ids !== undefined);
+      var actionHtml = canUndo
+        ? '<button type="button" onclick="undoSettlementRecord(' + Number(s.id) + ')" class="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-bold text-[11px] active:scale-95 transition flex items-center gap-1 mx-auto" title="បោះបង់ការទូទាត់ខុស"><i class="fas fa-rotate-left text-[10px]"></i> បោះបង់</button>'
+        : '<span class="text-[9.5px] text-slate-400 italic">' + (isLatestForCust ? 'ចាស់' : 'មានថ្មីជាង') + '</span>';
+
+      html += '<tr class="border-b hover:bg-gray-50">' +
+        '<td class="p-2 text-gray-500 text-[10px] text-center whitespace-nowrap">' + dateStr + '</td>' +
+        '<td class="p-2 font-bold text-gray-800">' + cName + '</td>' +
+        '<td class="p-2 text-right font-black text-emerald-700 whitespace-nowrap">៛ ' + Number(s.paid_khr || 0).toLocaleString() + '</td>' +
+        '<td class="p-2 text-center font-bold text-blue-800 text-[11px]">' + (s.pay_method || 'Cash') + '</td>' +
+        '<td class="p-2 text-right font-bold text-orange-700 whitespace-nowrap">៛ ' + Number(s.balance_khr || 0).toLocaleString() + '</td>' +
+        '<td class="p-2 text-center whitespace-nowrap">' + actionHtml + '</td>' +
+      '</tr>';
+    });
+
+    tbody.innerHTML = html;
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + e.message + '</td></tr>';
+  }
+}
+
+async function undoSettlementRecord(settleId) {
+  if (!currentUser || currentUser.role !== 'Admin') return;
+  var s = (window.__recentSettlementsMap || {})[settleId];
+  if (!s) return;
+
+  var ok = await kcConfirm({
+    title: "បោះបង់ការទូទាត់ប្រាក់ (Undo)",
+    message: "តើអ្នកពិតជាចង់បោះបង់ការទូទាត់របស់ [" + s.customer_name + "] ចំនួន ៛ " + Number(s.paid_khr || 0).toLocaleString() + " នេះមែនទេ? ជើងទឹកដែលបានគិតក្នុងវិក្កយបត្រនេះនឹងត្រឡប់ទៅជា «ជំពាក់ (Unpaid)» វិញដោយស្វ័យប្រវត្តិ។",
+    type: "danger",
+    confirmText: "យល់ព្រមបោះបង់"
+  });
+  if (!ok) return;
+
+  try {
+    var txIds = [];
+    try { txIds = JSON.parse(s.settled_tx_ids || '[]'); } catch(pe) { txIds = []; }
+
+    if (Array.isArray(txIds) && txIds.length > 0) {
+      const { error: txErr } = await supabaseClient
+        .from('transactions')
+        .update({ status: 'Unpaid' })
+        .in('id', txIds);
+      if (txErr) throw txErr;
+    }
+
+    const { error: delErr } = await supabaseClient
+      .from('settlements')
+      .delete()
+      .eq('id', settleId);
+    if (delErr) throw delErr;
+
+    try {
+      var timeKhNow = new Date().toLocaleString('km-KH', { timeZone: 'Asia/Phnom_Penh', dateStyle: 'short', timeStyle: 'short' });
+      var tgMsg = "↩️ <b>[KC WATER - បោះបង់ការទូទាត់ប្រាក់ (Undo Settlement)]</b>\n\n" +
+                  "👤 <b>អតិថិជន៖</b> " + s.customer_name + "\n" +
+                  "💰 <b>ប្រាក់ទូទាត់ដែលបានលុប៖</b> <b>-៛ " + Number(s.paid_khr || 0).toLocaleString() + "</b>\n" +
+                  "✍️ <b>អ្នកបោះបង់៖</b> " + (currentUser.fullName || "Admin") + "\n" +
+                  "🕒 <b>ម៉ោង៖</b> " + timeKhNow;
+      if (typeof sendTelegramAlert === 'function') sendTelegramAlert(tgMsg);
+    } catch(tgE) {}
+
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "បានបោះបង់ការទូទាត់ជោគជ័យ!",
+        message: "ប្រតិបត្តិការទូទាត់របស់ [" + s.customer_name + "] ត្រូវបានលុប ហើយជើងទឹកត្រូវបានបង្វិលមក «ជំពាក់» វិញរួចរាល់។",
+        type: "success"
+      });
+    } else {
+      showToast("បានបោះបង់ការទូទាត់ប្រាក់ជោគជ័យ!", "success");
+    }
+
+    checkAdminPendingPayments();
+    fetchSettlementOverviewData();
+    await loadSettlementDebtorsList();
+    loadRecentSettlementsList();
+  } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({ title: "កំហុសបោះបង់ការទូទាត់", message: err.message, type: "danger" });
     } else {
       showToast("កំហុស៖ " + err.message, "error");
     }
