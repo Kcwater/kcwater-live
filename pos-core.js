@@ -371,6 +371,9 @@ async function renderDashboardModule() {
   '</div>';
 
   await loadDashboardData();
+  if (typeof initDashboardRealtimeListener === 'function') {
+    initDashboardRealtimeListener();
+  }
 }
 
 // ==========================================
@@ -617,6 +620,61 @@ async function loadDashboardData() {
     }
   } catch(e) {
     console.error("Dashboard error:", e);
+  }
+}
+
+var dashboardRealtimeChannel = null;
+var dashboardRefreshTimer = null;
+
+function initDashboardRealtimeListener() {
+  if (!supabaseClient || !currentUser || currentUser.role !== 'Admin') return;
+  if (dashboardRealtimeChannel && dashboardRealtimeChannel.state === 'joined') return;
+
+  function scheduleDashboardAutoRefresh() {
+    if (!currentUser || currentUser.role !== 'Admin') return;
+    if (dashboardRefreshTimer) clearTimeout(dashboardRefreshTimer);
+    dashboardRefreshTimer = setTimeout(function() {
+      if (document.getElementById('dashTodaySales') && typeof loadDashboardData === 'function') {
+        loadDashboardData();
+      }
+      if (typeof updateNotificationCenterBadge === 'function') {
+        updateNotificationCenterBadge();
+      }
+    }, 800);
+  }
+
+  try {
+    if (dashboardRealtimeChannel) {
+      supabaseClient.removeChannel(dashboardRealtimeChannel);
+      dashboardRealtimeChannel = null;
+    }
+
+    dashboardRealtimeChannel = supabaseClient
+      .channel('public:admin_dashboard_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, scheduleDashboardAutoRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements' }, scheduleDashboardAutoRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, scheduleDashboardAutoRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, function(payload) {
+        if (payload && payload.new && payload.new.id && Array.isArray(allProducts)) {
+          var idx = allProducts.findIndex(function(p) { return String(p.id) === String(payload.new.id); });
+          if (idx !== -1) {
+            allProducts[idx] = Object.assign({}, allProducts[idx], payload.new);
+          }
+        }
+        scheduleDashboardAutoRefresh();
+      })
+      .subscribe();
+
+    if (!window.__kcDashVisibilityBound) {
+      window.__kcDashVisibilityBound = true;
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && currentUser && currentUser.role === 'Admin' && document.getElementById('dashTodaySales')) {
+          loadDashboardData();
+        }
+      });
+    }
+  } catch(e) {
+    console.warn("Dashboard realtime error:", e);
   }
 }
 
