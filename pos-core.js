@@ -2090,7 +2090,7 @@ async function confirmSale() {
                   "🕒 <b>កាលបរិច្ឆេទ៖</b> " + timeKhNow;
 
       if (typeof sendTelegramAlert === 'function') {
-        sendTelegramAlert(tgMsg);
+        await sendTelegramAlert(tgMsg);
       }
     } catch(e) {}
 
@@ -2120,8 +2120,16 @@ async function confirmSale() {
     if (typeof closeQuickPosModal === 'function') closeQuickPosModal();
     if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
-  } catch(err) {
-    showToast("កំហុសកត់ត្រា៖ " + err.message, "error");
+ } catch(err) {
+    if (typeof kcAlert === 'function') {
+      await kcAlert({
+        title: "❌ ការកត់ត្រាមិនជោគជ័យ!",
+        message: "មិនអាចផ្ញើទិន្នន័យចូលប្រព័ន្ធបានទេ (អាចមកពីគ្មាន Internet ឬ Internet យឺត)។ សូមពិនិត្យសេវា Internet របស់អ្នក រួចចុចបញ្ជូនម្តងទៀត!\n\n(" + (err.message || err) + ")",
+        type: "danger"
+      });
+    } else {
+      showToast("កំហុសកត់ត្រា៖ " + err.message, "error");
+    }
   } finally {
     isSubmittingSaleLock = false;
     if (btn) {
