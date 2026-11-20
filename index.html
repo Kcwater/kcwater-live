@@ -469,142 +469,16 @@
       <div id="fullCheckoutFormSection" class="space-y-3">
         <!-- ១. ព័ត៌មានអ្នកទទួល -->
         <div class="space-y-1.5">
-          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionUser">១. ព័ត៌មានអ្នកទទួលទឹក</label>
+          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionUser">១. ព័ត៌មានអ្នកទទួលទំនិញ</label>
           <div class="grid grid-cols-2 gap-2">
             <input type="tel" id="inp_custPhone" oninput="autoSaveCustomerInput()" placeholder="លេខទូរស័ព្ទ (* ចាំបាច់)" class="p-2.5 bg-white border-2 border-emerald-400 rounded-xl font-bold outline-none focus:border-emerald-600">
             <input type="text" id="inp_custName" oninput="autoSaveCustomerInput()" placeholder="ឈ្មោះ (ដាក់ឬមិនដាក់ក៏បាន)" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:bg-white focus:border-emerald-600">
           </div>
         </div>
 
-        <!-- ២. ម៉ោងចង់ទទួលទឹក (DELIVERY TIME VISUAL CHIPS) -->
-        <div class="space-y-2">
-          <div class="flex justify-between items-center">
-            <label class="font-black text-slate-800 uppercase tracking-wider block text-xs" id="coSectionTime">
-              <i class="fas fa-clock text-emerald-600 mr-1"></i> ២. ម៉ោងចង់ទទួលទឹក (Delivery Time)
-            </label>
-            <span id="selectedTimeSlotBadge" class="text-[10px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">⚡ ដឹកភ្លាមៗ</span>
-          </div>
-
-          <!-- ប៊ូតុង Chips រើសម៉ោងរហ័ស -->
-          <div class="grid grid-cols-3 gap-1.5 text-[11px] font-bold">
-            <button type="button" onclick="selectTimeSlotChip('ASAP', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-emerald-600 bg-emerald-700 text-white shadow-2xs active:scale-95 transition">
-              ⚡ ដឹកភ្លាមៗ
-            </button>
-            <button type="button" onclick="selectTimeSlotChip('ព្រឹក (08:00 - 11:30)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">
-              🌅 ព្រឹក (8-11h)
-            </button>
-            <button type="button" onclick="selectTimeSlotChip('ថ្ងៃត្រង់ (11:30 - 13:30)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">
-              ☀️ ថ្ងៃត្រង់
-            </button>
-            <button type="button" onclick="selectTimeSlotChip('រសៀល (13:30 - 17:30)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">
-              🌇 រសៀល (1-5h)
-            </button>
-            <button type="button" onclick="selectTimeSlotChip('ល្ងាច (17:30 - 19:30)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">
-              🌙 ល្ងាច (5-7h)
-            </button>
-            <button type="button" onclick="selectTimeSlotChip('CUSTOM', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">
-              ✍️ វាយម៉ោង
-            </button>
-          </div>
-
-          <input type="hidden" id="inp_selectedTimeSlotValue" value="ASAP">
-
-          <!-- ប្រអប់វាយម៉ោងដោយដៃពេលរើស Custom -->
-          <div id="customTimeManualInputRow" class="hidden pt-1">
-            <input type="text" id="inp_customTimeManual" oninput="autoSaveCustomerInput()" placeholder="ឧ៖ ម៉ោង ៤:៣០ រសៀល (4:30 PM)..." class="w-full p-2.5 bg-slate-50 border-2 border-emerald-300 rounded-xl font-bold text-xs outline-none focus:bg-white">
-          </div>
-        </div>
-
-        <!-- ៣. ប្រភេទកន្លែងស្នាក់នៅ (BUILDING, FLOOR & ELEVATOR CHIPS) -->
-        <div class="space-y-2">
-          <label class="font-black text-slate-800 uppercase tracking-wider block text-xs" id="coSectionBuilding">
-            <i class="fas fa-building text-blue-600 mr-1"></i> ៣. ប្រភេទកន្លែងស្នាក់នៅ (Building Type)
-          </label>
-
-          <!-- ជ្រើសរើស៖ ផ្ទះផ្ទាល់ដី vs បន្ទប់ជួល/អគារ -->
-          <div class="grid grid-cols-2 gap-2 text-xs font-bold">
-            <button type="button" onclick="selectBuildingTypeChip('HOUSE', this)" id="bldChip_HOUSE" class="bld-chip py-2.5 px-3 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-950 flex items-center justify-center gap-1.5 active:scale-95 transition">
-              <i class="fas fa-house-chimney text-blue-600 text-sm"></i>
-              <span>🏠 ផ្ទះផ្ទាល់ដី</span>
-            </button>
-            <button type="button" onclick="selectBuildingTypeChip('CONDO', this)" id="bldChip_CONDO" class="bld-chip py-2.5 px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1.5 active:scale-95 transition">
-              <i class="fas fa-building text-slate-500 text-sm"></i>
-              <span>🏢 បន្ទប់ជួល / អគារ</span>
-            </button>
-          </div>
-
-          <!-- 🏢 ផ្ទាំងលម្អិតអគារ (បង្ហាញស្វ័យប្រវត្តិតែពេលរើស "បន្ទប់ជួល/អគារ") -->
-          <div id="buildingAdvancedDetailsBox" class="hidden p-3 bg-gradient-to-br from-blue-50/70 to-slate-50 rounded-2xl border-2 border-blue-200 space-y-2.5">
-            
-            <!-- ក. ជម្រើសជាន់ Floor Chips (រំកិល Scroll បានពី G ដល់ 10+) -->
-            <div>
-              <div class="flex justify-between items-center mb-1">
-                <span class="text-[10px] font-black text-slate-600 uppercase">ជាន់ទី (Floor)៖</span>
-                <span id="selectedFloorDisplayBadge" class="text-[10px] font-black text-blue-800 bg-blue-100 px-2 py-0.2 rounded-full">ជាន់ G (ផ្ទាល់ដី)</span>
-              </div>
-              <div class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
-                <button type="button" onclick="selectFloorChip('G', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs shrink-0">G</button>
-                <button type="button" onclick="selectFloorChip('1', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 1</button>
-                <button type="button" onclick="selectFloorChip('2', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 2</button>
-                <button type="button" onclick="selectFloorChip('3', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 3</button>
-                <button type="button" onclick="selectFloorChip('4', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 4</button>
-                <button type="button" onclick="selectFloorChip('5', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 5</button>
-                <button type="button" onclick="selectFloorChip('6', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 6</button>
-                <button type="button" onclick="selectFloorChip('7', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 7</button>
-                <button type="button" onclick="selectFloorChip('8', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 8</button>
-                <button type="button" onclick="selectFloorChip('9', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 9</button>
-                <button type="button" onclick="selectFloorChip('10', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">ជាន់ 10</button>
-                <button type="button" onclick="selectFloorChip('OTHER', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">✍️ 10+</button>
-              </div>
-              <div id="customFloorInputRow" class="hidden pt-1">
-                <input type="text" id="inp_customFloorManual" oninput="onCustomFloorInput(this.value)" placeholder="វាយលេខជាន់ (ឧ៖ ជាន់ទី ១២)..." class="w-full p-2 bg-white border border-blue-300 rounded-xl font-bold text-xs outline-none">
-              </div>
-            </div>
-
-            <!-- ខ. លេខបន្ទប់ (Room No.) -->
-            <div>
-              <label class="text-[10px] font-black text-slate-600 uppercase block mb-1">លេខបន្ទប់ / ផ្ទះ (Room / Unit No.) *</label>
-              <input type="text" id="inp_bldRoomNo" oninput="autoSaveCustomerInput()" placeholder="ឧ៖ បន្ទប់លេខ 204, B12, ឬ A-05..." class="w-full p-2.5 bg-white border border-slate-300 focus:border-blue-500 rounded-xl font-bold text-xs outline-none">
-            </div>
-
-            <!-- គ. ជណ្តើរយន្ត vs ជណ្តើរជើង (Elevator Chips) -->
-            <div>
-              <span class="text-[10px] font-black text-slate-600 uppercase block mb-1">មធ្យោបាយឡើងទៅ (Elevator)៖</span>
-              <div class="grid grid-cols-2 gap-2 text-xs font-bold">
-                <button type="button" onclick="selectElevatorChip('YES', this)" id="elevChip_YES" class="elev-chip py-2 px-2.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white flex items-center justify-center gap-1 active:scale-95 transition">
-                  <i class="fas fa-elevator"></i>
-                  <span>🛗 មានជណ្តើរយន្ត</span>
-                </button>
-                <button type="button" onclick="selectElevatorChip('NO', this)" id="elevChip_NO" class="elev-chip py-2 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1 active:scale-95 transition">
-                  <i class="fas fa-stairs"></i>
-                  <span>🪜 ឡើងជណ្តើរជើង</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- ឃ. របៀបប្រគល់ទឹក (Handover Preference) -->
-            <div>
-              <span class="text-[10px] font-black text-slate-600 uppercase block mb-1">របៀបប្រគល់ទឹក (Delivery Handover)៖</span>
-              <div class="grid grid-cols-3 gap-1 text-[10px] font-bold">
-                <button type="button" onclick="selectHandoverChip('មុខបន្ទប់', this)" class="handover-chip py-2 px-1 rounded-xl border-2 border-blue-600 bg-blue-600 text-white active:scale-95 transition">
-                  🚪 ដាក់មុខបន្ទប់
-                </button>
-                <button type="button" onclick="selectHandoverChip('ជួបផ្ទាល់', this)" class="handover-chip py-2 px-1 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">
-                  🤝 ជួបផ្ទាល់
-                </button>
-                <button type="button" onclick="selectHandoverChip('សន្តិសុខ/Reception', this)" class="handover-chip py-2 px-1 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">
-                  🏢 ទុកនៅមុខទ្វារ/សន្តិសុខ
-                </button>
-              </div>
-              <input type="hidden" id="inp_bldHandover" value="ដាក់មុខបន្ទប់">
-            </div>
-
-          </div>
-        </div>
-
-        <!-- ៤. ទីតាំង GPS & រូបថតមុខផ្ទះ -->
+        <!-- ២. ទីតាំង GPS & រូបថតមុខផ្ទះ (ចាំបាច់សម្រាប់ភ្ញៀវថ្មី) -->
         <div class="space-y-1.5">
-          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionLoc">៤. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត</label>
+          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionLoc">២. ទីតាំងផ្ទះនៅក្រុងប៉ោយប៉ែត</label>
           <button type="button" id="btnDetectGPSAction" onclick="detectGPSLocation()" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition">
             <i class="fas fa-location-crosshairs"></i>
             <span id="btnGpsLabel">📍 ចុចចាប់ GPS ផ្ទះខ្ញុំ</span>
@@ -613,7 +487,7 @@
           <input type="hidden" id="inp_custMapUrl" value="">
           <input type="text" id="inp_custAddress" oninput="autoSaveCustomerInput()" placeholder="ភូមិ, សង្កាត់, ឬចំណាំទីតាំងសម្គាល់ក្បែរផ្ទះ..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:bg-white focus:border-emerald-600">
 
-          <!-- 📷 ភ្ជាប់រូបថតមុខផ្ទះ (In-Page Camera / Gallery) -->
+          <!-- 📷 ភ្ជាប់រូបថតមុខផ្ទះ -->
           <div class="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2">
               <div id="housePhotoThumbBox" class="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center overflow-hidden shrink-0">
@@ -640,10 +514,110 @@
           </div>
         </div>
 
-        <!-- ៥. ការដោះដូរសំបកធុង -->
+        <!-- ➕ ប៊ូតុងបត់បើកព័ត៌មានបន្ថែម (ម៉ោងដឹក & ជាន់ផ្ទះ/អគារ - ស្រេចចិត្ត) -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50/60">
+          <button type="button" id="btnToggleCheckoutExtras" onclick="toggleCheckoutOptionalExtras()" class="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+            <span id="lblToggleCheckoutExtras" class="flex items-center gap-1.5"><i class="fas fa-sliders text-blue-600"></i> ➕ ម៉ោងដឹក & ជាន់ផ្ទះ/អគារ (ស្រេចចិត្ត)</span>
+            <i id="iconToggleCheckoutExtras" class="fas fa-chevron-down text-slate-400 transition-transform"></i>
+          </button>
+
+          <div id="checkoutOptionalExtrasBox" class="hidden p-3 pt-1 space-y-3 border-t border-slate-200 bg-white">
+            <!-- ម៉ោងចង់ទទួល -->
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <label class="font-black text-slate-800 uppercase tracking-wider block text-xs" id="coSectionTime">
+                  <i class="fas fa-clock text-emerald-600 mr-1"></i> ម៉ោងចង់ទទួលទំនិញ
+                </label>
+                <span id="selectedTimeSlotBadge" class="text-[10px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">⚡ ដឹកភ្លាមៗ</span>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5 text-[11px] font-bold">
+                <button type="button" onclick="selectTimeSlotChip('ASAP', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-emerald-600 bg-emerald-700 text-white shadow-2xs active:scale-95 transition">⚡ ដឹកភ្លាមៗ</button>
+                <button type="button" onclick="selectTimeSlotChip('ព្រឹក (08:00 - 11:30)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🌅 ព្រឹក (8-11h)</button>
+                <button type="button" onclick="selectTimeSlotChip('ថ្ងៃត្រង់ (11:30 - 13:30)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">☀️ ថ្ងៃត្រង់</button>
+                <button type="button" onclick="selectTimeSlotChip('រសៀល (13:30 - 17:30)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🌇 រសៀល (1-5h)</button>
+                <button type="button" onclick="selectTimeSlotChip('ល្ងាច (17:30 - 19:30)', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🌙 ល្ងាច (5-7h)</button>
+                <button type="button" onclick="selectTimeSlotChip('CUSTOM', this)" class="time-chip py-2 px-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">✍️ វាយម៉ោង</button>
+              </div>
+              <input type="hidden" id="inp_selectedTimeSlotValue" value="ASAP">
+              <div id="customTimeManualInputRow" class="hidden pt-1">
+                <input type="text" id="inp_customTimeManual" oninput="autoSaveCustomerInput()" placeholder="ឧ៖ ម៉ោង ៤:៣០ រសៀល (4:30 PM)..." class="w-full p-2.5 bg-slate-50 border-2 border-emerald-300 rounded-xl font-bold text-xs outline-none focus:bg-white">
+              </div>
+            </div>
+
+            <!-- ប្រភេទកន្លែងស្នាក់នៅ -->
+            <div class="space-y-2">
+              <label class="font-black text-slate-800 uppercase tracking-wider block text-xs" id="coSectionBuilding">
+                <i class="fas fa-building text-blue-600 mr-1"></i> ប្រភេទកន្លែងស្នាក់នៅ
+              </label>
+              <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                <button type="button" onclick="selectBuildingTypeChip('HOUSE', this)" id="bldChip_HOUSE" class="bld-chip py-2.5 px-3 rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-950 flex items-center justify-center gap-1.5 active:scale-95 transition">
+                  <i class="fas fa-house-chimney text-blue-600 text-sm"></i><span>🏠 ផ្ទះផ្ទាល់ដី</span>
+                </button>
+                <button type="button" onclick="selectBuildingTypeChip('CONDO', this)" id="bldChip_CONDO" class="bld-chip py-2.5 px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1.5 active:scale-95 transition">
+                  <i class="fas fa-building text-slate-500 text-sm"></i><span>🏢 បន្ទប់ជួល / អគារ</span>
+                </button>
+              </div>
+
+              <div id="buildingAdvancedDetailsBox" class="hidden p-3 bg-gradient-to-br from-blue-50/70 to-slate-50 rounded-2xl border-2 border-blue-200 space-y-2.5">
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <span id="lblFloorTitle" class="text-[10px] font-black text-slate-600 uppercase">ជាន់ទី (Floor)៖</span>
+                    <span id="selectedFloorDisplayBadge" class="text-[10px] font-black text-blue-800 bg-blue-100 px-2 py-0.2 rounded-full">ជាន់ G (ផ្ទាល់ដី)</span>
+                  </div>
+                  <div class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
+                    <button type="button" onclick="selectFloorChip('G', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white shadow-2xs shrink-0">G</button>
+                    <button type="button" onclick="selectFloorChip('1', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">1</button>
+                    <button type="button" onclick="selectFloorChip('2', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">2</button>
+                    <button type="button" onclick="selectFloorChip('3', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">3</button>
+                    <button type="button" onclick="selectFloorChip('4', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">4</button>
+                    <button type="button" onclick="selectFloorChip('5', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">5</button>
+                    <button type="button" onclick="selectFloorChip('6', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">6</button>
+                    <button type="button" onclick="selectFloorChip('7', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">7</button>
+                    <button type="button" onclick="selectFloorChip('8', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">8</button>
+                    <button type="button" onclick="selectFloorChip('9', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">9</button>
+                    <button type="button" onclick="selectFloorChip('10', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">10</button>
+                    <button type="button" onclick="selectFloorChip('OTHER', this)" class="floor-chip px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 shrink-0">10+</button>
+                  </div>
+                  <div id="customFloorInputRow" class="hidden pt-1">
+                    <input type="text" id="inp_customFloorManual" oninput="onCustomFloorInput(this.value)" placeholder="វាយលេខជាន់..." class="w-full p-2 bg-white border border-blue-300 rounded-xl font-bold text-xs outline-none">
+                  </div>
+                </div>
+
+                <div>
+                  <label id="lblRoomNoTitle" class="text-[10px] font-black text-slate-600 uppercase block mb-1">លេខបន្ទប់ / ផ្ទះ (Room No.) *</label>
+                  <input type="text" id="inp_bldRoomNo" oninput="autoSaveCustomerInput()" placeholder="ឧ៖ 204, B12, A-05..." class="w-full p-2.5 bg-white border border-slate-300 focus:border-blue-500 rounded-xl font-bold text-xs outline-none">
+                </div>
+
+                <div>
+                  <span id="lblElevatorTitle" class="text-[10px] font-black text-slate-600 uppercase block mb-1">មធ្យោបាយឡើងទៅ (Elevator)៖</span>
+                  <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                    <button type="button" onclick="selectElevatorChip('YES', this)" id="elevChip_YES" class="elev-chip py-2 px-2.5 rounded-xl border-2 border-blue-600 bg-blue-600 text-white flex items-center justify-center gap-1 active:scale-95 transition">
+                      <i class="fas fa-elevator"></i><span>🛗 មានជណ្តើរយន្ត</span>
+                    </button>
+                    <button type="button" onclick="selectElevatorChip('NO', this)" id="elevChip_NO" class="elev-chip py-2 px-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 flex items-center justify-center gap-1 active:scale-95 transition">
+                      <i class="fas fa-stairs"></i><span>🪜 ឡើងជណ្តើរជើង</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <span id="lblHandoverTitle" class="text-[10px] font-black text-slate-600 uppercase block mb-1">របៀបប្រគល់ទំនិញ (Handover)៖</span>
+                  <div class="grid grid-cols-3 gap-1 text-[10px] font-bold">
+                    <button type="button" onclick="selectHandoverChip('មុខបន្ទប់', this)" class="handover-chip py-2 px-1 rounded-xl border-2 border-blue-600 bg-blue-600 text-white active:scale-95 transition">🚪 ដាក់មុខបន្ទប់</button>
+                    <button type="button" onclick="selectHandoverChip('ជួបផ្ទាល់', this)" class="handover-chip py-2 px-1 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🤝 ជួបផ្ទាល់</button>
+                    <button type="button" onclick="selectHandoverChip('សន្តិសុខ/Reception', this)" class="handover-chip py-2 px-1 rounded-xl border-2 border-slate-200 bg-white text-slate-700 active:scale-95 transition">🏢 ទុកនៅសន្តិសុខ</button>
+                  </div>
+                  <input type="hidden" id="inp_bldHandover" value="ដាក់មុខបន្ទប់">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ៣. ការដោះដូរសំបកធុង (បង្ហាញតែពេលមានទឹកធុង ២០L) -->
         <div class="space-y-1.5">
           <div class="flex justify-between items-center">
-            <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionSwap">៥. ការដោះដូរសំបកធុងទឹក (Barrel Swap)</label>
+            <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionSwap">៣. ការដោះដូរសំបកធុងទឹក (Barrel Swap)</label>
             <span id="barrelCountSummaryBadge" class="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full"></span>
           </div>
           <div class="space-y-1.5">
@@ -658,9 +632,9 @@
           </div>
         </div>
 
-        <!-- ៦. វិធីទូទាត់ប្រាក់ -->
+        <!-- ៤. វិធីទូទាត់ប្រាក់ -->
         <div class="space-y-1.5">
-          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionPay">៦. វិធីទូទាត់ប្រាក់</label>
+          <label class="font-black text-slate-700 uppercase tracking-wider block" id="coSectionPay">៤. វិធីទូទាត់ប្រាក់</label>
           <div class="grid grid-cols-2 gap-2">
             <label id="cardPayCOD" class="p-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 flex items-center gap-2 cursor-pointer font-bold text-slate-900 transition">
               <input type="radio" name="co_payMethod" value="COD" checked onchange="onPayMethodChanged('COD')" class="accent-emerald-600">
@@ -672,20 +646,16 @@
             </label>
           </div>
 
-          <!-- ABA KHQR Image Display (មានប៊ូតុងទាញយករូបភាព) -->
           <div id="abaKhqrDisplayArea" class="hidden p-3 bg-blue-50/70 border-2 border-blue-200 rounded-2xl text-center space-y-2">
             <span class="text-[11px] font-black text-blue-900 block" id="abaInstructionText">ស្កេនទូទាត់រួចហើយ សូមចុចប៊ូតុងកុម្ម៉ង់ខាងក្រោម</span>
             <div class="p-2 bg-white rounded-xl border border-blue-200 shadow-sm max-w-[180px] mx-auto">
               <img id="abaKhqrImgPreview" src="https://i.postimg.cc/DzHPhnmQ/photo-2026-09-06-20-44-57.jpg" class="w-full rounded-lg" alt="ABA KHQR">
             </div>
-            
-            <!-- 📥 ប៊ូតុងទាញយករូបភាព QR ទុកស្កេនក្នុង App ABA -->
-            <button type="button" onclick="downloadAbaKhqrImage()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs active:scale-95 transition inline-flex items-center gap-1.5 mx-auto">
+            <button type="button" id="btnDownloadAbaQr" onclick="downloadAbaKhqrImage()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs active:scale-95 transition inline-flex items-center gap-1.5 mx-auto">
               <i class="fas fa-download text-[11px]"></i> 📥 ទាញយករូប QR ទុកស្កេន
             </button>
-
             <div class="text-xs font-black text-blue-950 pt-1">
-              <span>ទឹកប្រាក់ត្រូវបង់៖ </span>
+              <span id="lblKhqrDuePrefix">ទឹកប្រាក់ត្រូវបង់៖ </span>
               <div id="khqrDueAmountText" class="text-emerald-700 text-sm mt-0.5">៛ 0</div>
             </div>
           </div>
@@ -1070,6 +1040,19 @@ var exchangeRateTHB = 115;
     var currentBuildingType = 'HOUSE';
     var currentFloorSelected = 'G';
     var currentElevatorSelected = 'YES';
+
+    function toggleCheckoutOptionalExtras() {
+      var box = document.getElementById('checkoutOptionalExtrasBox');
+      var icon = document.getElementById('iconToggleCheckoutExtras');
+      if (!box) return;
+      if (box.classList.contains('hidden')) {
+        box.classList.remove('hidden');
+        if (icon) icon.style.transform = 'rotate(180deg)';
+      } else {
+        box.classList.add('hidden');
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      }
+    }
 
     // ១. រើសវេនម៉ោងដឹក (Time Slot Chips)
     function selectTimeSlotChip(val, btn) {
@@ -1604,7 +1587,28 @@ function getLocalizedText(text, lang) {
         closedHint.innerText = d.closedHint.replace('{open}', storeOperatingConfig.openTime).replace('{close}', storeOperatingConfig.closeTime);
       }
 
-      // ៤. Refresh ប្រភេទទំនិញ កាតាឡុក កន្ត្រក និងការគណនាប្រាក់ភ្លាមៗ
+      setSafePlaceholder('catalogSearchInp',
+        lang === 'en' ? '🔍 Search products (e.g., rice, noodles, 20L water, 500ml)...' :
+        (lang === 'zh' ? '🔍 搜索商品 (例如：大米、方便面、桶装水、500ml)...' : '🔍 ស្វែងរកទំនិញ (ឧ៖ កាហ្វេ, មី, ទឹកធុង, 500ml)...')
+      );
+      setSafeHtml('lblToggleCheckoutExtras',
+        lang === 'en' ? '<i class="fas fa-sliders text-blue-600"></i> ➕ Delivery Time & Floor / Building (Optional)' :
+        (lang === 'zh' ? '<i class="fas fa-sliders text-blue-600"></i> ➕ 送达时间与楼层/公寓信息 (选填)' : '<i class="fas fa-sliders text-blue-600"></i> ➕ ម៉ោងដឹក & ជាន់ផ្ទះ/អគារ (ស្រេចចិត្ត)')
+      );
+      setSafeText('lblFloorTitle', lang === 'en' ? 'Floor:' : (lang === 'zh' ? '楼层：' : 'ជាន់ទី (Floor)៖'));
+      setSafeText('lblRoomNoTitle', lang === 'en' ? 'Room / Unit No. *' : (lang === 'zh' ? '房间号 / 门牌号 *' : 'លេខបន្ទប់ / ផ្ទះ (Room No.) *'));
+      setSafeText('lblElevatorTitle', lang === 'en' ? 'Access (Elevator):' : (lang === 'zh' ? '电梯情况：' : 'មធ្យោបាយឡើងទៅ (Elevator)៖'));
+      setSafeText('lblHandoverTitle', lang === 'en' ? 'Delivery Handover:' : (lang === 'zh' ? '交接方式：' : 'របៀបប្រគល់ទំនិញ (Handover)៖'));
+      setSafeHtml('btnDownloadAbaQr',
+        lang === 'en' ? '<i class="fas fa-download text-[11px]"></i> 📥 Save QR Image to Scan' :
+        (lang === 'zh' ? '<i class="fas fa-download text-[11px]"></i> 📥 保存二维码图片到手机' : '<i class="fas fa-download text-[11px]"></i> 📥 ទាញយករូប QR ទុកស្កេន')
+      );
+      setSafeText('lblKhqrDuePrefix', lang === 'en' ? 'Amount to Pay:' : (lang === 'zh' ? '应付金额：' : 'ទឹកប្រាក់ត្រូវបង់៖ '));
+
+      // ៤. Refresh ស្លាយ, ប្រភេទទំនិញ, កាតាឡុក, កន្ត្រក និងការគណនាប្រាក់ភ្លាមៗ
+      if (window.__kcCachedSettingsMap && typeof applyCustomSlidesFromSettings === 'function') {
+        applyCustomSlidesFromSettings(window.__kcCachedSettingsMap);
+      }
       if (typeof renderCategoryChips === 'function') renderCategoryChips();
       if (typeof renderCatalogGrid === 'function') renderCatalogGrid();
       if (typeof recalcCartDock === 'function') recalcCartDock();
@@ -1808,14 +1812,19 @@ async function loadStoreOnlineProducts() {
       filterCat = filterCat || activeCatalogCategoryFilter || 'ALL';
       var grid = document.getElementById('catalogGrid');
       if (!grid) return;
-      var d = DICT[currentLang] || DICT.km;
       var favList = getCustomerFavoritesList();
       var html = '';
+
+      var badgeDict = {
+        'គុណភាពខ្ពស់': { en: 'Premium', zh: '特级品质' },
+        'ពេញនិយម': { en: 'Popular', zh: '热销人气' },
+        'លក់ដាច់': { en: 'Best Seller', zh: '畅销爆款' },
+        'ទំនិញថ្មី': { en: 'New Arrival', zh: '新品上市' }
+      };
 
       STORE_CATALOG.forEach(function(item) {
         var isFavorited = (favList.indexOf(String(item.id)) !== -1);
 
-        // ១. ចម្រាញ់តាមប្រភេទ Category
         if (filterCat === 'FAVORITES') {
           if (!isFavorited) return;
         } else if (filterCat !== 'ALL') {
@@ -1826,7 +1835,6 @@ async function loadStoreOnlineProducts() {
           if (!isMatch) return;
         }
 
-        // 🔍 ២. ចម្រាញ់តាមពាក្យស្វែងរក (ស្គាល់ទាំងឈ្មោះខ្មែរ អង់គ្លេស ចិន និងការពិពណ៌នា)
         if (activeCatalogSearchKeyword) {
           var nameKh = (item.raw_name || '').toLowerCase();
           var nameTrans = getLocalizedProductName({ name: item.raw_name }, currentLang).toLowerCase();
@@ -1841,7 +1849,6 @@ async function loadStoreOnlineProducts() {
         var inCart = (cartItems[item.id] && cartItems[item.id].qty > 0) ? cartItems[item.id].qty : 0;
         var isOutOfStock = (item.type === 'ទិញគេ' && item.stock <= 0);
 
-        // 🎁 ឆែកមើល Promotion
         var promoRule = null;
         if (activePromoConfig && activePromoConfig.rules && activePromoConfig.rules.length > 0) {
           promoRule = activePromoConfig.rules.find(function(r) {
@@ -1851,29 +1858,39 @@ async function loadStoreOnlineProducts() {
 
         var badgeLabel = '';
         if (isOutOfStock) {
-          badgeLabel = '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">❌ អស់ស្តុក</span>';
+          var oosBadgeTxt = (currentLang === 'en') ? '❌ Out of Stock' : ((currentLang === 'zh') ? '❌ 缺货' : '❌ អស់ស្តុក');
+          badgeLabel = '<span class="bg-red-100 text-red-700 text-[9px] font-black px-2 py-0.5 rounded-full border border-red-200">' + oosBadgeTxt + '</span>';
         } else if (promoRule) {
-          var buyPrefix = (promoRule.buyQty && promoRule.buyQty > 1) ? ('ទិញ ' + promoRule.buyQty + ' ថែម ') : 'ថែម ';
-          badgeLabel = '<span class="bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs animate-pulse truncate max-w-[130px]" title="🎁 ' + buyPrefix + promoRule.freeProduct + ' x ' + promoRule.freeQty + '">' +
-            '🎁 ' + buyPrefix + promoRule.freeProduct + ' x ' + promoRule.freeQty +
+          var buyPrefix = (currentLang === 'en')
+            ? ((promoRule.buyQty && promoRule.buyQty > 1) ? ('Buy ' + promoRule.buyQty + ' Free ') : 'Free ')
+            : ((currentLang === 'zh')
+              ? ((promoRule.buyQty && promoRule.buyQty > 1) ? ('买' + promoRule.buyQty + '送 ') : '送 ')
+              : ((promoRule.buyQty && promoRule.buyQty > 1) ? ('ទិញ ' + promoRule.buyQty + ' ថែម ') : 'ថែម '));
+          var locFreeProd = getLocalizedProductName({ name: promoRule.freeProduct }, currentLang);
+          var safeFreeKey = String(promoRule.freeProduct || '').replace(/"/g, '&quot;');
+          badgeLabel = '<span data-trans-key="' + safeFreeKey + '" data-trans-prefix="🎁 ' + buyPrefix + '" data-trans-suffix=" x ' + promoRule.freeQty + '" class="bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs animate-pulse truncate max-w-[130px]" title="🎁 ' + buyPrefix + locFreeProd + ' x ' + promoRule.freeQty + '">' +
+            '🎁 ' + buyPrefix + locFreeProd + ' x ' + promoRule.freeQty +
           '</span>';
         } else {
           var rawBadge = item.badge || (item.cat === 'BARREL' ? 'ពេញនិយម' : 'គុណភាពខ្ពស់');
           if (rawBadge !== 'NONE') {
-            badgeLabel = '<span class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[85px]">' + rawBadge + '</span>';
+            var locBadge = (currentLang === 'km') ? rawBadge : ((badgeDict[rawBadge] && badgeDict[rawBadge][currentLang]) ? badgeDict[rawBadge][currentLang] : getLocalizedText(rawBadge, currentLang));
+            badgeLabel = '<span data-trans-key="' + String(rawBadge).replace(/"/g, '&quot;') + '" class="bg-emerald-50 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-200 truncate max-w-[85px]">' + locBadge + '</span>';
           }
         }
 
+        var favTitle = (currentLang === 'en') ? 'Favorite' : ((currentLang === 'zh') ? '收藏' : 'ចូលចិត្ត');
         var favBtn = '<button type="button" onclick="toggleFavoriteProduct(\'' + item.id + '\', event)" class="w-7 h-7 rounded-full bg-white/90 hover:bg-rose-50 border border-slate-200 text-xs flex items-center justify-center shadow-2xs active:scale-90 transition shrink-0 ' + 
-          (isFavorited ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400') + '" title="ចូលចិត្ត">' +
+          (isFavorited ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400') + '" title="' + favTitle + '">' +
           '<i class="' + (isFavorited ? 'fas fa-heart' : 'far fa-heart') + '"></i>' +
         '</button>';
 
         var clickAction = isOutOfStock ? '' : 'onclick="openProductDetailModal(\'' + item.id + '\')"';
         var cardOpacity = isOutOfStock ? 'opacity-60 grayscale-[35%]' : '';
 
+        var oosBtnTxt = (currentLang === 'en') ? 'Sold Out' : ((currentLang === 'zh') ? '已售罄' : 'អស់ស្តុក');
         var actionBtn = isOutOfStock ? 
-          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">អស់ស្តុក</span>' : 
+          '<span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-xl">' + oosBtnTxt + '</span>' : 
           '<div class="relative shrink-0">' +
             '<button type="button" class="w-8 h-8 rounded-full bg-emerald-600 group-hover:bg-emerald-700 text-white flex items-center justify-center font-black shadow-md active:scale-90 transition">' +
               '<i class="fas fa-plus text-xs"></i>' +
@@ -1900,7 +1917,7 @@ async function loadStoreOnlineProducts() {
             item.svg + 
           '</div>' +
           '<div class="text-left px-0.5 mt-1.5 mb-1">' +
-            '<h4 data-trans-key="' + item.raw_name + '" class="text-[10px] sm:text-xs font-black text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-700 transition">' + localizedName + '</h4>' +
+            '<h4 data-trans-key="' + String(item.raw_name || '').replace(/"/g, '&quot;') + '" class="text-[10px] sm:text-xs font-black text-slate-800 line-clamp-2 h-7 sm:h-8 leading-snug group-hover:text-emerald-700 transition">' + localizedName + '</h4>' +
           '</div>' +
           '<div class="flex items-center justify-between pt-1.5 border-t border-slate-100 mt-auto">' +
             '<div class="min-w-0 flex-1">' +
@@ -1911,12 +1928,17 @@ async function loadStoreOnlineProducts() {
         '</div>';
       });
 
-      // 🔍 បង្ហាញផ្ទាំងជូនដំណឹងបើស្វែងរកមិនឃើញទំនិញ
       if (!html) {
+        var emptyMsg = (currentLang === 'en')
+          ? ('No products matching "' + activeCatalogSearchKeyword + '" found')
+          : ((currentLang === 'zh')
+            ? ('未找到与“' + activeCatalogSearchKeyword + '”匹配的商品')
+            : ('រកមិនឃើញទំនិញត្រូវនឹងពាក្យ «' + activeCatalogSearchKeyword + '» ឡើយ'));
+        var clearLbl = (currentLang === 'en') ? 'Clear search' : ((currentLang === 'zh') ? '清除搜索' : 'សម្អាតការស្វែងរក');
         grid.innerHTML = '<div class="col-span-full py-8 text-center text-slate-400 font-bold text-xs bg-white rounded-2xl border border-dashed border-slate-200 p-4 space-y-1.5">' +
           '<i class="fas fa-magnifying-glass text-2xl text-slate-300 block mb-1"></i>' +
-          '<span>រកមិនឃើញទំនិញត្រូវនឹងពាក្យ «' + activeCatalogSearchKeyword + '» ឡើយ</span>' +
-          '<button type="button" onclick="clearCatalogSearch()" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold block mx-auto active:scale-95 transition">សម្អាតការស្វែងរក</button>' +
+          '<span>' + emptyMsg + '</span>' +
+          '<button type="button" onclick="clearCatalogSearch()" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold block mx-auto active:scale-95 transition">' + clearLbl + '</button>' +
         '</div>';
         return;
       }
@@ -2464,11 +2486,13 @@ function updateCheckoutCalculation() {
     if (total20LBarrels > 0) {
       swapSection.classList.remove('hidden');
       if (barrelBadge) {
-        barrelBadge.innerText = 'សរុប ' + total20LBarrels + ' ធុង';
+        barrelBadge.innerText = (currentLang === 'en') ? ('Total ' + total20LBarrels + ' barrels') :
+                                ((currentLang === 'zh') ? ('共 ' + total20LBarrels + ' 桶') : ('សរុប ' + total20LBarrels + ' ធុង'));
       }
       if (optNoSpan) {
         var representativePrice = (whiteBarrelsQty > 0) ? whiteBarrelPrice : blueBarrelPrice;
-        optNoSpan.innerText = '🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មី +' + representativePrice.toLocaleString() + '៛/ធុង)';
+        optNoSpan.innerText = (currentLang === 'en') ? ('🛒 No barrels to exchange (+' + representativePrice.toLocaleString() + ' KHR/barrel)') :
+                              ((currentLang === 'zh') ? ('🛒 无空桶可换 (+' + representativePrice.toLocaleString() + ' 瑞尔/桶)') : ('🛒 គ្មានសំបកធុងដូរទេ (ទិញសំបកថ្មី +' + representativePrice.toLocaleString() + '៛/ធុង)'));
       }
     } else {
       swapSection.classList.add('hidden');
