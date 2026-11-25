@@ -617,12 +617,13 @@ function initDashboardRealtimeListener() {
     }, 800);
   }
 
-    var walkinRefreshTimer = null;
+   var repDailyRefreshTimer = null;
   function handleTransOrSettleChange() {
-    if (document.getElementById('posWalkinTodayTbody') && typeof loadPosTodayWalkinSales === 'function') {
-      if (walkinRefreshTimer) clearTimeout(walkinRefreshTimer);
-      walkinRefreshTimer = setTimeout(function() {
-        loadPosTodayWalkinSales();
+    var secDaily = document.getElementById('secDailyLogRep');
+    if (secDaily && !secDaily.classList.contains('hidden') && document.getElementById('repDailyLogTbody') && typeof loadRepDailyLogFromSupabase === 'function') {
+      if (repDailyRefreshTimer) clearTimeout(repDailyRefreshTimer);
+      repDailyRefreshTimer = setTimeout(function() {
+        loadRepDailyLogFromSupabase();
       }, 600);
     }
     if (currentUser && currentUser.role === 'Admin') {
@@ -775,9 +776,12 @@ async function voidTransaction(rowId, tid, prodName, qty, total) {
       sendTelegramAlert(tgMsg);
     } catch(tgE) {}
 
+    if (document.getElementById('repDailyLogTbody') && typeof loadRepDailyLogFromSupabase === 'function') loadRepDailyLogFromSupabase();
+    if (document.getElementById('compSalesTotal') && typeof fetchCompanySummaryFromSupabase === 'function') fetchCompanySummaryFromSupabase();
+    if (document.getElementById('repDailyLogTbody') && typeof loadRepDailyLogFromSupabase === 'function') loadRepDailyLogFromSupabase();
+    if (document.getElementById('compSalesTotal') && typeof fetchCompanySummaryFromSupabase === 'function') fetchCompanySummaryFromSupabase();
     await fetchInitialPOSData();
     if (document.getElementById('dashTodaySales')) loadDashboardData();
-    if (document.getElementById('posWalkinTodayTbody') && typeof loadPosTodayWalkinSales === 'function') loadPosTodayWalkinSales();
     if (document.getElementById('pGrid') && typeof rPG === 'function') rPG();
 
   } catch(err) {
@@ -1318,128 +1322,6 @@ function renderPOSModule() {
   rC();
 }
 
-function renderWalkinHistoryModule() {
-  var area = document.getElementById('contentArea');
-  if (!area) return;
-
-  var isAdmin = (currentUser && currentUser.role === 'Admin');
-  var isSeller = (currentUser && (currentUser.role === 'Seller' || currentUser.role === 'Cashier'));
-  if (!isAdmin && !isSeller) return;
-
-  area.innerHTML = '<div class="w-full max-w-[1600px] mx-auto space-y-3.5 px-1 sm:px-2">' +
-    '<div class="card border-t-4 border-slate-700 shadow-lg p-4 sm:p-5 bg-white">' +
-      '<div class="flex flex-wrap justify-between items-center gap-2 mb-3">' +
-        '<div>' +
-          '<h2 class="font-extrabold text-slate-900 text-sm sm:text-base flex items-center gap-2">' +
-            '<i class="fas fa-clock-rotate-left text-blue-600"></i>ប្រវត្តិលក់នៅកន្លែងថ្ងៃនេះ (Walk-in)' +
-          '</h2>' +
-          (!isAdmin ? '<p class="text-[11px] text-amber-700 font-bold mt-0.5">🔒 ប្រសិនបើវាយខុស សូមទាក់ទង Admin ដើម្បីកែប្រែ ឬបោះបង់</p>' : '<p class="text-[11px] text-slate-500 mt-0.5">Admin អាចចុច ✏️ កែប្រែ ឬ 🗑️ បោះបង់ ការលក់ខុសនៅទីនេះបាន</p>') +
-        '</div>' +
-        '<div class="flex items-center gap-1.5">' +
-          '<span id="posWalkinTodayCountBadge" class="bg-blue-100 text-blue-800 text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full font-bold">0 លើក</span>' +
-          '<button type="button" onclick="loadPosTodayWalkinSales()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold active:scale-95 transition flex items-center gap-1"><i class="fas fa-sync-alt"></i> Refresh</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="overflow-x-auto max-h-[70vh] overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
-        '<table class="w-full text-left text-xs border-collapse">' +
-          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
-            '<tr>' +
-              '<th class="p-2.5 text-center w-14">ម៉ោង</th>' +
-              '<th class="p-2.5">ទំនិញ</th>' +
-              '<th class="p-2.5 text-center">ចំនួន</th>' +
-              '<th class="p-2.5 text-right">សរុប</th>' +
-              '<th class="p-2.5 text-center">បង់តាម</th>' +
-              (isAdmin ? '<th class="p-2.5 text-center w-20">កែ/លុប</th>' : '') +
-            '</tr>' +
-          '</thead>' +
-          '<tbody id="posWalkinTodayTbody"><tr><td colspan="' + (isAdmin ? 6 : 5) + '" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr></tbody>' +
-        '</table>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
-
-  if (typeof loadPosTodayWalkinSales === 'function') {
-    loadPosTodayWalkinSales();
-  }
-}
-
-async function loadPosTodayWalkinSales() {
-  var tbody = document.getElementById('posWalkinTodayTbody');
-  var badge = document.getElementById('posWalkinTodayCountBadge');
-  if (!tbody) return;
-
-  var isAdmin = (currentUser && currentUser.role === 'Admin');
-  var colSpan = isAdmin ? 6 : 5;
-
-  try {
-    var todayStr = getCambodiaToday();
-    var todayQueryStart = todayStr + 'T00:00:00+07:00';
-
-    const { data: rows, error } = await supabaseClient
-      .from('transactions')
-      .select('*')
-      .eq('customer_name', 'Walk-in')
-      .gte('created_at', todayQueryStart)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    var todayRows = (rows || []).filter(function(r) {
-      return isTodayInCambodia(r.created_at);
-    });
-
-    if (badge) badge.innerText = todayRows.length + ' លើក';
-
-    if (!window.__dashRecentRowsMap) window.__dashRecentRowsMap = {};
-
-    if (todayRows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="' + colSpan + '" class="p-4 text-center text-gray-400 italic">មិនទាន់មានការលក់នៅកន្លែងថ្ងៃនេះទេ</td></tr>';
-      return;
-    }
-
-    var html = '';
-    todayRows.forEach(function(r) {
-      window.__dashRecentRowsMap[r.id] = r;
-      var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', {
-        timeZone: 'Asia/Phnom_Penh',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-      var payLabel = (r.payment_method === 'ABA')
-        ? '<span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-blue-100 text-blue-800">📱 ABA</span>'
-        : (r.status === 'Unpaid'
-          ? '<span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-orange-100 text-orange-800">⚠️ ជំពាក់</span>'
-          : '<span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-green-100 text-green-800">💵 សុទ្ធ</span>');
-
-      var safeProd = (typeof escapeHtml === 'function') ? escapeHtml(r.product_name || '') : (r.product_name || '');
-      var safeRec = (typeof escapeHtml === 'function') ? escapeHtml(r.recorded_by || '') : (r.recorded_by || '');
-      var sellerNote = safeRec ? '<br><span class="text-[9px] text-slate-400 font-normal">អ្នកលក់៖ ' + safeRec + '</span>' : '';
-
-      var adminCol = isAdmin ? (
-        '<td class="p-2 text-center whitespace-nowrap">' +
-          '<div class="flex items-center justify-center gap-1">' +
-            '<button type="button" onclick="openEditDashboardTxModal(' + Number(r.id) + ')" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-xs active:scale-90 transition" title="កែប្រែការលក់នេះ"><i class="fas fa-pen-to-square"></i></button>' +
-            '<button type="button" onclick="voidTransaction(' + Number(r.id) + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="បោះបង់ការលក់នេះ"><i class="fas fa-trash-can"></i></button>' +
-          '</div>' +
-        '</td>'
-      ) : '';
-
-      html += '<tr class="border-b hover:bg-gray-50">' +
-        '<td class="p-2 text-center text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
-        '<td class="p-2 font-bold text-gray-800">' + safeProd + sellerNote + '</td>' +
-        '<td class="p-2 text-center font-bold text-blue-700">' + r.qty + '</td>' +
-        '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
-        '<td class="p-2 text-center whitespace-nowrap">' + payLabel + '</td>' +
-        adminCol +
-      '</tr>';
-    });
-
-    tbody.innerHTML = html;
-  } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="' + colSpan + '" class="p-4 text-center text-red-500 font-bold">កំហុស៖ ' + e.message + '</td></tr>';
-  }
-}
 
 // 🔍 មុខងារ Search រកទំនិញលើ POS ភ្លាមៗ
 function onPosSearchInput(val) {
