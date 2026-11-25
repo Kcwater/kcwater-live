@@ -160,8 +160,6 @@ function renderSidebarMenu() {
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ការលក់ & ទូទាត់</div>';
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
     html += '<button onclick="loadModule(\'Settlement\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-calculator mr-3 w-5 text-center"></i>ទូទាត់លុយ</button>';
-    html += '<button onclick="loadModule(\'WalkinHistory\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-clock-rotate-left mr-3 w-5 text-center"></i>ប្រវត្តិលក់នៅកន្លែងថ្ងៃនេះ</button>';
-    html += '<button onclick="loadModule(\'OnlineHub\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold text-amber-300"><i class="fas fa-globe mr-3 w-5 text-center"></i>គ្រប់គ្រង Online & ប្រវត្តិ</button>';
     html += '<div class="text-[10px] font-bold text-green-300 uppercase px-3 pt-3 pb-1 opacity-80 tracking-wider">ឃ្លាំង & ស្តុក</div>';
     html += '<button onclick="loadModule(\'Stock\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-box mr-3 w-5 text-center"></i>គ្រប់គ្រងស្តុក</button>';
     html += '<button onclick="loadModule(\'StockRep\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-boxes-stacked mr-3 w-5 text-center"></i>របាយការណ៍ស្តុក</button>';
@@ -344,34 +342,6 @@ async function renderDashboardModule() {
           '</button>' +
         '</div>' +
         '<div id="dashStockAlertArea" class="space-y-1.5 text-xs max-h-72 overflow-y-auto pr-1">កំពុងឆែកមើលស្តុក...</div>' +
-      '</div>' +
-    '</div>' +
-
-    // 📋 ជួរក្រោម៖ តារាងប្រតិបត្តិការដកទំនិញថ្ងៃនេះ
-    '<div class="card p-4 sm:p-5 border-t-4 border-gray-700 shadow-md mb-0 bg-white">' +
-      '<div class="flex justify-between items-center mb-2.5">' +
-        '<h3 class="font-extrabold text-gray-800 text-xs sm:text-sm flex items-center gap-2">' +
-          '<i class="fas fa-clock-rotate-left text-blue-600"></i> ប្រតិបត្តិការដកទំនិញថ្ងៃនេះ (ពេញមួយថ្ងៃ)' +
-        '</h3>' +
-        '<span id="dashRecentCountBadge" class="bg-blue-100 text-blue-800 text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full font-bold">0 លើក</span>' +
-      '</div>' +
-      '<div class="overflow-x-auto max-h-[300px] overflow-y-auto rounded-xl border border-gray-200 shadow-inner">' +
-        '<table class="w-full text-left text-xs border-collapse">' +
-          '<thead class="sticky top-0 bg-gray-100 text-gray-700 font-bold border-b z-10 shadow-2xs">' +
-            '<tr>' +
-              '<th class="p-2 sm:p-2.5 text-center w-14">ម៉ោង</th>' +
-              '<th class="p-2 sm:p-2.5">អតិថិជន</th>' +
-              '<th class="p-2 sm:p-2.5">ទំនិញ</th>' +
-              '<th class="p-2 sm:p-2.5 text-center">ចំនួន</th>' +
-              '<th class="p-2 sm:p-2.5 text-right">សរុប</th>' +
-              '<th class="p-2 sm:p-2.5 text-center">ស្ថានភាព</th>' +
-              '<th class="p-2 sm:p-2.5 text-center w-20">កែ/លុប</th>' +
-            '</tr>' +
-          '</thead>' +
-          '<tbody id="dashRecentTbody">' +
-            '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">កំពុងទាញទិន្នន័យ...</td></tr>' +
-          '</tbody>' +
-        '</table>' +
       '</div>' +
     '</div>' +
   '</div>';
@@ -581,67 +551,10 @@ async function loadDashboardData() {
       alertArea.innerHTML = saHtml || '<p class="text-gray-400 italic text-center py-4">គ្មានទំនិញទិញគេក្នុងឃ្លាំង</p>';
     }
 
-    var tbodyRecent = document.getElementById('dashRecentTbody');
-    var badgeCount = document.getElementById('dashRecentCountBadge');
-    if (badgeCount) badgeCount.innerText = todayRecentSales.length + " លើក";
-
-    if (tbodyRecent) {
-      window.__dashRecentRowsMap = {};
-      if (todayRecentSales.length === 0) {
-        tbodyRecent.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400 italic">មិនទាន់មានប្រតិបត្តិការដកទំនិញថ្ងៃនេះនៅឡើយ</td></tr>';
-      } else {
-        var rHtml = '';
-        var isAdmin = (currentUser && currentUser.role === 'Admin');
-
-        todayRecentSales.forEach(function(r) {
-          window.__dashRecentRowsMap[r.id] = r;
-          var timeStr = new Date(r.created_at).toLocaleTimeString('km-KH', { 
-            timeZone: 'Asia/Phnom_Penh', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          });
-
-          var recByClean = String(r.recorded_by || '').replace(/\s*\(.*?\)/g, '').trim();
-          var isWithdrawnByOther = (recByClean && recByClean !== r.customer_name && recByClean !== 'Admin');
-          var isAdminProxy = (r.recorded_by && r.recorded_by.includes('Admin') && r.customer_name !== 'Walk-in');
-
-          var withdrawTag = '';
-          if (isWithdrawnByOther) {
-            withdrawTag = '<br><span class="text-[9px] text-amber-950 font-bold bg-amber-100 border border-amber-300 px-1 py-0.2 rounded inline-flex items-center gap-1 mt-0.5"><i class="fas fa-truck text-[8px] text-amber-600"></i>ជំនួស: ' + recByClean + '</span>';
-          } else if (isAdminProxy) {
-            withdrawTag = '<br><span class="text-[9px] text-blue-900 font-bold bg-blue-50 border border-blue-200 px-1 py-0.2 rounded inline-flex items-center gap-1 mt-0.5"><i class="fas fa-user-pen text-[8px] text-blue-500"></i>Admin កត់ជំនួស</span>';
-          }
-
-          var isSettledDebt = (r.status === 'Paid' && r.payment_method === 'Debt');
-          var voidCellHtml = isAdmin ? (
-            isSettledDebt
-              ? '<span class="text-[9px] text-slate-400 italic" title="បានទូទាត់ក្នុង Settlement រួច">ទូទាត់រួច</span>'
-              : '<div class="flex items-center justify-center gap-1">' +
-                  '<button type="button" onclick="openEditDashboardTxModal(' + Number(r.id) + ')" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-xs active:scale-90 transition" title="កែប្រែប្រតិបត្តិការនេះ"><i class="fas fa-pen-to-square"></i></button>' +
-                  '<button type="button" onclick="voidTransaction(' + Number(r.id) + ')" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs active:scale-90 transition" title="បោះបង់ការលក់នេះ"><i class="fas fa-trash-can"></i></button>' +
-                '</div>'
-          ) : '-';
-
-          rHtml += '<tr class="border-b hover:bg-gray-50">' +
-            '<td class="p-2 text-center text-gray-500 whitespace-nowrap text-[10px]">' + timeStr + '</td>' +
-            '<td class="p-2 font-bold text-gray-800">' + r.customer_name + withdrawTag + '</td>' +
-            '<td class="p-2">' + r.product_name + '</td>' +
-            '<td class="p-2 text-center font-bold text-blue-700">' + r.qty + '</td>' +
-            '<td class="p-2 text-right font-black text-green-700 whitespace-nowrap">៛ ' + Number(r.total).toLocaleString() + '</td>' +
-            '<td class="p-2 text-center whitespace-nowrap">' +
-              '<span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold ' + (r.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800 border border-orange-200') + '">' + (r.status === 'Paid' ? 'បង់រួច' : 'ជំពាក់') + '</span>' +
-            '</td>' +
-            '<td class="p-2 text-center whitespace-nowrap">' + voidCellHtml + '</td>' +
-          '</tr>';
-        });
-        tbodyRecent.innerHTML = rHtml;
-      }
-    }
-  } catch(e) {
+    } catch(e) {
     console.error("Dashboard error:", e);
   }
 }
-
 var dashboardRealtimeChannel = null;
 var dashboardRefreshTimer = null;
 var stockUiRefreshTimer = null;
