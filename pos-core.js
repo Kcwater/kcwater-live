@@ -200,7 +200,6 @@ function renderSidebarMenu() {
   } else {
     html += '<button onclick="loadModule(\'POS\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-shopping-cart mr-3 w-5 text-center"></i>ផ្ទាំងលក់ (POS)</button>';
   }
-  html += '<button onclick="loadModule(\'WalkinHistory\')" class="w-full text-left p-3 hover:bg-green-700 rounded-xl transition flex items-center font-bold"><i class="fas fa-clock-rotate-left mr-3 w-5 text-center"></i>ប្រវត្តិលក់នៅកន្លែងថ្ងៃនេះ</button>';
 
   html += '<hr class="border-green-800 my-3">';
   html += '<button onclick="logout()" class="w-full text-left p-3 text-red-300 hover:bg-red-800 rounded-xl transition flex items-center font-bold"><i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>ចាកចេញ</button>';
