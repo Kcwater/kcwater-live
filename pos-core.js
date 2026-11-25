@@ -1801,6 +1801,11 @@ function openProductModal(id) {
   if (priceInp) priceInp.onblur = onModalPriceBlur;
   var quickPayBtn = document.getElementById('btnModalQuickPay');
   var addToCartBtn = document.getElementById('btnModalAddToCart');
+  var freeBtn = document.getElementById('btnModalAddFree');
+  if (freeBtn) {
+    if (currentUser && currentUser.role === 'Admin') freeBtn.classList.remove('hidden');
+    else freeBtn.classList.add('hidden');
+  }
   var khrQuickRow = document.getElementById('modalKhrQuickButtonsRow');
   var khrHintText = document.getElementById('modalKhrHintText');
   var currTabsRow = document.getElementById('btnModalCurr_KHR') ? document.getElementById('btnModalCurr_KHR').parentElement : null;
@@ -1945,6 +1950,51 @@ function confirmAddToCart() {
   closeProductModal();
   renderCart();
   showToast("បានបញ្ចូល [" + prodName + "] x " + q + " ក្នុងកន្ត្រក!", "success");
+}
+
+// 🎁 បញ្ចូលទំនិញថែម Free (0 ៛ - កាត់ស្តុកអូតូ ឃើញតែ Admin)
+function confirmAddFreeToCart() {
+  if (!selectedModalProduct || !currentUser || currentUser.role !== 'Admin') return;
+
+  var q = parseInt(document.getElementById('modalQtyInput') ? document.getElementById('modalQtyInput').value : 1) || 1;
+  if (isNaN(q) || q <= 0) {
+    showToast("សូមបញ្ចូលចំនួនឱ្យត្រឹមត្រូវ!", "error");
+    return;
+  }
+
+  if (selectedModalProduct.type === 'ទិញគេ') {
+    var inCartQty = cart.filter(function(i) { return i.id === selectedModalProduct.id; }).reduce(function(sum, i) { return sum + i.qty; }, 0);
+    var curStock = parseFloat(selectedModalProduct.stock || 0);
+    var available = curStock - inCartQty;
+    if (q > available) {
+      showToast("មិនអាចថែមបានទេ! សល់ត្រឹម " + Math.max(0, available) + " ក្នុងស្តុក!", "error");
+      return;
+    }
+  }
+
+  var prodId = selectedModalProduct.id;
+  var freeName = "🎁 [Free] " + selectedModalProduct.name;
+
+  var existingFree = cart.find(function(item) {
+    return item.id === prodId && item.price === 0 && item.name === freeName;
+  });
+
+  if (existingFree) {
+    existingFree.qty += q;
+  } else {
+    cart.push({
+      id: prodId,
+      name: freeName,
+      price: 0,
+      qty: q,
+      currency: 'KHR',
+      isFree: true
+    });
+  }
+
+  closeProductModal();
+  renderCart();
+  showToast("បានបញ្ចូល " + freeName + " x " + q + " (0 ៛) ក្នុងកន្ត្រក!", "success");
 }
 
 // ⚡ មុខងារទូទាត់រហ័ស (QUICK CHECKOUT) - កែសម្រួលរួចរាល់
@@ -2197,9 +2247,10 @@ async function confirmSale() {
   var custObjCheck = allCustomers.find(c => c.full_name === custName);
   var isMonthlyCustomer = (custObjCheck && custObjCheck.type === 'Monthly');
 
-  if (isMonthlyCustomer) {
+if (isMonthlyCustomer) {
     var invalidItems = [];
     cart.forEach(function(item) {
+      if (item.isFree === true) return;
       var hasContract = specialPrices.some(s => s.customer_name === custName && s.product_name === item.name);
       if (!hasContract) invalidItems.push(item.name);
     });
@@ -2224,7 +2275,7 @@ async function confirmSale() {
 
   var calc = getCartCalculations();
   var paid = isDebtWithdrawal ? 0 : parseFloat(document.getElementById('pK') ? document.getElementById('pK').value || 0 : 0);
-  var status = (isWalkIn && paid >= calc.finalTotal) ? 'Paid' : 'Unpaid';
+  var status = ((isWalkIn && paid >= calc.finalTotal) || calc.finalTotal === 0) ? 'Paid' : 'Unpaid';
 
   var tid = "TR-" + new Date().getTime();
   var btn = document.getElementById('sBtn');
@@ -2241,8 +2292,9 @@ async function confirmSale() {
 
     cart.forEach(function(item) {
       var itemTotal = item.qty * item.price;
+      var isFreeRow = (item.isFree === true || itemTotal === 0);
       var allocatedPaid = 0;
-      if (remainingPaidToDistribute > 0) {
+      if (remainingPaidToDistribute > 0 && !isFreeRow) {
         allocatedPaid = Math.min(remainingPaidToDistribute, itemTotal);
         remainingPaidToDistribute -= allocatedPaid;
       }
@@ -2255,10 +2307,10 @@ async function confirmSale() {
         price: item.price,
         currency: "KHR",
         total: itemTotal,
-        paid_khr: isDebtWithdrawal ? 0 : allocatedPaid,
+        paid_khr: (isDebtWithdrawal || isFreeRow) ? 0 : allocatedPaid,
         recorded_by: isDriverWithdraw ? (currentUser.fullName + " (កូនចៅដកជំនួស)") : (isDebtWithdrawal && isAdmin ? "Admin (ដកជំនួស)" : (currentUser.fullName || "Admin")),
-        status: status,
-        payment_method: isDebtWithdrawal ? 'Debt' : currentPosPayMethod
+        status: isFreeRow ? 'Paid' : status,
+        payment_method: isFreeRow ? 'Free' : (isDebtWithdrawal ? 'Debt' : currentPosPayMethod)
       });
     });
 
