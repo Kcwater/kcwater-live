@@ -1101,10 +1101,20 @@ async function saveStockInToSupabase() {
 
   try {
     var newStock = parseFloat(prod.stock || 0) + qty;
-    var updateObj = { stock: newStock };
-    if (cost > 0) updateObj.cost = cost;
+    const { data: newStockVal, error: stkErr } = await supabaseClient.rpc('adjust_product_stock', {
+      p_token: (currentUser && currentUser.sessionToken) ? currentUser.sessionToken : '',
+      p_product_id: id,
+      p_delta: Math.abs(qty)
+    });
+    if (!stkErr && newStockVal !== null && newStockVal !== undefined) {
+      newStock = parseFloat(newStockVal);
+    } else {
+      await supabaseClient.from('products').update({ stock: newStock }).eq('id', id);
+    }
 
-    await supabaseClient.from('products').update(updateObj).eq('id', id);
+    if (cost > 0) {
+      await supabaseClient.from('products').update({ cost: cost }).eq('id', id);
+    }
     await supabaseClient.from('stock_in').insert([{
       product_id: id,
       product_name: prod.name,
